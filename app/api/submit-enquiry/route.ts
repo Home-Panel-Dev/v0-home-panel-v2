@@ -1,0 +1,56 @@
+import { NextResponse } from "next/server"
+import { Resend } from "resend"
+import { enquiryFormSchema } from "@/lib/form-schema"
+import { getCustomerConfirmationEmail, getInternalAlertEmail } from "@/lib/email-templates"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "team@homepanel.co.uk"
+const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <noreply@homepanel.co.uk>"
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    
+    // Validate the request body
+    const validatedData = enquiryFormSchema.parse(body)
+
+    // Get email templates
+    const customerEmail = getCustomerConfirmationEmail(validatedData)
+    const internalEmail = getInternalAlertEmail(validatedData)
+
+    // Send customer confirmation email
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: validatedData.email,
+      subject: customerEmail.subject,
+      html: customerEmail.html,
+      text: customerEmail.text,
+    })
+
+    // Send internal alert email
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: INTERNAL_EMAIL,
+      subject: internalEmail.subject,
+      html: internalEmail.html,
+      text: internalEmail.text,
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error submitting enquiry:", error)
+    
+    if (error instanceof Error && error.name === "ZodError") {
+      return NextResponse.json(
+        { error: "Invalid form data" },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: "Failed to submit enquiry" },
+      { status: 500 }
+    )
+  }
+}
