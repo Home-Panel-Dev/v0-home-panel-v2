@@ -39,16 +39,16 @@ export function MultiStepForm() {
   const form = useForm<EnquiryFormData>({
     resolver: zodResolver(enquiryFormSchema),
     defaultValues: {
-      transactionType: undefined,
+      transactionType: "",
       fullName: "",
       email: "",
       phone: "",
       postcode: "",
       propertyPostcode: "",
       estimatedValue: "",
-      mortgageRequired: undefined,
-      firstTimeBuyer: undefined,
-      referralSource: undefined,
+      mortgageRequired: "",
+      firstTimeBuyer: "",
+      referralSource: "",
     },
     mode: "onChange",
   })
@@ -258,8 +258,8 @@ function Step1TransactionType({
   onChange,
   error,
 }: {
-  value?: string
-  onChange: (value: "buying" | "selling" | "buying-selling" | "remortgage" | "transfer-equity") => void
+  value: string
+  onChange: (value: string) => void
   error?: string
 }) {
   return (
@@ -409,7 +409,7 @@ function Step3PropertyDetails({
         <Label>Will you need a mortgage?</Label>
         <RadioGroup
           value={values.mortgageRequired}
-          onValueChange={(value) => setValue("mortgageRequired", value as "yes" | "no")}
+          onValueChange={(value) => setValue("mortgageRequired", value)}
           className="flex gap-4"
         >
           {["yes", "no"].map((option) => (
@@ -435,7 +435,7 @@ function Step3PropertyDetails({
         <Label>Are you a first-time buyer?</Label>
         <RadioGroup
           value={values.firstTimeBuyer}
-          onValueChange={(value) => setValue("firstTimeBuyer", value as "yes" | "no")}
+          onValueChange={(value) => setValue("firstTimeBuyer", value)}
           className="flex gap-4"
         >
           {["yes", "no"].map((option) => (
@@ -466,8 +466,8 @@ function Step4ReferralSource({
   onChange,
   error,
 }: {
-  value?: string
-  onChange: (value: "direct" | "estate-agent" | "broker") => void
+  value: string
+  onChange: (value: string) => void
   error?: string
 }) {
   return (

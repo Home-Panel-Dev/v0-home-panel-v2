@@ -16,9 +16,11 @@ export const referralSources = [
 
 export const enquiryFormSchema = z.object({
   // Step 1: Transaction Type
-  transactionType: z.enum(["buying", "selling", "buying-selling", "remortgage", "transfer-equity"], {
-    required_error: "Please select a transaction type",
-  }),
+  transactionType: z.string().refine(
+    (val): val is "buying" | "selling" | "buying-selling" | "remortgage" | "transfer-equity" =>
+      ["buying", "selling", "buying-selling", "remortgage", "transfer-equity"].includes(val),
+    { message: "Please select a transaction type" }
+  ),
 
   // Step 2: Basic Details
   fullName: z.string().min(2, "Name must be at least 2 characters"),
@@ -29,17 +31,21 @@ export const enquiryFormSchema = z.object({
   // Step 3: Property Details
   propertyPostcode: z.string().min(5, "Please enter a valid postcode"),
   estimatedValue: z.string().min(1, "Please enter an estimated value"),
-  mortgageRequired: z.enum(["yes", "no"], {
-    required_error: "Please select an option",
-  }),
-  firstTimeBuyer: z.enum(["yes", "no"], {
-    required_error: "Please select an option",
-  }),
+  mortgageRequired: z.string().refine(
+    (val): val is "yes" | "no" => ["yes", "no"].includes(val),
+    { message: "Please select an option" }
+  ),
+  firstTimeBuyer: z.string().refine(
+    (val): val is "yes" | "no" => ["yes", "no"].includes(val),
+    { message: "Please select an option" }
+  ),
 
   // Step 4: Referral Source
-  referralSource: z.enum(["direct", "estate-agent", "broker"], {
-    required_error: "Please select how you heard about us",
-  }),
+  referralSource: z.string().refine(
+    (val): val is "direct" | "estate-agent" | "broker" =>
+      ["direct", "estate-agent", "broker"].includes(val),
+    { message: "Please select how you heard about us" }
+  ),
 })
 
 export type EnquiryFormData = z.infer<typeof enquiryFormSchema>
