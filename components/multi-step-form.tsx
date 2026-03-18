@@ -136,7 +136,7 @@ export function MultiStepForm() {
   
   const currentStep = steps[currentStepIndex]
   const totalSteps = steps.length
-  const progress = ((currentStepIndex) / (totalSteps - 1)) * 100
+  const progress = totalSteps > 1 ? ((currentStepIndex) / (totalSteps - 1)) * 100 : 0
 
   const validateCurrentStep = async (): Promise<boolean> => {
     switch (currentStep) {

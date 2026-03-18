@@ -1,4 +1,5 @@
-import { Metadata } from "next"
+"use client"
+
 import { Hero } from "@/components/hero"
 import { Section, SectionHeader } from "@/components/section"
 import { CTASection } from "@/components/cta-section"
@@ -10,11 +11,6 @@ import {
   UserCheck,
   CheckCircle2
 } from "lucide-react"
-
-export const metadata: Metadata = {
-  title: "How It Works | HomePanel",
-  description: "Learn how HomePanel simplifies your home moving process with our guided conveyancing onboarding.",
-}
 
 const steps = [
   {
