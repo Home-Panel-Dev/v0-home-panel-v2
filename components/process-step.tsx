@@ -1,15 +1,29 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { CheckCircle2 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
+import { 
+  CheckCircle2, 
+  FileText, 
+  Search, 
+  ClipboardCheck, 
+  UserCheck 
+} from "lucide-react"
+
+const iconMap = {
+  FileText,
+  Search,
+  ClipboardCheck,
+  UserCheck,
+} as const
+
+type IconName = keyof typeof iconMap
 
 interface ProcessStepProps {
   step: number
   title: string
   description: string
   details: string[]
-  icon: LucideIcon
+  iconName: IconName
   index: number
   isLast?: boolean
 }
@@ -19,10 +33,12 @@ export function ProcessStep({
   title, 
   description, 
   details, 
-  icon: Icon, 
+  iconName, 
   index,
   isLast = false 
 }: ProcessStepProps) {
+  const Icon = iconMap[iconName]
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

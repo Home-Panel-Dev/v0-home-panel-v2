@@ -4,13 +4,7 @@ import { Hero } from "@/components/hero"
 import { Section, SectionHeader } from "@/components/section"
 import { CTASection } from "@/components/cta-section"
 import { ProcessStep } from "@/components/process-step"
-import { 
-  FileText, 
-  Search, 
-  ClipboardCheck, 
-  UserCheck,
-  CheckCircle2
-} from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 
 const steps = [
   {
@@ -23,7 +17,7 @@ const steps = [
       "Share property information",
       "Takes less than 5 minutes",
     ],
-    icon: FileText,
+    iconName: "FileText" as const,
   },
   {
     step: 2,
@@ -35,7 +29,7 @@ const steps = [
       "Preparation for next steps",
       "Personal attention to your case",
     ],
-    icon: Search,
+    iconName: "Search" as const,
   },
   {
     step: 3,
@@ -47,7 +41,7 @@ const steps = [
       "Regular progress updates",
       "Support when you need it",
     ],
-    icon: ClipboardCheck,
+    iconName: "ClipboardCheck" as const,
   },
   {
     step: 4,
@@ -59,7 +53,7 @@ const steps = [
       "Smooth handover",
       "Ready to progress",
     ],
-    icon: UserCheck,
+    iconName: "UserCheck" as const,
   },
 ]
 
@@ -86,7 +80,7 @@ export default function HowItWorksPage() {
               title={step.title}
               description={step.description}
               details={step.details}
-              icon={step.icon}
+              iconName={step.iconName}
               index={index}
               isLast={index === steps.length - 1}
             />

@@ -2,17 +2,57 @@
 
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
-import type { LucideIcon } from "lucide-react"
+import {
+  Users,
+  Clock,
+  TrendingUp,
+  Shield,
+  Handshake,
+  FileCheck,
+  Zap,
+  BarChart3,
+  UserCheck,
+  FileStack,
+  Timer,
+  Briefcase,
+  Home,
+  FileText,
+  HeartHandshake,
+  Sparkles,
+} from "lucide-react"
+
+const iconMap = {
+  Users,
+  Clock,
+  TrendingUp,
+  Shield,
+  Handshake,
+  FileCheck,
+  Zap,
+  BarChart3,
+  UserCheck,
+  FileStack,
+  Timer,
+  Briefcase,
+  Home,
+  FileText,
+  HeartHandshake,
+  Sparkles,
+} as const
+
+type IconName = keyof typeof iconMap
 
 interface FeatureCardProps {
   title: string
   description: string
-  icon: LucideIcon
+  iconName: IconName
   index?: number
   className?: string
 }
 
-export function FeatureCard({ title, description, icon: Icon, index = 0, className }: FeatureCardProps) {
+export function FeatureCard({ title, description, iconName, index = 0, className }: FeatureCardProps) {
+  const Icon = iconMap[iconName]
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

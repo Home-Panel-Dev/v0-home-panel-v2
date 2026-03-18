@@ -2,18 +2,27 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
+import { ArrowRight, Building2, Landmark, Scale } from "lucide-react"
+
+const iconMap = {
+  Building2,
+  Landmark,
+  Scale,
+} as const
+
+type IconName = keyof typeof iconMap
 
 interface PartnerCardProps {
   title: string
   description: string
   href: string
-  icon: LucideIcon
+  iconName: IconName
   index?: number
 }
 
-export function PartnerCard({ title, description, href, icon: Icon, index = 0 }: PartnerCardProps) {
+export function PartnerCard({ title, description, href, iconName, index = 0 }: PartnerCardProps) {
+  const Icon = iconMap[iconName]
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

@@ -5,40 +5,27 @@ import { Section, SectionHeader } from "@/components/section"
 import { FeatureCard } from "@/components/feature-card"
 import { PartnerCard } from "@/components/partner-card"
 import { CTASection } from "@/components/cta-section"
-import { 
-  FileText, 
-  Search, 
-  ClipboardCheck, 
-  UserCheck,
-  Heart,
-  Zap,
-  Clock,
-  MessageCircle,
-  Building2,
-  Landmark,
-  Scale
-} from "lucide-react"
 
 const steps = [
   {
     title: "Submit your enquiry",
     description: "Tell us about your move. It takes less than five minutes to share the essential details.",
-    icon: FileText,
+    iconName: "FileText" as const,
   },
   {
     title: "HomePanel reviews",
     description: "Our team reviews your information and prepares everything for a smooth onboarding.",
-    icon: Search,
+    iconName: "UserCheck" as const,
   },
   {
     title: "Guided onboarding",
     description: "We guide you through each step, collecting what your solicitor needs upfront.",
-    icon: ClipboardCheck,
+    iconName: "FileCheck" as const,
   },
   {
     title: "Solicitor allocation",
     description: "Once ready, we connect you with the right solicitor for your transaction.",
-    icon: UserCheck,
+    iconName: "Handshake" as const,
   },
 ]
 
@@ -46,22 +33,22 @@ const benefits = [
   {
     title: "Less stress",
     description: "A calm, guided process that removes the overwhelm from moving home.",
-    icon: Heart,
+    iconName: "HeartHandshake" as const,
   },
   {
     title: "Faster onboarding",
     description: "Get prepared quickly with our streamlined information gathering.",
-    icon: Zap,
+    iconName: "Zap" as const,
   },
   {
     title: "Fewer delays",
     description: "Complete documentation upfront means fewer bottlenecks later.",
-    icon: Clock,
+    iconName: "Clock" as const,
   },
   {
     title: "Better communication",
     description: "Stay informed throughout with clear updates on your progress.",
-    icon: MessageCircle,
+    iconName: "Users" as const,
   },
 ]
 
@@ -70,19 +57,19 @@ const partners = [
     title: "Estate Agents",
     description: "Offer your clients a seamless conveyancing experience that reflects your commitment to service.",
     href: "/estate-agents",
-    icon: Building2,
+    iconName: "Building2" as const,
   },
   {
     title: "Mortgage Brokers",
     description: "Enhance your client journey with integrated conveyancing that complements your mortgage service.",
     href: "/brokers",
-    icon: Landmark,
+    iconName: "Landmark" as const,
   },
   {
     title: "Solicitors",
     description: "Receive pre-qualified, well-prepared clients ready to progress through conveyancing.",
     href: "/solicitors",
-    icon: Scale,
+    iconName: "Scale" as const,
   },
 ]
 
@@ -109,7 +96,7 @@ export default function HomePage() {
               key={benefit.title}
               title={benefit.title}
               description={benefit.description}
-              icon={benefit.icon}
+              iconName={benefit.iconName}
               index={index}
             />
           ))}
@@ -130,7 +117,7 @@ export default function HomePage() {
               <FeatureCard
                 title={step.title}
                 description={step.description}
-                icon={step.icon}
+                iconName={step.iconName}
                 index={index}
                 className="pt-10"
               />
@@ -151,7 +138,7 @@ export default function HomePage() {
               title={partner.title}
               description={partner.description}
               href={partner.href}
-              icon={partner.icon}
+              iconName={partner.iconName}
               index={index}
             />
           ))}

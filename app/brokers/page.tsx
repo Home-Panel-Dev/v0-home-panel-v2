@@ -1,41 +1,31 @@
-import { Metadata } from "next"
+"use client"
+
 import { Hero } from "@/components/hero"
 import { Section, SectionHeader } from "@/components/section"
 import { FeatureCard } from "@/components/feature-card"
 import { CTASection } from "@/components/cta-section"
-import {
-  Handshake,
-  FileCheck,
-  Zap,
-  BarChart3,
-  CheckCircle2,
-} from "lucide-react"
-
-export const metadata: Metadata = {
-  title: "Mortgage Brokers | HomePanel",
-  description: "Enhance your client journey with integrated conveyancing that complements your mortgage service and drives better outcomes.",
-}
+import { CheckCircle2 } from "lucide-react"
 
 const benefits = [
   {
     title: "Streamlined client journey",
     description: "Integrate conveyancing seamlessly into your mortgage process for a unified client experience.",
-    icon: Handshake,
+    iconName: "Handshake" as const,
   },
   {
     title: "Pre-prepared documentation",
     description: "Clients arrive at conveyancing with everything in order, reducing back-and-forth.",
-    icon: FileCheck,
+    iconName: "FileCheck" as const,
   },
   {
     title: "Faster completions",
     description: "Well-prepared clients mean smoother transactions and quicker completions.",
-    icon: Zap,
+    iconName: "Zap" as const,
   },
   {
     title: "Valuable insights",
     description: "Track client progress and completion rates with detailed reporting.",
-    icon: BarChart3,
+    iconName: "BarChart3" as const,
   },
 ]
 
@@ -71,7 +61,7 @@ export default function BrokersPage() {
               key={benefit.title}
               title={benefit.title}
               description={benefit.description}
-              icon={benefit.icon}
+              iconName={benefit.iconName}
               index={index}
             />
           ))}

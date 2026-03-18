@@ -1,41 +1,31 @@
-import { Metadata } from "next"
+"use client"
+
 import { Hero } from "@/components/hero"
 import { Section, SectionHeader } from "@/components/section"
 import { FeatureCard } from "@/components/feature-card"
 import { CTASection } from "@/components/cta-section"
-import {
-  UserCheck,
-  FileStack,
-  Timer,
-  Briefcase,
-  CheckCircle2,
-} from "lucide-react"
-
-export const metadata: Metadata = {
-  title: "Solicitors | HomePanel",
-  description: "Receive pre-qualified, well-prepared clients ready to progress through conveyancing with complete documentation.",
-}
+import { CheckCircle2 } from "lucide-react"
 
 const benefits = [
   {
     title: "Pre-qualified clients",
     description: "Every client has been reviewed and qualified before allocation, saving you time on initial checks.",
-    icon: UserCheck,
+    iconName: "UserCheck" as const,
   },
   {
     title: "Complete documentation",
     description: "Clients arrive with all necessary information gathered, reducing delays and follow-ups.",
-    icon: FileStack,
+    iconName: "FileStack" as const,
   },
   {
     title: "Reduced turnaround",
     description: "Well-prepared files mean faster matter opening and quicker progression.",
-    icon: Timer,
+    iconName: "Timer" as const,
   },
   {
     title: "Quality referrals",
     description: "Receive a steady stream of qualified instructions from our partner network.",
-    icon: Briefcase,
+    iconName: "Briefcase" as const,
   },
 ]
 
@@ -71,7 +61,7 @@ export default function SolicitorsPage() {
               key={benefit.title}
               title={benefit.title}
               description={benefit.description}
-              icon={benefit.icon}
+              iconName={benefit.iconName}
               index={index}
             />
           ))}

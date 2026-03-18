@@ -1,41 +1,31 @@
-import { Metadata } from "next"
+"use client"
+
 import { Hero } from "@/components/hero"
 import { Section, SectionHeader } from "@/components/section"
 import { FeatureCard } from "@/components/feature-card"
 import { CTASection } from "@/components/cta-section"
-import {
-  Users,
-  Clock,
-  TrendingUp,
-  Shield,
-  CheckCircle2,
-} from "lucide-react"
-
-export const metadata: Metadata = {
-  title: "Estate Agents | HomePanel",
-  description: "Partner with HomePanel to offer your clients a seamless conveyancing experience that reflects your commitment to exceptional service.",
-}
+import { CheckCircle2 } from "lucide-react"
 
 const benefits = [
   {
     title: "Enhanced client experience",
     description: "Offer your clients a premium, guided conveyancing journey that sets you apart from competitors.",
-    icon: Users,
+    iconName: "Users" as const,
   },
   {
     title: "Faster completions",
     description: "Pre-qualified, well-prepared clients mean fewer delays and smoother transactions.",
-    icon: Clock,
+    iconName: "Clock" as const,
   },
   {
     title: "Increased referrals",
     description: "Exceptional service leads to more recommendations and repeat business.",
-    icon: TrendingUp,
+    iconName: "TrendingUp" as const,
   },
   {
     title: "Trusted partnership",
     description: "We work alongside you to ensure every client receives consistent, quality care.",
-    icon: Shield,
+    iconName: "Shield" as const,
   },
 ]
 
@@ -71,7 +61,7 @@ export default function EstateAgentsPage() {
               key={benefit.title}
               title={benefit.title}
               description={benefit.description}
-              icon={benefit.icon}
+              iconName={benefit.iconName}
               index={index}
             />
           ))}
