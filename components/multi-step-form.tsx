@@ -279,14 +279,10 @@ export function MultiStepForm() {
     }
   }
 
-  // Auto-advance for radio selections
+// Handle radio selection without auto-advance
   const handleRadioSelect = (field: keyof EnquiryFormData, value: string) => {
     setValue(field, value)
-    // Small delay for visual feedback before advancing
-    setTimeout(() => {
-      if (currentStepIndex < steps.length - 1) {
-        setCurrentStepIndex((prev) => prev + 1)
-      }
+  }
     }, 200)
   }
 
@@ -461,45 +457,43 @@ export function MultiStepForm() {
             </div>
           )}
 
-          {/* Navigation - only show Next for steps that need it */}
-          {(currentStep === "property-address" || currentStep === "property-value" || currentStep === "personal-details" || currentStep === "quote") && (
-            <div className="flex justify-end mt-6">
-              {currentStep === "quote" ? (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-8"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Proceed with HomePanel"
-                  )}
-                </Button>
-              ) : currentStep === "personal-details" ? (
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  Get My Quote
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  Next
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Navigation */}
+          <div className="flex justify-end mt-6">
+            {currentStep === "quote" ? (
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Proceed with HomePanel"
+                )}
+              </Button>
+            ) : currentStep === "personal-details" ? (
+              <Button
+                type="button"
+                onClick={nextStep}
+                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                Get My Quote
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={nextStep}
+                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </form>
       </div>
     </div>
