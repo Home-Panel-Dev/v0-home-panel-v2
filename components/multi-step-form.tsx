@@ -283,8 +283,6 @@ export function MultiStepForm() {
   const handleRadioSelect = (field: keyof EnquiryFormData, value: string) => {
     setValue(field, value)
   }
-    }, 200)
-  }
 
   if (isSuccess) {
     return (
