@@ -134,9 +134,10 @@ export function MultiStepForm() {
     [watchedValues.transactionType]
   )
   
-  const currentStep = steps[currentStepIndex]
-  const totalSteps = steps.length
-  const progress = totalSteps > 1 ? ((currentStepIndex) / (totalSteps - 1)) * 100 : 0
+  const currentStep = steps[currentStepIndex] || "transaction-type"
+  const totalSteps = steps.length || 1
+  const progressValue = totalSteps > 1 ? (currentStepIndex / (totalSteps - 1)) * 100 : 0
+  const progress = Number.isNaN(progressValue) ? 0 : Math.round(progressValue)
 
   const validateCurrentStep = async (): Promise<boolean> => {
     switch (currentStep) {
