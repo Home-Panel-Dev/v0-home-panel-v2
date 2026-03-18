@@ -3,19 +3,20 @@ import type { EnquiryFormData } from "@/lib/form-schema"
 const transactionTypeLabels: Record<string, string> = {
   buying: "Buying",
   selling: "Selling",
-  "buying-selling": "Buying and Selling",
-  remortgage: "Remortgage",
+  "buying-selling": "Buying & Selling",
+  remortgage: "Remortgaging",
   "transfer-equity": "Transfer of Equity",
 }
 
-const referralSourceLabels: Record<string, string> = {
-  direct: "Direct",
-  "estate-agent": "Estate Agent",
-  broker: "Mortgage Broker",
+const tenureLabels: Record<string, string> = {
+  freehold: "Freehold",
+  leasehold: "Leasehold",
+  unsure: "Unsure",
 }
 
 export function getCustomerConfirmationEmail(data: EnquiryFormData) {
   const transactionType = transactionTypeLabels[data.transactionType] || data.transactionType
+  const fullName = `${data.firstName} ${data.lastName}`
 
   return {
     subject: "HomePanel has received your enquiry",
@@ -35,7 +36,7 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
   <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Thank you for your enquiry</h2>
   
   <p style="color: #666; margin-bottom: 24px;">
-    Dear ${data.fullName},
+    Dear ${fullName},
   </p>
   
   <p style="color: #666; margin-bottom: 24px;">
@@ -75,7 +76,7 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
     text: `
 Thank you for your enquiry
 
-Dear ${data.fullName},
+Dear ${fullName},
 
 We've received your enquiry about your ${transactionType.toLowerCase()} transaction, and a member of the HomePanel team will be in touch shortly.
 
@@ -100,11 +101,17 @@ homepanel.co.uk
 
 export function getInternalAlertEmail(data: EnquiryFormData) {
   const transactionType = transactionTypeLabels[data.transactionType] || data.transactionType
-  const referralSource = referralSourceLabels[data.referralSource] || data.referralSource
+  const tenure = tenureLabels[data.tenure || ""] || data.tenure || "Not specified"
+  const fullName = `${data.firstName} ${data.lastName}`
   const timestamp = new Date().toLocaleString("en-GB", {
     dateStyle: "full",
     timeStyle: "short",
   })
+
+  const formatYesNo = (value: string | undefined) => {
+    if (!value) return "Not specified"
+    return value === "yes" ? "Yes" : "No"
+  }
 
   return {
     subject: "New HomePanel enquiry received",
@@ -126,10 +133,11 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
   </p>
 
   <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px; color: #666;">Contact Details</h3>
     <table style="width: 100%; border-collapse: collapse;">
       <tr>
         <td style="padding: 8px 0; color: #666; width: 40%;">Client Name</td>
-        <td style="padding: 8px 0; font-weight: 500;">${data.fullName}</td>
+        <td style="padding: 8px 0; font-weight: 500;">${fullName}</td>
       </tr>
       <tr>
         <td style="padding: 8px 0; color: #666;">Email</td>
@@ -139,29 +147,55 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
         <td style="padding: 8px 0; color: #666;">Phone</td>
         <td style="padding: 8px 0; font-weight: 500;"><a href="tel:${data.phone}" style="color: #1a1a1a;">${data.phone}</a></td>
       </tr>
+    </table>
+  </div>
+
+  <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px; color: #666;">Transaction Details</h3>
+    <table style="width: 100%; border-collapse: collapse;">
       <tr>
-        <td style="padding: 8px 0; color: #666;">Transaction Type</td>
+        <td style="padding: 8px 0; color: #666; width: 40%;">Transaction Type</td>
         <td style="padding: 8px 0; font-weight: 500;">${transactionType}</td>
       </tr>
       <tr>
         <td style="padding: 8px 0; color: #666;">Property Postcode</td>
-        <td style="padding: 8px 0; font-weight: 500;">${data.propertyPostcode}</td>
+        <td style="padding: 8px 0; font-weight: 500;">${data.propertyPostcode || (data.propertyAddressUnknown ? "Unknown" : "Not provided")}</td>
       </tr>
       <tr>
-        <td style="padding: 8px 0; color: #666;">Estimated Value</td>
-        <td style="padding: 8px 0; font-weight: 500;">${data.estimatedValue}</td>
+        <td style="padding: 8px 0; color: #666;">Tenure</td>
+        <td style="padding: 8px 0; font-weight: 500;">${tenure}</td>
       </tr>
       <tr>
-        <td style="padding: 8px 0; color: #666;">Mortgage Required</td>
-        <td style="padding: 8px 0; font-weight: 500;">${data.mortgageRequired === "yes" ? "Yes" : "No"}</td>
+        <td style="padding: 8px 0; color: #666;">Property Value</td>
+        <td style="padding: 8px 0; font-weight: 500;">${data.propertyValue ? `£${data.propertyValue}` : "Not specified"}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Number of Owners</td>
+        <td style="padding: 8px 0; font-weight: 500;">${data.ownerCount || "Not specified"}</td>
       </tr>
       <tr>
         <td style="padding: 8px 0; color: #666;">First-Time Buyer</td>
-        <td style="padding: 8px 0; font-weight: 500;">${data.firstTimeBuyer === "yes" ? "Yes" : "No"}</td>
+        <td style="padding: 8px 0; font-weight: 500;">${formatYesNo(data.firstTimeBuyer)}</td>
       </tr>
       <tr>
-        <td style="padding: 8px 0; color: #666;">Referral Source</td>
-        <td style="padding: 8px 0; font-weight: 500;">${referralSource}</td>
+        <td style="padding: 8px 0; color: #666;">New Build</td>
+        <td style="padding: 8px 0; font-weight: 500;">${formatYesNo(data.isNewBuild)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Mortgage Required</td>
+        <td style="padding: 8px 0; font-weight: 500;">${formatYesNo(data.hasMortgage)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Company Purchase</td>
+        <td style="padding: 8px 0; font-weight: 500;">${formatYesNo(data.isCompanyPurchase)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Gift Funds</td>
+        <td style="padding: 8px 0; font-weight: 500;">${formatYesNo(data.hasGiftFunds)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Bank Funds Only</td>
+        <td style="padding: 8px 0; font-weight: 500;">${formatYesNo(data.bankFundsOnly)}</td>
       </tr>
       <tr>
         <td style="padding: 8px 0; color: #666;">Submitted</td>
@@ -181,16 +215,23 @@ New HomePanel Enquiry
 
 A new enquiry has been submitted through the HomePanel website.
 
-Client Details:
-- Name: ${data.fullName}
+Contact Details:
+- Name: ${fullName}
 - Email: ${data.email}
 - Phone: ${data.phone}
+
+Transaction Details:
 - Transaction Type: ${transactionType}
-- Property Postcode: ${data.propertyPostcode}
-- Estimated Value: ${data.estimatedValue}
-- Mortgage Required: ${data.mortgageRequired === "yes" ? "Yes" : "No"}
-- First-Time Buyer: ${data.firstTimeBuyer === "yes" ? "Yes" : "No"}
-- Referral Source: ${referralSource}
+- Property Postcode: ${data.propertyPostcode || (data.propertyAddressUnknown ? "Unknown" : "Not provided")}
+- Tenure: ${tenure}
+- Property Value: ${data.propertyValue ? `£${data.propertyValue}` : "Not specified"}
+- Number of Owners: ${data.ownerCount || "Not specified"}
+- First-Time Buyer: ${formatYesNo(data.firstTimeBuyer)}
+- New Build: ${formatYesNo(data.isNewBuild)}
+- Mortgage Required: ${formatYesNo(data.hasMortgage)}
+- Company Purchase: ${formatYesNo(data.isCompanyPurchase)}
+- Gift Funds: ${formatYesNo(data.hasGiftFunds)}
+- Bank Funds Only: ${formatYesNo(data.bankFundsOnly)}
 - Submitted: ${timestamp}
 
 Please follow up with this client within 24 hours.

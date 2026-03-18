@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
-import { enquiryFormSchema } from "@/lib/form-schema"
+import { z } from "zod"
+import type { EnquiryFormData } from "@/lib/form-schema"
 import { getCustomerConfirmationEmail, getInternalAlertEmail } from "@/lib/email-templates"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -8,12 +9,21 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "team@homepanel.co.uk"
 const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <noreply@homepanel.co.uk>"
 
+// Minimal validation for required fields
+const submitSchema = z.object({
+  transactionType: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(10),
+}).passthrough()
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     
-    // Validate the request body
-    const validatedData = enquiryFormSchema.parse(body)
+    // Validate required fields
+    const validatedData = submitSchema.parse(body) as EnquiryFormData
 
     // Get email templates
     const customerEmail = getCustomerConfirmationEmail(validatedData)
