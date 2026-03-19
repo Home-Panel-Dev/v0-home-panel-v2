@@ -1,11 +1,11 @@
 import type { EnquiryFormData } from "@/lib/form-schema"
 
 const transactionTypeLabels: Record<string, string> = {
-  buying: "Buying",
-  selling: "Selling",
-  "buying-selling": "Buying & Selling",
-  remortgage: "Remortgaging",
-  "transfer-equity": "Transfer of Equity",
+  buying: "purchase",
+  selling: "sale",
+  "buying-selling": "purchase & sale",
+  remortgage: "remortgage",
+  "transfer-equity": "transfer of equity",
 }
 
 const tenureLabels: Record<string, string> = {
@@ -14,12 +14,82 @@ const tenureLabels: Record<string, string> = {
   unsure: "Unsure",
 }
 
+// Fee calculation - mirrors the logic in multi-step-form.tsx
+function calculateFees(data: EnquiryFormData) {
+  const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
+  
+  // Base legal fee
+  let legalFee = 595
+  if (propertyValue > 250000) legalFee = 695
+  if (propertyValue > 500000) legalFee = 895
+  if (propertyValue > 1000000) legalFee = 1295
+  
+  // Additional fees based on options
+  const isLeasehold = data.tenure === "leasehold"
+  const hasMortgage = data.hasMortgage === "yes"
+  const isNewBuild = data.isNewBuild === "yes"
+  const isCompanyPurchase = data.isCompanyPurchase === "yes"
+  const hasGiftFunds = data.hasGiftFunds === "yes"
+  
+  const fees = {
+    legalFee,
+    leaseholdSupplement: isLeasehold ? 195 : 0,
+    mortgageFee: hasMortgage ? 95 : 0,
+    newBuildFee: isNewBuild ? 195 : 0,
+    companyFee: isCompanyPurchase ? 295 : 0,
+    giftFundsFee: hasGiftFunds ? 50 : 0,
+    searchFees: 300,
+    landRegistryFee: propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100,
+    bankTransferFee: 35,
+  }
+  
+  const subtotal = fees.legalFee + fees.leaseholdSupplement + fees.mortgageFee + 
+    fees.newBuildFee + fees.companyFee + fees.giftFundsFee
+  const vat = Math.round(subtotal * 0.2)
+  const disbursements = fees.searchFees + fees.landRegistryFee + fees.bankTransferFee
+  const total = subtotal + vat + disbursements
+  
+  return {
+    ...fees,
+    subtotal,
+    vat,
+    disbursements,
+    total,
+    transactionLabel: transactionTypeLabels[data.transactionType] || data.transactionType
+  }
+}
+
+// Agent data
+const agents = [
+  { name: "Sarah Mitchell", role: "Senior Conveyancer" },
+  { name: "James Thompson", role: "Property Solicitor" },
+]
+
 export function getCustomerConfirmationEmail(data: EnquiryFormData) {
-  const transactionType = transactionTypeLabels[data.transactionType] || data.transactionType
+  const fees = calculateFees(data)
   const fullName = `${data.firstName} ${data.lastName}`
 
+  // Build fee breakdown rows
+  const feeRows = [
+    { label: "Legal fee", amount: fees.legalFee },
+    fees.leaseholdSupplement > 0 ? { label: "Leasehold supplement", amount: fees.leaseholdSupplement } : null,
+    fees.mortgageFee > 0 ? { label: "Mortgage work", amount: fees.mortgageFee } : null,
+    fees.newBuildFee > 0 ? { label: "New build supplement", amount: fees.newBuildFee } : null,
+    fees.companyFee > 0 ? { label: "Company purchase", amount: fees.companyFee } : null,
+    fees.giftFundsFee > 0 ? { label: "Gift funds verification", amount: fees.giftFundsFee } : null,
+  ].filter(Boolean) as { label: string; amount: number }[]
+
+  const feeRowsHtml = feeRows.map(row => `
+    <tr>
+      <td style="padding: 8px 0; color: #666;">${row.label}</td>
+      <td style="padding: 8px 0; text-align: right;">£${row.amount}</td>
+    </tr>
+  `).join("")
+
+  const feeRowsText = feeRows.map(row => `${row.label}: £${row.amount}`).join("\n")
+
   return {
-    subject: "HomePanel has received your enquiry",
+    subject: `Your HomePanel Quote - £${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -27,46 +97,100 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-  <div style="text-align: center; margin-bottom: 40px;">
-    <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
-    <h1 style="margin: 16px 0 0; font-size: 24px; font-weight: 600;">HomePanel</h1>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fafaf8;">
+  <div style="background-color: white; border-radius: 24px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+    
+    <!-- Logo -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+    </div>
+
+    <!-- Heading -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h1 style="font-size: 24px; font-weight: 600; margin: 0 0 8px;">If you let us handle this</h1>
+      <h1 style="font-size: 24px; font-weight: 600; margin: 0;">journey for you</h1>
+    </div>
+
+    <!-- Main fee -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <p style="color: #666; margin: 0 0 8px;">Our fee for your ${fees.transactionLabel} would be:</p>
+      <p style="font-size: 36px; font-weight: 700; margin: 0; color: #1a1a1a;">£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+    </div>
+
+    <!-- Fee breakdown -->
+    <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 32px;">
+      <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px; color: #1a1a1a;">Fee breakdown</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        ${feeRowsHtml}
+        <tr>
+          <td style="padding: 12px 0 8px; color: #666; border-top: 1px solid #e5e5e5;">Subtotal</td>
+          <td style="padding: 12px 0 8px; text-align: right; border-top: 1px solid #e5e5e5;">£${fees.subtotal}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">VAT (20%)</td>
+          <td style="padding: 8px 0; text-align: right;">£${fees.vat}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0 8px; color: #666; border-top: 1px solid #e5e5e5;">Disbursements</td>
+          <td style="padding: 12px 0 8px; text-align: right; border-top: 1px solid #e5e5e5;">£${fees.disbursements}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #999; font-size: 12px;" colspan="2">
+            Searches (£${fees.searchFees}), Land Registry (£${fees.landRegistryFee}), Bank Transfer (£${fees.bankTransferFee})
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 16px 0 0; font-weight: 600; border-top: 1px solid #e5e5e5;">Total</td>
+          <td style="padding: 16px 0 0; text-align: right; font-weight: 600; border-top: 1px solid #e5e5e5;">£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Agents -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <p style="color: #666; margin: 0 0 16px;">Your case would directly be handled by</p>
+      <table style="margin: 0 auto;">
+        <tr>
+          ${agents.map((agent, i) => `
+            ${i > 0 ? '<td style="padding: 0 16px; color: #999; font-size: 14px;">or</td>' : ''}
+            <td style="text-align: center; padding: 0 8px;">
+              <div style="width: 64px; height: 64px; border-radius: 50%; background-color: #e5e5e5; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 20px; color: #666;">${agent.name.split(" ").map(n => n[0]).join("")}</span>
+              </div>
+              <p style="margin: 0; font-weight: 500; font-size: 14px;">${agent.name}</p>
+              <p style="margin: 4px 0 0; color: #666; font-size: 12px;">${agent.role}</p>
+            </td>
+          `).join("")}
+        </tr>
+      </table>
+      <p style="color: #666; font-size: 14px; margin: 16px 0 0;">Experts in their field.</p>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <a href="https://homepanel.co.uk/contact" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Get started with HomePanel</a>
+    </div>
+
+    <!-- What happens next -->
+    <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px;">
+      <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px;">What happens next?</h3>
+      <ol style="color: #666; margin: 0; padding-left: 20px; font-size: 14px;">
+        <li style="margin-bottom: 8px;">Our team will review your details</li>
+        <li style="margin-bottom: 8px;">We'll contact you to discuss your move</li>
+        <li style="margin-bottom: 8px;">We'll guide you through our onboarding process</li>
+        <li>Once ready, we'll connect you with your dedicated conveyancer</li>
+      </ol>
+    </div>
+
+    <p style="color: #666; margin: 24px 0 8px; font-size: 14px;">
+      Questions? Simply reply to this email.
+    </p>
+    <p style="color: #1a1a1a; font-weight: 500; margin: 0; font-size: 14px;">
+      The HomePanel Team
+    </p>
   </div>
 
-  <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Thank you for your enquiry</h2>
-  
-  <p style="color: #666; margin-bottom: 24px;">
-    Dear ${fullName},
-  </p>
-  
-  <p style="color: #666; margin-bottom: 24px;">
-    We've received your enquiry about your ${transactionType.toLowerCase()} transaction, and a member of the HomePanel team will be in touch shortly.
-  </p>
-
-  <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
-    <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 16px;">What happens next?</h3>
-    <ol style="color: #666; margin: 0; padding-left: 20px;">
-      <li style="margin-bottom: 8px;">Our team will review your details</li>
-      <li style="margin-bottom: 8px;">We'll contact you to discuss your move</li>
-      <li style="margin-bottom: 8px;">We'll guide you through our onboarding process</li>
-      <li>Once ready, we'll connect you with a suitable solicitor</li>
-    </ol>
-  </div>
-
-  <p style="color: #666; margin-bottom: 24px;">
-    In the meantime, if you have any questions, please don't hesitate to reply to this email.
-  </p>
-
-  <p style="color: #666; margin-bottom: 8px;">
-    Best regards,
-  </p>
-  <p style="color: #1a1a1a; font-weight: 500; margin: 0;">
-    The HomePanel Team
-  </p>
-
-  <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 40px 0;">
-  
-  <p style="color: #999; font-size: 12px; text-align: center;">
+  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 24px;">
     HomePanel | Simplifying your home move<br>
     <a href="https://homepanel.co.uk" style="color: #999;">homepanel.co.uk</a>
   </p>
@@ -74,20 +198,34 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
 </html>
     `,
     text: `
-Thank you for your enquiry
+Your HomePanel Quote
 
-Dear ${fullName},
+If you let us handle this journey for you
 
-We've received your enquiry about your ${transactionType.toLowerCase()} transaction, and a member of the HomePanel team will be in touch shortly.
+Our fee for your ${fees.transactionLabel} would be:
+£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+Fee breakdown:
+${feeRowsText}
+Subtotal: £${fees.subtotal}
+VAT (20%): £${fees.vat}
+Disbursements: £${fees.disbursements}
+  - Searches: £${fees.searchFees}
+  - Land Registry: £${fees.landRegistryFee}
+  - Bank Transfer: £${fees.bankTransferFee}
+Total: £${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+Your case would directly be handled by:
+${agents.map(a => `- ${a.name}, ${a.role}`).join("\n")}
+Experts in their field.
 
 What happens next?
-
 1. Our team will review your details
 2. We'll contact you to discuss your move
 3. We'll guide you through our onboarding process
-4. Once ready, we'll connect you with a suitable solicitor
+4. Once ready, we'll connect you with your dedicated conveyancer
 
-In the meantime, if you have any questions, please don't hesitate to reply to this email.
+Questions? Simply reply to this email.
 
 Best regards,
 The HomePanel Team
@@ -100,7 +238,7 @@ homepanel.co.uk
 }
 
 export function getInternalAlertEmail(data: EnquiryFormData) {
-  const transactionType = transactionTypeLabels[data.transactionType] || data.transactionType
+  const fees = calculateFees(data)
   const tenure = tenureLabels[data.tenure || ""] || data.tenure || "Not specified"
   const fullName = `${data.firstName} ${data.lastName}`
   const timestamp = new Date().toLocaleString("en-GB", {
@@ -114,7 +252,7 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
   }
 
   return {
-    subject: "New HomePanel enquiry received",
+    subject: `New Enquiry: ${fullName} - £${fees.total.toLocaleString("en-GB")} ${fees.transactionLabel}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -126,11 +264,8 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
   <div style="text-align: center; margin-bottom: 40px;">
     <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
     <h1 style="margin: 16px 0 0; font-size: 24px; font-weight: 600;">New Enquiry</h1>
+    <p style="margin: 8px 0 0; font-size: 32px; font-weight: 700; color: #059669;">£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</p>
   </div>
-
-  <p style="color: #666; margin-bottom: 24px;">
-    A new enquiry has been submitted through the HomePanel website.
-  </p>
 
   <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
     <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px; color: #666;">Contact Details</h3>
@@ -155,7 +290,7 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
     <table style="width: 100%; border-collapse: collapse;">
       <tr>
         <td style="padding: 8px 0; color: #666; width: 40%;">Transaction Type</td>
-        <td style="padding: 8px 0; font-weight: 500;">${transactionType}</td>
+        <td style="padding: 8px 0; font-weight: 500;">${fees.transactionLabel}</td>
       </tr>
       <tr>
         <td style="padding: 8px 0; color: #666;">Property Postcode</td>
@@ -197,13 +332,43 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
         <td style="padding: 8px 0; color: #666;">Bank Funds Only</td>
         <td style="padding: 8px 0; font-weight: 500;">${formatYesNo(data.bankFundsOnly)}</td>
       </tr>
+    </table>
+  </div>
+
+  <div style="background-color: #ecfdf5; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px; color: #059669;">Quote Breakdown</h3>
+    <table style="width: 100%; border-collapse: collapse;">
       <tr>
-        <td style="padding: 8px 0; color: #666;">Submitted</td>
-        <td style="padding: 8px 0; font-weight: 500;">${timestamp}</td>
+        <td style="padding: 8px 0; color: #666;">Legal Fee</td>
+        <td style="padding: 8px 0; text-align: right;">£${fees.legalFee}</td>
+      </tr>
+      ${fees.leaseholdSupplement > 0 ? `<tr><td style="padding: 8px 0; color: #666;">Leasehold Supplement</td><td style="padding: 8px 0; text-align: right;">£${fees.leaseholdSupplement}</td></tr>` : ""}
+      ${fees.mortgageFee > 0 ? `<tr><td style="padding: 8px 0; color: #666;">Mortgage Work</td><td style="padding: 8px 0; text-align: right;">£${fees.mortgageFee}</td></tr>` : ""}
+      ${fees.newBuildFee > 0 ? `<tr><td style="padding: 8px 0; color: #666;">New Build Supplement</td><td style="padding: 8px 0; text-align: right;">£${fees.newBuildFee}</td></tr>` : ""}
+      ${fees.companyFee > 0 ? `<tr><td style="padding: 8px 0; color: #666;">Company Purchase</td><td style="padding: 8px 0; text-align: right;">£${fees.companyFee}</td></tr>` : ""}
+      ${fees.giftFundsFee > 0 ? `<tr><td style="padding: 8px 0; color: #666;">Gift Funds</td><td style="padding: 8px 0; text-align: right;">£${fees.giftFundsFee}</td></tr>` : ""}
+      <tr>
+        <td style="padding: 8px 0; color: #666; border-top: 1px solid #d1fae5;">Subtotal</td>
+        <td style="padding: 8px 0; text-align: right; border-top: 1px solid #d1fae5;">£${fees.subtotal}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">VAT (20%)</td>
+        <td style="padding: 8px 0; text-align: right;">£${fees.vat}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Disbursements</td>
+        <td style="padding: 8px 0; text-align: right;">£${fees.disbursements}</td>
+      </tr>
+      <tr>
+        <td style="padding: 12px 0; font-weight: 600; border-top: 1px solid #d1fae5;">Total</td>
+        <td style="padding: 12px 0; text-align: right; font-weight: 600; font-size: 18px; border-top: 1px solid #d1fae5;">£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</td>
       </tr>
     </table>
   </div>
 
+  <p style="color: #666; font-size: 14px; margin-bottom: 8px;">
+    Submitted: ${timestamp}
+  </p>
   <p style="color: #666; font-size: 14px;">
     Please follow up with this client within 24 hours.
   </p>
@@ -211,9 +376,7 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
 </html>
     `,
     text: `
-New HomePanel Enquiry
-
-A new enquiry has been submitted through the HomePanel website.
+New HomePanel Enquiry - £${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2 })}
 
 Contact Details:
 - Name: ${fullName}
@@ -221,7 +384,7 @@ Contact Details:
 - Phone: ${data.phone}
 
 Transaction Details:
-- Transaction Type: ${transactionType}
+- Transaction Type: ${fees.transactionLabel}
 - Property Postcode: ${data.propertyPostcode || (data.propertyAddressUnknown ? "Unknown" : "Not provided")}
 - Tenure: ${tenure}
 - Property Value: ${data.propertyValue ? `£${data.propertyValue}` : "Not specified"}
@@ -232,7 +395,15 @@ Transaction Details:
 - Company Purchase: ${formatYesNo(data.isCompanyPurchase)}
 - Gift Funds: ${formatYesNo(data.hasGiftFunds)}
 - Bank Funds Only: ${formatYesNo(data.bankFundsOnly)}
-- Submitted: ${timestamp}
+
+Quote Breakdown:
+- Legal Fee: £${fees.legalFee}
+${fees.leaseholdSupplement > 0 ? `- Leasehold Supplement: £${fees.leaseholdSupplement}\n` : ""}${fees.mortgageFee > 0 ? `- Mortgage Work: £${fees.mortgageFee}\n` : ""}${fees.newBuildFee > 0 ? `- New Build Supplement: £${fees.newBuildFee}\n` : ""}${fees.companyFee > 0 ? `- Company Purchase: £${fees.companyFee}\n` : ""}${fees.giftFundsFee > 0 ? `- Gift Funds: £${fees.giftFundsFee}\n` : ""}- Subtotal: £${fees.subtotal}
+- VAT (20%): £${fees.vat}
+- Disbursements: £${fees.disbursements}
+- Total: £${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+
+Submitted: ${timestamp}
 
 Please follow up with this client within 24 hours.
     `,
