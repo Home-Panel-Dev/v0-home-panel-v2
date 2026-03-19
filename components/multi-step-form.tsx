@@ -260,23 +260,30 @@ const nextStep = async () => {
   }
 
 const onSubmit = async (data: EnquiryFormData) => {
-  console.log("[v0] onSubmit called, currentStep:", currentStep)
-  setIsSubmitting(true)
-  setError(null)
-  
-  try {
-  const response = await fetch("/api/submit-enquiry", {
+    console.log("[v0] onSubmit called, currentStep:", currentStep)
+    setIsSubmitting(true)
+    setError(null)
+    
+    try {
+      console.log("[v0] Submitting to API...")
+      const response = await fetch("/api/submit-enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
 
+      console.log("[v0] API response status:", response.status)
+      
       if (!response.ok) {
-        throw new Error("Something went wrong. Please try again.")
+        const errorData = await response.json().catch(() => ({}))
+        console.log("[v0] API error:", errorData)
+        throw new Error(errorData.error || "Something went wrong. Please try again.")
       }
 
+      console.log("[v0] Submission successful, setting isSuccess to true")
       setIsSuccess(true)
     } catch (err) {
+      console.log("[v0] Submission error:", err)
       setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
       setIsSubmitting(false)
