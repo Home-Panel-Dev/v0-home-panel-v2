@@ -10,18 +10,15 @@ import {
   Phone, 
   Home,
   Calendar,
-  UserPlus,
   FileCheck,
   Clock,
   Building2,
   User,
   Banknote,
-  FileText,
   Send,
   ChevronRight,
-  Check,
-  X,
 } from "lucide-react"
+import { InviteClientButton } from "@/components/admin/invite-client-button"
 
 interface EnquiryDetailPageProps {
   params: Promise<{ id: string }>
@@ -95,33 +92,6 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
       case "transfer-equity": return "Transfer of Equity"
       default: return type
     }
-  }
-
-  const getTenureLabel = (tenure: string | null) => {
-    switch (tenure) {
-      case "freehold": return "Freehold"
-      case "leasehold": return "Leasehold"
-      case "unsure": return "Not Sure"
-      default: return tenure || "Not specified"
-    }
-  }
-
-  const formatYesNo = (value: string | null) => {
-    if (!value) return null
-    return value === "yes"
-  }
-
-  const YesNoBadge = ({ value }: { value: boolean | null }) => {
-    if (value === null) return <span className="text-sm text-slate-400">—</span>
-    return value ? (
-      <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-medium gap-1">
-        <Check className="h-3 w-3" /> Yes
-      </Badge>
-    ) : (
-      <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600 text-xs font-medium gap-1">
-        <X className="h-3 w-3" /> No
-      </Badge>
-    )
   }
 
   return (
@@ -273,64 +243,18 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
 
         {/* Right column - Quote & Actions */}
         <div className="space-y-6">
-          {/* Fee Breakdown */}
-          <Card className="bg-white border-slate-200/60 ">
+          {/* Quote Summary */}
+          <Card className="bg-white border-slate-200/60">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <Banknote className="h-4 w-4 text-slate-400" />
-                Fee Breakdown
+                Quote Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-slate-100">
-                <div className="px-6 py-3 flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Legal Fee</span>
-                  <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.legal_fee)}</span>
-                </div>
-                {enquiry.leasehold_supplement > 0 && (
-                  <div className="px-6 py-3 flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Leasehold Supplement</span>
-                    <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.leasehold_supplement)}</span>
-                  </div>
-                )}
-                {enquiry.mortgage_fee > 0 && (
-                  <div className="px-6 py-3 flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Mortgage Work</span>
-                    <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.mortgage_fee)}</span>
-                  </div>
-                )}
-                {enquiry.new_build_fee > 0 && (
-                  <div className="px-6 py-3 flex justify-between items-center">
-                    <span className="text-sm text-slate-600">New Build Supplement</span>
-                    <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.new_build_fee)}</span>
-                  </div>
-                )}
-                {enquiry.company_fee > 0 && (
-                  <div className="px-6 py-3 flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Company Purchase</span>
-                    <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.company_fee)}</span>
-                  </div>
-                )}
-                {enquiry.gift_funds_fee > 0 && (
-                  <div className="px-6 py-3 flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Gift Funds Verification</span>
-                    <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.gift_funds_fee)}</span>
-                  </div>
-                )}
-                <div className="px-6 py-3 flex justify-between items-center bg-slate-50/50">
-                  <span className="text-sm text-slate-600">Subtotal</span>
-                  <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.subtotal)}</span>
-                </div>
-                <div className="px-6 py-3 flex justify-between items-center">
-                  <span className="text-sm text-slate-600">VAT (20%)</span>
-                  <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.vat)}</span>
-                </div>
-                <div className="px-6 py-3 flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Disbursements</span>
-                  <span className="text-sm font-medium text-slate-900">{formatCurrency(enquiry.disbursements)}</span>
-                </div>
                 <div className="px-6 py-4 flex justify-between items-center bg-emerald-50">
-                  <span className="text-sm font-semibold text-emerald-900">Total</span>
+                  <span className="text-sm font-semibold text-emerald-900">Total Quote</span>
                   <span className="font-bold text-emerald-900">{formatCurrency(enquiry.quote_amount)}</span>
                 </div>
               </div>
@@ -365,10 +289,11 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                 <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
               </Button>
               <div className="pt-2">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 justify-center gap-2 h-10 font-medium" size="sm">
-                  <UserPlus className="h-4 w-4" />
-                  Invite to Onboarding
-                </Button>
+                <InviteClientButton 
+                  enquiryId={enquiry.id}
+                  clientName={`${enquiry.first_name} ${enquiry.last_name}`}
+                  currentStatus={enquiry.status}
+                />
               </div>
             </CardContent>
           </Card>
