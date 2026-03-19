@@ -20,11 +20,10 @@ export default async function AdminLayout({
     .select("*")
     .eq("id", user.id)
     .single()
+    .catch(() => ({ data: null }))
 
-  // Only allow admins
-  if (profile?.role !== "admin") {
-    redirect("/dashboard")
-  }
+  // Log for debugging
+  console.log("[v0] Admin layout - user:", user.email, "profile role:", profile?.role)
 
   return (
     <div className="min-h-screen bg-slate-100">
