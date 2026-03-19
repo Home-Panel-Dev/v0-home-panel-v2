@@ -1,4 +1,3 @@
-// Admin Layout - HomePanel Dashboard
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { AdminNav } from "@/components/admin/admin-nav"
@@ -15,18 +14,12 @@ export default async function AdminLayout({
     redirect("/auth/login")
   }
 
-  // Get user profile - errors are fine if table doesn't exist yet
-  let profile = null
-  try {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user!.id)
-      .single()
-    profile = data
-  } catch {
-    // profile table may not exist yet
-  }
+  // Get user profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single()
 
   return (
     <div className="min-h-screen bg-slate-100">

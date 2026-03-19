@@ -31,25 +31,13 @@ CREATE TABLE IF NOT EXISTS public.enquiries (
   disbursements INTEGER,
   
   -- Status tracking
-  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'reviewing', 'accepted', 'declined', 'converted')),
-  case_id UUID REFERENCES public.cases(id),
+  status TEXT DEFAULT 'new',
+  case_id UUID,
   
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS
-ALTER TABLE public.enquiries ENABLE ROW LEVEL SECURITY;
-
--- Allow admins to read all enquiries
-CREATE POLICY enquiries_admin_select ON public.enquiries 
-  FOR SELECT USING (true);
-
--- Allow admins to update enquiries
-CREATE POLICY enquiries_admin_update ON public.enquiries 
-  FOR UPDATE USING (true);
-
--- Allow inserts from API (service role)
-CREATE POLICY enquiries_insert ON public.enquiries 
-  FOR INSERT WITH CHECK (true);
+-- Disable RLS for now to allow all operations
+ALTER TABLE public.enquiries DISABLE ROW LEVEL SECURITY;
