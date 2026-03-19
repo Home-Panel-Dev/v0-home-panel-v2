@@ -4,8 +4,6 @@ import { z } from "zod"
 import type { EnquiryFormData } from "@/lib/form-schema"
 import { getCustomerConfirmationEmail, getInternalAlertEmail } from "@/lib/email-templates"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "team@homepanel.co.uk"
 const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <noreply@homepanel.co.uk>"
 
@@ -25,27 +23,35 @@ export async function POST(request: Request) {
     // Validate required fields
     const validatedData = submitSchema.parse(body) as EnquiryFormData
 
-    // Get email templates
-    const customerEmail = getCustomerConfirmationEmail(validatedData)
-    const internalEmail = getInternalAlertEmail(validatedData)
+    // Only send emails if RESEND_API_KEY is configured
+    if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY)
+      
+      // Get email templates
+      const customerEmail = getCustomerConfirmationEmail(validatedData)
+      const internalEmail = getInternalAlertEmail(validatedData)
 
-    // Send customer confirmation email
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: validatedData.email,
-      subject: customerEmail.subject,
-      html: customerEmail.html,
-      text: customerEmail.text,
-    })
+      // Send customer confirmation email
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: validatedData.email,
+        subject: customerEmail.subject,
+        html: customerEmail.html,
+        text: customerEmail.text,
+      })
 
-    // Send internal alert email
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: INTERNAL_EMAIL,
-      subject: internalEmail.subject,
-      html: internalEmail.html,
-      text: internalEmail.text,
-    })
+      // Send internal alert email
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: INTERNAL_EMAIL,
+        subject: internalEmail.subject,
+        html: internalEmail.html,
+        text: internalEmail.text,
+      })
+    } else {
+      console.log("[v0] RESEND_API_KEY not configured, skipping email send")
+      console.log("[v0] Enquiry data:", JSON.stringify(validatedData, null, 2))
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
