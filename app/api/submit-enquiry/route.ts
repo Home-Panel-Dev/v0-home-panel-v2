@@ -1,4 +1,4 @@
-// HomePanel Enquiry Submission API v2
+// HomePanel Enquiry Submission API v3 - Fixed
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { z } from "zod"
