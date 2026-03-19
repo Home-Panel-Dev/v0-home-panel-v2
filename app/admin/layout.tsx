@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { AdminNav } from "@/components/admin/admin-nav"
 
-interface Profile {
+type ProfileData = {
   id: string
   email: string | null
   first_name: string | null
@@ -17,21 +17,23 @@ export default async function AdminLayout({
 }) {
   const supabase = await createClient()
   
-  const { data: { user } } = await supabase.auth.getUser()
+  const authResult = await supabase.auth.getUser()
+  const user = authResult.data.user
+  
   if (!user) {
     redirect("/auth/login")
   }
 
-  // Fetch profile - handle gracefully if table doesn't exist
-  let profile: Profile | null = null
-  const result = await supabase
+  // Fetch profile data
+  let profile: ProfileData | null = null
+  const profileResult = await supabase
     .from("profiles")
     .select("id, email, first_name, last_name, role")
     .eq("id", user.id)
     .single()
   
-  if (result.data) {
-    profile = result.data
+  if (profileResult.data) {
+    profile = profileResult.data
   }
 
   return (
