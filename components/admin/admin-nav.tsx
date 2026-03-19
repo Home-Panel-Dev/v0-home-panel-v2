@@ -171,14 +171,14 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
                 className={cn(
                   "p-3 rounded-xl transition-all duration-200 group relative",
                   isActive(item.href)
-                    ? "bg-slate-900 text-white shadow-md"
-                    : "text-slate-400 hover:bg-white hover:text-slate-900 hover:shadow-sm"
+                    ? "bg-slate-900 text-white "
+                    : "text-slate-400 hover:bg-white hover:text-slate-900 hover:"
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span className="sr-only">{item.name}</span>
                 {/* Tooltip */}
-                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 ">
                   {item.name}
                 </div>
               </Link>
@@ -188,7 +188,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
           {/* Bottom navigation */}
           <div className="flex flex-col items-center gap-1 mt-auto">
             {/* More menu */}
-            <button className="p-3 rounded-xl text-slate-400 hover:bg-white hover:text-slate-900 hover:shadow-sm transition-all duration-200">
+            <button className="p-3 rounded-xl text-slate-400 hover:bg-white hover:text-slate-900 hover: transition-all duration-200">
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                 <circle cx="4" cy="10" r="1.5" />
                 <circle cx="10" cy="10" r="1.5" />
@@ -203,13 +203,13 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
                 className={cn(
                   "p-3 rounded-xl transition-all duration-200 group relative",
                   isActive(item.href)
-                    ? "bg-slate-900 text-white shadow-md"
-                    : "text-slate-400 hover:bg-white hover:text-slate-900 hover:shadow-sm"
+                    ? "bg-slate-900 text-white "
+                    : "text-slate-400 hover:bg-white hover:text-slate-900 hover:"
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span className="sr-only">{item.name}</span>
-                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 ">
                   {item.name}
                 </div>
               </Link>
@@ -217,10 +217,10 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
 
             {/* User avatar */}
             <Link href="/admin/settings" className="mt-3 group relative">
-              <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-white shadow-md">
+              <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-white ">
                 {initials}
               </div>
-              <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
+              <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 ">
                 {profile?.first_name || "Account"}
               </div>
             </Link>
@@ -265,7 +265,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
           </button>
 
           {/* New Instruction button */}
-          <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-full px-5 ml-2 font-medium shadow-sm text-sm">
+          <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-full px-5 ml-2 font-medium  text-sm">
             <Plus className="h-4 w-4 mr-2" />
             New Instruction
           </Button>

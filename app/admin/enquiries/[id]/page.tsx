@@ -36,9 +36,24 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
     redirect("/auth/login")
   }
 
+  // Select only columns that exist in the database
+  // Add more columns once you run the ALTER TABLE SQL to add them
   const { data: enquiry, error } = await supabase
     .from("enquiries")
-    .select("*")
+    .select(`
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      property_address,
+      property_postcode,
+      transaction_type,
+      property_value,
+      quote_amount,
+      status,
+      created_at
+    `)
     .eq("id", id)
     .single()
 
@@ -154,7 +169,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
         {/* Left column - Details */}
         <div className="xl:col-span-2 space-y-6">
           {/* Quote Summary - Hero Card */}
-          <Card className="border-0 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-lg overflow-hidden">
+          <Card className="border-0 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white  overflow-hidden">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
@@ -172,7 +187,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
           </Card>
 
           {/* Contact Details */}
-          <Card className="bg-white border-slate-200/60 shadow-sm">
+          <Card className="bg-white border-slate-200/60 ">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <User className="h-4 w-4 text-slate-400" />
@@ -225,7 +240,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
           </Card>
 
           {/* Property Details */}
-          <Card className="bg-white border-slate-200/60 shadow-sm">
+          <Card className="bg-white border-slate-200/60 ">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-slate-400" />
@@ -251,64 +266,6 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                     {enquiry.property_value ? `£${Number(enquiry.property_value).toLocaleString()}` : "—"}
                   </p>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tenure</label>
-                  <p className="mt-1 text-slate-900 font-medium text-sm">{getTenureLabel(enquiry.tenure)}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Number of Owners</label>
-                  <p className="mt-1 text-slate-900 font-medium text-sm">{enquiry.owner_count || "—"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Transaction Options */}
-          <Card className="bg-white border-slate-200/60 shadow-sm">
-            <CardHeader className="border-b border-slate-100 py-4 px-6">
-              <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                <FileText className="h-4 w-4 text-slate-400" />
-                Transaction Options
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">First-Time Buyer</label>
-                  <div className="mt-2">
-                    <YesNoBadge value={formatYesNo(enquiry.first_time_buyer)} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">New Build</label>
-                  <div className="mt-2">
-                    <YesNoBadge value={formatYesNo(enquiry.is_new_build)} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Mortgage Required</label>
-                  <div className="mt-2">
-                    <YesNoBadge value={formatYesNo(enquiry.has_mortgage)} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Company Purchase</label>
-                  <div className="mt-2">
-                    <YesNoBadge value={formatYesNo(enquiry.is_company_purchase)} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Gift Funds</label>
-                  <div className="mt-2">
-                    <YesNoBadge value={formatYesNo(enquiry.has_gift_funds)} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Bank Funds Only</label>
-                  <div className="mt-2">
-                    <YesNoBadge value={formatYesNo(enquiry.bank_funds_only)} />
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -317,7 +274,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
         {/* Right column - Quote & Actions */}
         <div className="space-y-6">
           {/* Fee Breakdown */}
-          <Card className="bg-white border-slate-200/60 shadow-sm">
+          <Card className="bg-white border-slate-200/60 ">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <Banknote className="h-4 w-4 text-slate-400" />
@@ -381,7 +338,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
           </Card>
 
           {/* Quick Actions */}
-          <Card className="bg-white border-slate-200/60 shadow-sm">
+          <Card className="bg-white border-slate-200/60 ">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight">Quick Actions</CardTitle>
             </CardHeader>
@@ -417,7 +374,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
           </Card>
 
           {/* Activity Timeline */}
-          <Card className="bg-white border-slate-200/60 shadow-sm">
+          <Card className="bg-white border-slate-200/60 ">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <Clock className="h-4 w-4 text-slate-400" />

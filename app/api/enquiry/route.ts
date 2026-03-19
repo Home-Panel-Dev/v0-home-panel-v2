@@ -72,6 +72,7 @@ export async function POST(request: Request) {
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
       
+      // Insert only basic columns - run setup_homepanel.sql for full functionality
       const { error: dbError } = await supabase.from("enquiries").insert({
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
@@ -81,23 +82,6 @@ export async function POST(request: Request) {
         property_postcode: validatedData.propertyPostcode || null,
         transaction_type: validatedData.transactionType,
         property_value: propertyValue || null,
-        tenure: validatedData.tenure || null,
-        owner_count: validatedData.ownerCount || null,
-        first_time_buyer: validatedData.firstTimeBuyer || null,
-        is_new_build: validatedData.isNewBuild || null,
-        has_mortgage: validatedData.hasMortgage || null,
-        is_company_purchase: validatedData.isCompanyPurchase || null,
-        has_gift_funds: validatedData.hasGiftFunds || null,
-        bank_funds_only: validatedData.bankFundsOnly || null,
-        legal_fee: fees.legalFee,
-        leasehold_supplement: fees.leaseholdSupplement,
-        mortgage_fee: fees.mortgageFee,
-        new_build_fee: fees.newBuildFee,
-        company_fee: fees.companyFee,
-        gift_funds_fee: fees.giftFundsFee,
-        subtotal: fees.subtotal,
-        vat: fees.vat,
-        disbursements: fees.disbursements,
         quote_amount: fees.total,
         status: "new"
       })
