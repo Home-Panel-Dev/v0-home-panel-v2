@@ -14,21 +14,22 @@ export default async function AdminLayout({
     redirect("/auth/login")
   }
 
-  // Get user profile to check role
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
-  
-  // If no profile found, that's okay - user can still access admin for now
-  if (error) {
-    console.log("[v0] Profile query error:", error.message)
+  // Get user profile - errors are fine if table doesn't exist yet
+  let profile = null
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user!.id)
+      .single()
+    profile = data
+  } catch {
+    // profile table may not exist yet
   }
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <AdminNav user={user} profile={profile} />
+      <AdminNav user={user!} profile={profile} />
       <main className="lg:pl-16 lg:pt-16">
         <div className="px-6 py-6 lg:px-8 lg:py-8">
           {children}
