@@ -15,17 +15,14 @@ const submitSchema = z.object({
   phone: z.string().min(10),
 }).passthrough()
 
-// Fee calculation matching the form exactly
 function calculateFees(data: EnquiryFormData) {
   const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
   
-  // Base legal fee based on property value
   let legalFee = 595
   if (propertyValue > 250000) legalFee = 695
   if (propertyValue > 500000) legalFee = 895
   if (propertyValue > 1000000) legalFee = 1295
   
-  // Additional fees
   const isLeasehold = data.tenure === "leasehold"
   const hasMortgage = data.hasMortgage === "yes"
   const isNewBuild = data.isNewBuild === "yes"
@@ -41,7 +38,6 @@ function calculateFees(data: EnquiryFormData) {
   const subtotal = legalFee + leaseholdFee + mortgageFee + newBuildFee + companyPurchaseFee + giftFundsFee
   const vat = Math.round(subtotal * 0.2)
   
-  // Disbursements
   const searchFees = 300
   const landRegistryFee = propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100
   const bankTransferFee = 35
@@ -49,17 +45,7 @@ function calculateFees(data: EnquiryFormData) {
   
   const total = subtotal + vat + disbursements
   
-  return {
-    legalFee,
-    mortgageFee,
-    newBuildFee,
-    companyPurchaseFee,
-    giftFundsFee,
-    subtotal,
-    vat,
-    disbursements,
-    total
-  }
+  return { total }
 }
 
 export async function POST(request: Request) {
@@ -67,61 +53,32 @@ export async function POST(request: Request) {
     const body = await request.json()
     const validatedData = submitSchema.parse(body) as EnquiryFormData
     const fees = calculateFees(validatedData)
-    
-    // Parse property value to number
     const propertyValue = parseFloat(validatedData.propertyValue?.replace(/,/g, "") || "0")
 
-    // Save to Supabase with ALL fields
+    // Save to Supabase
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
       
-      const insertData = {
-        // Contact details
+      // ONLY columns that exist: id, first_name, last_name, email, phone, 
+      // property_address, property_postcode, transaction_type, property_value, quote_amount, status, created_at
+      const { error: dbError } = await supabase.from("enquiries").insert({
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
         email: validatedData.email,
         phone: validatedData.phone || null,
-        
-        // Property details
         property_address: validatedData.propertyAddressLine1 || null,
         property_postcode: validatedData.propertyPostcode || null,
         transaction_type: validatedData.transactionType,
-        tenure: validatedData.tenure || null,
         property_value: propertyValue || null,
-        owner_count: validatedData.ownerCount ? parseInt(validatedData.ownerCount) : null,
-        
-        // Boolean flags (convert "yes"/"no" to boolean)
-        first_time_buyer: validatedData.firstTimeBuyer === "yes",
-        new_build: validatedData.isNewBuild === "yes",
-        mortgage: validatedData.hasMortgage === "yes",
-        company_purchase: validatedData.isCompanyPurchase === "yes",
-        gift_funds: validatedData.hasGiftFunds === "yes",
-        bank_funds_only: validatedData.bankFundsOnly === "yes",
-        
-        // Quote breakdown
-        legal_fees: fees.legalFee,
-        mortgage_work_fee: fees.mortgageFee,
-        new_build_fee: fees.newBuildFee,
-        company_purchase_fee: fees.companyPurchaseFee,
-        gift_funds_fee: fees.giftFundsFee,
-        subtotal: fees.subtotal,
-        vat: fees.vat,
-        disbursements: fees.disbursements,
         quote_amount: fees.total,
-        
-        // Status
         status: "new"
-      }
-      
-      const { error: dbError } = await supabase
-        .from("enquiries")
-        .insert(insertData)
+      })
       
       if (dbError) {
-        console.error("Database insert error:", dbError.message)
+        console.error("DB error:", dbError.message)
       }
     }
 
@@ -161,7 +118,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Enquiry submission error:", error)
+    console.error("Enquiry error:", error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid form data" }, { status: 400 })
