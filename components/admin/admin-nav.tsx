@@ -154,7 +154,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
 
       {/* Desktop sidebar - icon only */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-16 lg:flex-col">
-        <div className="flex grow flex-col items-center bg-white border-r border-slate-200 py-4">
+        <div className="flex grow flex-col items-center bg-slate-50 border-r border-slate-200 py-4">
           {/* Logo */}
           <Link href="/admin" className="mb-6">
             <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
@@ -169,16 +169,16 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "p-3 rounded-xl transition-colors group relative",
+                  "p-3 rounded-xl transition-all duration-200 group relative",
                   isActive(item.href)
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-slate-900 text-white shadow-md"
+                    : "text-slate-400 hover:bg-white hover:text-slate-900 hover:shadow-sm"
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span className="sr-only">{item.name}</span>
                 {/* Tooltip */}
-                <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50">
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   {item.name}
                 </div>
               </Link>
@@ -187,12 +187,12 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
 
           {/* Bottom navigation */}
           <div className="flex flex-col items-center gap-1 mt-auto">
-            {/* Ellipsis menu - placeholder */}
-            <button className="p-3 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+            {/* More menu */}
+            <button className="p-3 rounded-xl text-slate-400 hover:bg-white hover:text-slate-900 hover:shadow-sm transition-all duration-200">
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                <circle cx="4" cy="10" r="2" />
-                <circle cx="10" cy="10" r="2" />
-                <circle cx="16" cy="10" r="2" />
+                <circle cx="4" cy="10" r="1.5" />
+                <circle cx="10" cy="10" r="1.5" />
+                <circle cx="16" cy="10" r="1.5" />
               </svg>
             </button>
 
@@ -201,24 +201,27 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "p-3 rounded-xl transition-colors group relative",
+                  "p-3 rounded-xl transition-all duration-200 group relative",
                   isActive(item.href)
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-slate-900 text-white shadow-md"
+                    : "text-slate-400 hover:bg-white hover:text-slate-900 hover:shadow-sm"
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span className="sr-only">{item.name}</span>
-                <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50">
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   {item.name}
                 </div>
               </Link>
             ))}
 
             {/* User avatar */}
-            <Link href="/admin/settings" className="mt-2">
-              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+            <Link href="/admin/settings" className="mt-3 group relative">
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white shadow-md">
                 {initials}
+              </div>
+              <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                {profile?.first_name || "Account"}
               </div>
             </Link>
           </div>
@@ -226,44 +229,44 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
       </div>
 
       {/* Desktop top bar */}
-      <div className="hidden lg:fixed lg:top-0 lg:left-16 lg:right-0 lg:z-40 lg:flex lg:h-16 lg:items-center lg:gap-4 lg:bg-white lg:border-b lg:border-slate-200 lg:px-6">
+      <div className="hidden lg:fixed lg:top-0 lg:left-16 lg:right-0 lg:z-40 lg:flex lg:h-16 lg:items-center lg:gap-6 lg:bg-white lg:border-b lg:border-slate-200 lg:px-8">
         <h1 className="text-lg font-semibold text-slate-900">Dashboard</h1>
         
         {/* Search */}
-        <div className="flex-1 max-w-lg mx-auto">
+        <div className="flex-1 max-w-md mx-auto">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
               placeholder="Search..." 
-              className="pl-9 pr-12 bg-slate-50 border-slate-200 h-10 rounded-full"
+              className="pl-10 pr-14 bg-slate-100 border-0 h-10 rounded-full text-sm focus-visible:ring-2 focus-visible:ring-slate-300"
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-white px-2 py-1 rounded-md border border-slate-200 font-medium">
               ⌘K
             </div>
           </div>
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Notifications */}
-          <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+          <button className="relative p-2.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            <span className="absolute top-1.5 right-1.5 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
               3
             </span>
           </button>
           
           {/* Theme toggle */}
           <button 
-            className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+            className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
             onClick={() => setDarkMode(!darkMode)}
           >
             {darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
 
           {/* New Instruction button */}
-          <Button className="bg-blue-600 hover:bg-blue-700 rounded-full px-4">
-            <Plus className="h-4 w-4 mr-1.5" />
+          <Button className="bg-blue-600 hover:bg-blue-700 rounded-full px-5 ml-2 font-medium shadow-sm">
+            <Plus className="h-4 w-4 mr-2" />
             New Instruction
           </Button>
         </div>
