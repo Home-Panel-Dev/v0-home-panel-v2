@@ -15,15 +15,16 @@ export default async function AdminLayout({
   }
 
   // Get user profile to check role
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single()
-    .catch(() => ({ data: null }))
-
-  // Log for debugging
-  console.log("[v0] Admin layout - user:", user.email, "profile role:", profile?.role)
+  
+  // If no profile found, that's okay - user can still access admin for now
+  if (error) {
+    console.log("[v0] Profile query error:", error.message)
+  }
 
   return (
     <div className="min-h-screen bg-slate-100">
