@@ -24,9 +24,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-foreground flex items-center justify-center">
-                <span className="text-background font-semibold text-sm">H</span>
-              </div>
+              <img src="/logo.svg" alt="HomePanel" className="h-8 w-8" />
               <span className="font-semibold text-lg tracking-tight">HomePanel</span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-xs">

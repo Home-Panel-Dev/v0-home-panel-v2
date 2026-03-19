@@ -1027,9 +1027,7 @@ function QuoteStep({
   return (
     <div className="text-center">
       {/* Logo/Brand mark */}
-      <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-foreground flex items-center justify-center">
-        <span className="text-background font-bold text-lg">HP</span>
-      </div>
+      <img src="/logo.svg" alt="HomePanel" className="w-12 h-12 mx-auto mb-4" />
       
       <h2 className="text-xl font-semibold mb-1">
         If you let us handle this
