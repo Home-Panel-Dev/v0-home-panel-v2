@@ -5,13 +5,11 @@ import { z } from "zod"
 import type { EnquiryFormData } from "@/lib/form-schema"
 import { getCustomerConfirmationEmail, getInternalAlertEmail } from "@/lib/email-templates"
 
-const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "team@homepanel.co.uk"
+// IMPORTANT: Until you verify a domain in Resend, you can only send to your verified email
+// Set INTERNAL_EMAIL to your Resend-verified email for testing
+const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "joshua@madebymclean.com"
 // Use Resend's test sender by default (works without domain verification)
-// Set FROM_EMAIL env var once you've verified your domain in Resend
 const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <onboarding@resend.dev>"
-
-// Log at startup to verify environment
-console.log("[v0] API route loaded, RESEND_API_KEY configured:", !!process.env.RESEND_API_KEY)
 
 // Minimal validation for required fields
 const submitSchema = z.object({
@@ -33,37 +31,40 @@ export async function POST(request: Request) {
 
     // Only send emails if RESEND_API_KEY is configured
     if (process.env.RESEND_API_KEY) {
-      console.log("[v0] Sending emails via Resend...")
       const resend = new Resend(process.env.RESEND_API_KEY)
       
       // Get email templates
       const customerEmail = getCustomerConfirmationEmail(validatedData)
       const internalEmail = getInternalAlertEmail(validatedData)
 
-      // Send customer confirmation email
-      console.log("[v0] Sending customer confirmation to:", validatedData.email)
-      const customerResult = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: validatedData.email,
-        subject: customerEmail.subject,
-        html: customerEmail.html,
-        text: customerEmail.text,
-      })
-      console.log("[v0] Customer email result:", customerResult)
+      // Send internal alert email first (to verified email - should always work)
+      try {
+        await resend.emails.send({
+          from: FROM_EMAIL,
+          to: INTERNAL_EMAIL,
+          subject: internalEmail.subject,
+          html: internalEmail.html,
+          text: internalEmail.text,
+        })
+      } catch (emailError) {
+        console.error("Failed to send internal email:", emailError)
+        // Continue anyway - don't fail the whole submission
+      }
 
-      // Send internal alert email
-      console.log("[v0] Sending internal alert to:", INTERNAL_EMAIL)
-      const internalResult = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: INTERNAL_EMAIL,
-        subject: internalEmail.subject,
-        html: internalEmail.html,
-        text: internalEmail.text,
-      })
-      console.log("[v0] Internal email result:", internalResult)
-    } else {
-      console.log("[v0] RESEND_API_KEY not configured, skipping email send")
-      console.log("[v0] Enquiry data:", JSON.stringify(validatedData, null, 2))
+      // Send customer confirmation email
+      // Note: In test mode, this only works if customer email matches your Resend-verified email
+      try {
+        await resend.emails.send({
+          from: FROM_EMAIL,
+          to: validatedData.email,
+          subject: customerEmail.subject,
+          html: customerEmail.html,
+          text: customerEmail.text,
+        })
+      } catch (emailError) {
+        console.error("Failed to send customer email:", emailError)
+        // Continue anyway - enquiry was still recorded
+      }
     }
 
     return NextResponse.json({ success: true })

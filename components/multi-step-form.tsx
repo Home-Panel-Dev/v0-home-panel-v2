@@ -244,13 +244,10 @@ export function MultiStepForm() {
   }
 
 const nextStep = async () => {
-  console.log("[v0] nextStep called, currentStep:", currentStep, "currentStepIndex:", currentStepIndex, "totalSteps:", steps.length)
-  const isValid = await validateCurrentStep()
-  console.log("[v0] validation result:", isValid)
-  if (isValid && currentStepIndex < steps.length - 1) {
-    console.log("[v0] advancing to step:", currentStepIndex + 1, "which is:", steps[currentStepIndex + 1])
-    setCurrentStepIndex((prev) => prev + 1)
-  }
+    const isValid = await validateCurrentStep()
+    if (isValid && currentStepIndex < steps.length - 1) {
+      setCurrentStepIndex((prev) => prev + 1)
+    }
   }
 
   const prevStep = () => {
@@ -259,31 +256,24 @@ const nextStep = async () => {
     }
   }
 
-const onSubmit = async (data: EnquiryFormData) => {
-    console.log("[v0] onSubmit called, currentStep:", currentStep)
+  const onSubmit = async (data: EnquiryFormData) => {
     setIsSubmitting(true)
     setError(null)
     
     try {
-      console.log("[v0] Submitting to API...")
       const response = await fetch("/api/submit-enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-
-      console.log("[v0] API response status:", response.status)
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.log("[v0] API error:", errorData)
         throw new Error(errorData.error || "Something went wrong. Please try again.")
       }
 
-      console.log("[v0] Submission successful, setting isSuccess to true")
       setIsSuccess(true)
     } catch (err) {
-      console.log("[v0] Submission error:", err)
       setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
       setIsSubmitting(false)
