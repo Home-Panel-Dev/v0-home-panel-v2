@@ -243,11 +243,14 @@ export function MultiStepForm() {
     }
   }
 
-  const nextStep = async () => {
-    const isValid = await validateCurrentStep()
-    if (isValid && currentStepIndex < steps.length - 1) {
-      setCurrentStepIndex((prev) => prev + 1)
-    }
+const nextStep = async () => {
+  console.log("[v0] nextStep called, currentStep:", currentStep, "currentStepIndex:", currentStepIndex, "totalSteps:", steps.length)
+  const isValid = await validateCurrentStep()
+  console.log("[v0] validation result:", isValid)
+  if (isValid && currentStepIndex < steps.length - 1) {
+    console.log("[v0] advancing to step:", currentStepIndex + 1, "which is:", steps[currentStepIndex + 1])
+    setCurrentStepIndex((prev) => prev + 1)
+  }
   }
 
   const prevStep = () => {
@@ -256,12 +259,13 @@ export function MultiStepForm() {
     }
   }
 
-  const onSubmit = async (data: EnquiryFormData) => {
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      const response = await fetch("/api/submit-enquiry", {
+const onSubmit = async (data: EnquiryFormData) => {
+  console.log("[v0] onSubmit called, currentStep:", currentStep)
+  setIsSubmitting(true)
+  setError(null)
+  
+  try {
+  const response = await fetch("/api/submit-enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

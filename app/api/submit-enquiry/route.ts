@@ -1,3 +1,4 @@
+// HomePanel Enquiry Submission API
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { z } from "zod"
