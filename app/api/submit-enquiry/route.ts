@@ -5,7 +5,9 @@ import type { EnquiryFormData } from "@/lib/form-schema"
 import { getCustomerConfirmationEmail, getInternalAlertEmail } from "@/lib/email-templates"
 
 const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "team@homepanel.co.uk"
-const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <noreply@homepanel.co.uk>"
+// Use Resend's test sender by default (works without domain verification)
+// Set FROM_EMAIL env var once you've verified your domain in Resend
+const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <onboarding@resend.dev>"
 
 // Minimal validation for required fields
 const submitSchema = z.object({
