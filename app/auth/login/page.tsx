@@ -35,11 +35,11 @@ export default function Page() {
         options: {
           emailRedirectTo:
             process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-            `${window.location.origin}/protected`,
+            `${window.location.origin}/dashboard`,
         },
       })
       if (error) throw error
-      router.push('/protected')
+      router.push('/dashboard')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
@@ -53,9 +53,13 @@ export default function Page() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Login</CardTitle>
+              <div className="flex items-center gap-2 mb-2">
+                <img src="/logo.svg" alt="HomePanel" className="h-8 w-8" />
+                <span className="font-semibold text-lg">HomePanel</span>
+              </div>
+              <CardTitle className="text-2xl">Welcome back</CardTitle>
               <CardDescription>
-                Enter your email below to login to your account
+                Sign in to your HomePanel account
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -83,7 +87,7 @@ export default function Page() {
                     />
                   </div>
                   {error && <p className="text-sm text-red-500">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
                     {isLoading ? 'Logging in...' : 'Login'}
                   </Button>
                 </div>
