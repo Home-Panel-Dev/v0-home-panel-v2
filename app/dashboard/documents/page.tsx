@@ -19,38 +19,41 @@ import {
   FileText, 
   CheckCircle2, 
   Clock, 
-  XCircle,
   Loader2,
-  Trash2
+  Download,
+  File,
+  Image as ImageIcon,
 } from "lucide-react"
 
-interface Document {
+interface UploadedDocument {
   id: string
-  document_type: string
-  file_name: string
-  file_url: string
-  status: string
-  created_at: string
+  documentType: string
+  filename: string
+  pathname: string
+  size: number
+  status: "pending" | "approved" | "rejected"
+  uploadedAt: string
 }
 
 const documentTypes = [
-  { value: "passport", label: "Passport" },
-  { value: "driving_licence", label: "Driving Licence" },
-  { value: "utility_bill", label: "Utility Bill (within 3 months)" },
-  { value: "bank_statement", label: "Bank Statement" },
-  { value: "mortgage_offer", label: "Mortgage Offer" },
-  { value: "property_info", label: "Property Information Form" },
-  { value: "title_deeds", label: "Title Deeds" },
-  { value: "other", label: "Other" },
+  { value: "passport", label: "Passport", description: "Photo page of your valid passport" },
+  { value: "driving_licence", label: "Driving Licence", description: "Front and back of your licence" },
+  { value: "utility_bill", label: "Utility Bill", description: "Within the last 3 months" },
+  { value: "bank_statement", label: "Bank Statement", description: "Showing your name and address" },
+  { value: "mortgage_offer", label: "Mortgage Offer", description: "If applicable" },
+  { value: "proof_of_funds", label: "Proof of Funds", description: "Bank statements showing deposit" },
+  { value: "property_info", label: "Property Information", description: "TA6/TA7/TA10 forms" },
+  { value: "other", label: "Other Document", description: "Any other supporting documents" },
 ]
 
 export default function DocumentsPage() {
   const router = useRouter()
-  const [documents, setDocuments] = useState<Document[]>([])
+  const [documents, setDocuments] = useState<UploadedDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [selectedType, setSelectedType] = useState("")
-  const [caseId, setCaseId] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -65,101 +68,133 @@ export default function DocumentsPage() {
       return
     }
 
-    // Get active case
-    const { data: cases } = await supabase
-      .from("cases")
-      .select("id")
-      .eq("client_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-
-    if (cases && cases.length > 0) {
-      setCaseId(cases[0].id)
-      
-      // Get documents for this case
-      const { data: docs } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("case_id", cases[0].id)
-        .order("created_at", { ascending: false })
-
-      setDocuments(docs || [])
+    // Load documents from localStorage for now
+    // In production, these would come from a database table
+    const stored = localStorage.getItem(`documents_${user.id}`)
+    if (stored) {
+      setDocuments(JSON.parse(stored))
     }
     setLoading(false)
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !caseId || !selectedType) return
+  const saveDocuments = (docs: UploadedDocument[]) => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        localStorage.setItem(`documents_${user.id}`, JSON.stringify(docs))
+      }
+    })
+  }
 
+  const handleFileUpload = async (file: File) => {
+    if (!selectedType) {
+      setError("Please select a document type first")
+      return
+    }
+
+    setError(null)
     setUploading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("Not authenticated")
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("documentType", selectedType)
 
-      // For demo purposes, we'll simulate the upload
-      // In production, you'd upload to Supabase Storage or another provider
-      const mockUrl = `https://example.com/documents/${Date.now()}-${file.name}`
+      const response = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      })
 
-      const { data, error } = await supabase
-        .from("documents")
-        .insert({
-          case_id: caseId,
-          uploaded_by: user.id,
-          document_type: selectedType,
-          file_name: file.name,
-          file_url: mockUrl,
-          file_size: file.size,
-          status: "pending_review",
-        })
-        .select()
-        .single()
+      const result = await response.json()
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error(result.error || "Upload failed")
+      }
 
-      setDocuments([data, ...documents])
+      const newDoc: UploadedDocument = {
+        id: crypto.randomUUID(),
+        documentType: selectedType,
+        filename: result.filename,
+        pathname: result.pathname,
+        size: result.size,
+        status: "pending",
+        uploadedAt: result.uploadedAt,
+      }
+
+      const updatedDocs = [newDoc, ...documents]
+      setDocuments(updatedDocs)
+      saveDocuments(updatedDocs)
       setSelectedType("")
-      e.target.value = ""
-    } catch (error) {
-      console.error("Upload error:", error)
+    } catch (err) {
+      console.error("Upload error:", err)
+      setError(err instanceof Error ? err.message : "Upload failed")
     } finally {
       setUploading(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("documents")
-      .delete()
-      .eq("id", id)
-
-    if (!error) {
-      setDocuments(documents.filter(d => d.id !== id))
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleFileUpload(file)
+      e.target.value = ""
     }
+  }
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      handleFileUpload(file)
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  const getFileIcon = (filename: string) => {
+    const ext = filename.split(".").pop()?.toLowerCase()
+    if (["jpg", "jpeg", "png", "heic"].includes(ext || "")) {
+      return <ImageIcon className="h-5 w-5 text-blue-600" />
+    }
+    return <FileText className="h-5 w-5 text-slate-600" />
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
         return (
-          <span className="flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
             <CheckCircle2 className="h-3 w-3" />
             Approved
           </span>
         )
       case "rejected":
         return (
-          <span className="flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-1 rounded-full">
-            <XCircle className="h-3 w-3" />
-            Rejected
+          <span className="flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-full">
+            Needs Resubmission
           </span>
         )
       default:
         return (
-          <span className="flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
             <Clock className="h-3 w-3" />
-            Pending Review
+            Under Review
           </span>
         )
     }
@@ -173,86 +208,141 @@ export default function DocumentsPage() {
     )
   }
 
-  if (!caseId) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <h3 className="text-lg font-medium mb-2">No active case</h3>
-          <p className="text-slate-600 mb-4">
-            Please start a quote to upload documents.
-          </p>
-          <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-            <a href="/start">Get a Quote</a>
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Documents</h1>
-        <p className="text-slate-600">
-          Upload and manage your property transaction documents.
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Documents</h1>
+        <p className="text-slate-600 mt-1">
+          Upload and manage your property transaction documents securely.
         </p>
       </div>
 
       {/* Upload section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload Document</CardTitle>
-          <CardDescription>
-            Select a document type and upload your file
+      <Card className="border-slate-200/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold tracking-tight">Upload Document</CardTitle>
+          <CardDescription className="text-sm">
+            Select a document type, then drag and drop or click to upload
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Document type selector */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Document Type</Label>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select document type..." />
+              </SelectTrigger>
+              <SelectContent>
+                {documentTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    <div className="flex flex-col">
+                      <span>{type.label}</span>
+                      <span className="text-xs text-slate-500">{type.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+              dragActive 
+                ? "border-emerald-500 bg-emerald-50" 
+                : selectedType 
+                  ? "border-slate-300 hover:border-emerald-400 hover:bg-slate-50 cursor-pointer" 
+                  : "border-slate-200 bg-slate-50 cursor-not-allowed"
+            }`}
+          >
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.heic,.doc,.docx"
+              onChange={handleInputChange}
+              disabled={!selectedType || uploading}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+            />
+            
+            {uploading ? (
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+                <p className="text-sm font-medium text-slate-700">Uploading...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <div className={`p-3 rounded-full ${selectedType ? "bg-emerald-100" : "bg-slate-200"}`}>
+                  <Upload className={`h-6 w-6 ${selectedType ? "text-emerald-600" : "text-slate-400"}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700">
+                    {selectedType ? "Drag and drop or click to upload" : "Select a document type first"}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    PDF, JPG, PNG, HEIC, DOC up to 10MB
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Required documents checklist */}
+      <Card className="border-slate-200/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold tracking-tight">Required Documents</CardTitle>
+          <CardDescription className="text-sm">
+            Please ensure you upload all required documents to avoid delays
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Document Type</Label>
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {documentTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>File</Label>
-              <div className="relative">
-                <Input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  onChange={handleFileUpload}
-                  disabled={!selectedType || uploading}
-                  className="cursor-pointer"
-                />
-                {uploading && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-md">
-                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {documentTypes.slice(0, 6).map((type) => {
+              const uploaded = documents.find(d => d.documentType === type.value)
+              return (
+                <div 
+                  key={type.value}
+                  className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    uploaded 
+                      ? "border-emerald-200 bg-emerald-50/50" 
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-full ${uploaded ? "bg-emerald-100" : "bg-slate-100"}`}>
+                    {uploaded ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <File className="h-4 w-4 text-slate-400" />
+                    )}
                   </div>
-                )}
-              </div>
-              <p className="text-xs text-slate-500">
-                PDF, JPG, PNG, DOC up to 10MB
-              </p>
-            </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${uploaded ? "text-emerald-900" : "text-slate-700"}`}>
+                      {type.label}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">{type.description}</p>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
 
-      {/* Documents list */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Uploaded Documents</CardTitle>
-          <CardDescription>
+      {/* Uploaded documents */}
+      <Card className="border-slate-200/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold tracking-tight">Uploaded Documents</CardTitle>
+          <CardDescription className="text-sm">
             {documents.length} document{documents.length !== 1 ? "s" : ""} uploaded
           </CardDescription>
         </CardHeader>
@@ -262,28 +352,34 @@ export default function DocumentsPage() {
               {documents.map((doc) => (
                 <div 
                   key={doc.id} 
-                  className="flex items-center justify-between p-4 rounded-lg bg-slate-50"
+                  className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-slate-200">
-                      <FileText className="h-5 w-5 text-slate-600" />
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                      {getFileIcon(doc.filename)}
                     </div>
-                    <div>
-                      <p className="font-medium">{doc.file_name}</p>
-                      <p className="text-sm text-slate-600">
-                        {documentTypes.find(t => t.value === doc.document_type)?.label || doc.document_type}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm text-slate-900 truncate">{doc.filename}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {documentTypes.find(t => t.value === doc.documentType)?.label} • {formatFileSize(doc.size)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 ml-4">
                     {getStatusBadge(doc.status)}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(doc.id)}
-                      className="text-slate-400 hover:text-red-600"
+                      asChild
+                      className="text-slate-400 hover:text-slate-600"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <a 
+                        href={`/api/documents/file?pathname=${encodeURIComponent(doc.pathname)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
                     </Button>
                   </div>
                 </div>
@@ -291,10 +387,12 @@ export default function DocumentsPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <Upload className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="font-medium text-slate-900 mb-1">No documents yet</h3>
+              <div className="p-4 rounded-full bg-slate-100 w-fit mx-auto mb-4">
+                <Upload className="h-8 w-8 text-slate-400" />
+              </div>
+              <h3 className="font-medium text-slate-900 mb-1">No documents uploaded</h3>
               <p className="text-sm text-slate-600">
-                Upload your first document to get started
+                Select a document type above and upload your first document
               </p>
             </div>
           )}
