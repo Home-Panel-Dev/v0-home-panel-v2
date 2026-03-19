@@ -17,6 +17,7 @@ import {
   Banknote,
   Send,
   ChevronRight,
+  UserPlus,
 } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 
