@@ -334,19 +334,8 @@ const nextStep = async () => {
           </div>
         </div>
 
-        {/* Form content */}
-        <form 
-          onSubmit={(e) => {
-            // Only submit on the quote step - otherwise prevent and advance
-            if (currentStep !== "quote") {
-              e.preventDefault()
-              nextStep()
-              return
-            }
-            handleSubmit(onSubmit)(e)
-          }} 
-          className="p-6 pt-8"
-        >
+        {/* Form content - NO form element until quote step to prevent accidental submission */}
+        <div className="p-6 pt-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -471,8 +460,9 @@ const nextStep = async () => {
           <div className="flex justify-end mt-6">
             {currentStep === "quote" ? (
               <Button
-                type="submit"
+                type="button"
                 disabled={isSubmitting}
+                onClick={handleSubmit(onSubmit)}
                 className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-8"
               >
                 {isSubmitting ? (
@@ -504,7 +494,7 @@ const nextStep = async () => {
               </Button>
             )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
