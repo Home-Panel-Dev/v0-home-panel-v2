@@ -1,4 +1,3 @@
-// HomePanel Enquiry API - saves to database and sends emails
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createClient } from "@supabase/supabase-js"
@@ -16,7 +15,6 @@ const submitSchema = z.object({
   phone: z.string().min(10),
 }).passthrough()
 
-// Calculate fees (same logic as form)
 function calculateFees(data: EnquiryFormData) {
   let baseFee = 595
   if (data.transactionType === "sale-purchase") baseFee = 995
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
     const validatedData = submitSchema.parse(body) as EnquiryFormData
     const fees = calculateFees(validatedData)
 
-    // Save to database using service role
+    // Save to Supabase
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
@@ -51,35 +49,24 @@ export async function POST(request: Request) {
       const { error: dbError } = await supabase
         .from("enquiries")
         .insert({
-          transaction_type: validatedData.transactionType,
-          property_address: validatedData.propertyAddress || null,
-          postcode: validatedData.postcode || null,
-          tenure: validatedData.tenure || null,
-          property_value: validatedData.propertyValue || null,
-          owner_count: validatedData.ownerCount || null,
-          first_time_buyer: validatedData.firstTimeBuyer || false,
-          property_count: validatedData.propertyCount || null,
-          new_build: validatedData.newBuild || false,
-          mortgage: validatedData.mortgage || false,
-          company_purchase: validatedData.companyPurchase || false,
-          gift_funds: validatedData.giftFunds || false,
-          bank_funds_only: validatedData.bankFundsOnly || false,
           first_name: validatedData.firstName,
           last_name: validatedData.lastName,
           email: validatedData.email,
           phone: validatedData.phone || null,
+          property_address: validatedData.propertyAddress || null,
+          property_postcode: validatedData.postcode || null,
+          transaction_type: validatedData.transactionType,
+          property_value: validatedData.propertyValue || null,
           quote_amount: fees.total,
-          legal_fees: fees.legalFees,
-          disbursements: fees.disbursements,
           status: "new"
         })
       
       if (dbError) {
-        console.error("Database error:", dbError.message)
+        console.error("DB insert error:", dbError.message)
       }
     }
 
-    // Send emails if RESEND_API_KEY is configured
+    // Send emails
     const apiKey = process.env.RESEND_API_KEY
     if (apiKey) {
       const { Resend } = await import("resend")
@@ -88,7 +75,6 @@ export async function POST(request: Request) {
       const customerEmail = getCustomerConfirmationEmail(validatedData)
       const internalEmail = getInternalAlertEmail(validatedData)
 
-      // Send internal alert email
       try {
         await resend.emails.send({
           from: FROM_EMAIL,
@@ -98,10 +84,9 @@ export async function POST(request: Request) {
           text: internalEmail.text,
         })
       } catch (e) {
-        console.error("Failed to send internal email:", e)
+        console.error("Internal email failed:", e)
       }
 
-      // Send customer confirmation email
       try {
         await resend.emails.send({
           from: FROM_EMAIL,
@@ -111,13 +96,13 @@ export async function POST(request: Request) {
           text: customerEmail.text,
         })
       } catch (e) {
-        console.error("Failed to send customer email:", e)
+        console.error("Customer email failed:", e)
       }
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error submitting enquiry:", error)
+    console.error("Enquiry error:", error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid form data" }, { status: 400 })

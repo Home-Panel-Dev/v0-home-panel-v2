@@ -176,7 +176,7 @@ export default async function AdminDashboardPage() {
                             <p className="text-sm text-slate-900 max-w-[200px] truncate">
                               {enquiry.property_address || "Address not provided"}
                             </p>
-                            <p className="text-xs text-slate-500">{enquiry.postcode || "—"}</p>
+                            <p className="text-xs text-slate-500">{enquiry.property_postcode || "—"}</p>
                           </div>
                         </div>
                       </td>
@@ -197,9 +197,6 @@ export default async function AdminDashboardPage() {
                       </td>
                       <td className="px-6 py-4">
                         <p className="font-semibold text-slate-900">£{enquiry.quote_amount?.toLocaleString() || "—"}</p>
-                        <p className="text-xs text-slate-500">
-                          Legal: £{enquiry.legal_fees?.toLocaleString() || "—"}
-                        </p>
                       </td>
                       <td className="px-6 py-4">
                         <Badge 
