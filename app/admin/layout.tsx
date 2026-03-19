@@ -1,3 +1,4 @@
+// Admin Layout - HomePanel Dashboard
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { AdminNav } from "@/components/admin/admin-nav"
