@@ -93,7 +93,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
             />
           </div>
         </div>
-        <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+        <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-sm font-medium">
           <Plus className="h-4 w-4 mr-1" />
           New
         </Button>
@@ -154,7 +154,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
 
       {/* Desktop sidebar - icon only */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-16 lg:flex-col">
-        <div className="flex grow flex-col items-center bg-slate-50 border-r border-slate-200 py-4">
+        <div className="flex grow flex-col items-center bg-white border-r border-slate-200/60 py-4">
           {/* Logo */}
           <Link href="/admin" className="mb-6">
             <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
@@ -217,7 +217,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
 
             {/* User avatar */}
             <Link href="/admin/settings" className="mt-3 group relative">
-              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white shadow-md">
+              <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-white shadow-md">
                 {initials}
               </div>
               <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
@@ -229,8 +229,8 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
       </div>
 
       {/* Desktop top bar */}
-      <div className="hidden lg:fixed lg:top-0 lg:left-16 lg:right-0 lg:z-40 lg:flex lg:h-16 lg:items-center lg:gap-6 lg:bg-white lg:border-b lg:border-slate-200 lg:px-8">
-        <h1 className="text-lg font-semibold text-slate-900">Dashboard</h1>
+      <div className="hidden lg:fixed lg:top-0 lg:left-16 lg:right-0 lg:z-40 lg:flex lg:h-16 lg:items-center lg:gap-6 lg:bg-white lg:border-b lg:border-slate-200/60 lg:px-8">
+        <h1 className="text-base font-semibold tracking-tight text-slate-900">Dashboard</h1>
         
         {/* Search */}
         <div className="flex-1 max-w-md mx-auto">
@@ -265,7 +265,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
           </button>
 
           {/* New Instruction button */}
-          <Button className="bg-blue-600 hover:bg-blue-700 rounded-full px-5 ml-2 font-medium shadow-sm">
+          <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-full px-5 ml-2 font-medium shadow-sm text-sm">
             <Plus className="h-4 w-4 mr-2" />
             New Instruction
           </Button>
