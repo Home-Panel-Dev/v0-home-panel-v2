@@ -1,253 +1,217 @@
 import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { 
-  FileText, 
-  Users,
-  PoundSterling,
-  Clock,
-  ChevronRight,
-  Home,
-  Mail,
-  Eye,
-  UserPlus,
-} from "lucide-react"
+import { FileText, Clock, CheckCircle, Users, ArrowRight, TrendingUp, Mail, Phone, MapPin } from "lucide-react"
 
-export default async function AdminDashboardPage() {
+type Enquiry = {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  phone: string | null
+  property_address: string | null
+  property_postcode: string | null
+  transaction_type: string | null
+  property_value: number | null
+  quote_amount: number | null
+  status: string
+  created_at: string
+}
+
+export default async function AdminDashboard() {
   const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  let firstName = "Admin"
   
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("first_name")
-      .eq("id", user.id)
-      .single()
-    firstName = profile?.first_name || "Admin"
-  }
-
   const { data: enquiries, error } = await supabase
     .from("enquiries")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(10)
+    .limit(20)
 
-  const newEnquiries = enquiries?.filter(e => e.status === "new").length || 0
-  const reviewingEnquiries = enquiries?.filter(e => e.status === "reviewing").length || 0
-  const totalQuoteValue = enquiries?.reduce((sum, e) => sum + (e.quote_amount || 0), 0) || 0
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  const allEnquiries = (enquiries || []) as Enquiry[]
+  
+  const stats = {
+    new: allEnquiries.filter(e => e.status === "new").length,
+    underReview: allEnquiries.filter(e => e.status === "under_review").length,
+    accepted: allEnquiries.filter(e => e.status === "accepted" || e.status === "onboarding").length,
+    total: allEnquiries.length,
+    totalValue: allEnquiries.reduce((sum, e) => sum + (e.quote_amount || 0), 0)
   }
 
-  const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+  const statusColors: Record<string, string> = {
+    new: "bg-blue-50 text-blue-700 border border-blue-200",
+    under_review: "bg-amber-50 text-amber-700 border border-amber-200",
+    accepted: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    onboarding: "bg-purple-50 text-purple-700 border border-purple-200",
+    active: "bg-green-50 text-green-700 border border-green-200",
+    completed: "bg-slate-100 text-slate-700 border border-slate-200",
+    rejected: "bg-red-50 text-red-700 border border-red-200"
+  }
+
+  const statusLabels: Record<string, string> = {
+    new: "New",
+    under_review: "Under Review",
+    accepted: "Accepted",
+    onboarding: "Onboarding",
+    active: "Active",
+    completed: "Completed",
+    rejected: "Rejected"
+  }
+
+  const transactionLabels: Record<string, string> = {
+    purchase: "Purchase",
+    buying: "Purchase",
+    sale: "Sale",
+    selling: "Sale",
+    both: "Sale & Purchase",
+    "buying-selling": "Sale & Purchase"
+  }
+
+  function formatDate(dateString: string) {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    
+    if (diffHours < 1) return "Just now"
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome header */}
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Welcome back, {firstName}</h1>
-        <p className="text-sm text-slate-500 mt-1">Manage your quote requests and client onboarding</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
+        <p className="text-slate-500 mt-1">Manage quote requests and client cases</p>
       </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-white border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold tracking-tight text-slate-900">{newEnquiries}</p>
-                <p className="text-sm text-slate-500">New Requests</p>
-              </div>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-blue-600" />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 rounded-xl bg-amber-50 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold tracking-tight text-slate-900">{reviewingEnquiries}</p>
-                <p className="text-sm text-slate-500">Under Review</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 rounded-xl bg-emerald-50 flex items-center justify-center">
-                <Users className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold tracking-tight text-slate-900">{enquiries?.length || 0}</p>
-                <p className="text-sm text-slate-500">Total Enquiries</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 rounded-xl bg-purple-50 flex items-center justify-center">
-                <PoundSterling className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold tracking-tight text-slate-900">£{totalQuoteValue.toLocaleString()}</p>
-                <p className="text-sm text-slate-500">Quote Value</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quote Requests Table */}
-      <Card className="bg-white border-slate-200/60 shadow-sm">
-        <CardHeader className="border-b border-slate-100 py-4 px-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-semibold tracking-tight">Quote Requests</CardTitle>
-              <p className="text-sm text-slate-500 mt-0.5">Recent enquiries from your intake form</p>
-            </div>
-            <Button variant="outline" size="sm" className="text-sm font-medium">
-              Export
-            </Button>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {error ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-500">Unable to load enquiries.</p>
-              <p className="text-sm text-slate-400 mt-1">Submit a quote request to create the first entry.</p>
+          <p className="text-2xl font-semibold text-slate-900">{stats.new}</p>
+          <p className="text-sm text-slate-500">New Requests</p>
+        </div>
+        
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-amber-600" />
             </div>
-          ) : enquiries && enquiries.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3">Client</th>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3">Property</th>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3">Type</th>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3">Quote</th>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3">Status</th>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3">Date</th>
-                    <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {enquiries.map((enquiry) => (
-                    <tr key={enquiry.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-slate-900">{enquiry.first_name} {enquiry.last_name}</p>
-                          <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-500">
-                            <Mail className="h-3.5 w-3.5" />
-                            <span className="truncate max-w-[180px]">{enquiry.email}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-start gap-2">
-                          <Home className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-sm text-slate-900 max-w-[180px] truncate">
-                              {enquiry.property_address || "Address TBC"}
-                            </p>
-                            <p className="text-xs text-slate-500">{enquiry.property_postcode || "—"}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge 
-                          variant="outline"
-                          className={`text-xs font-medium ${
-                            enquiry.transaction_type === "sale" || enquiry.transaction_type === "selling"
-                              ? "border-blue-200 bg-blue-50 text-blue-700"
-                              : enquiry.transaction_type === "purchase" || enquiry.transaction_type === "buying"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-purple-200 bg-purple-50 text-purple-700"
-                          }`}
-                        >
-                          {enquiry.transaction_type === "sale" || enquiry.transaction_type === "selling" ? "Sale" : 
-                           enquiry.transaction_type === "purchase" || enquiry.transaction_type === "buying" ? "Purchase" : "Sale & Purchase"}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-semibold text-slate-900">£{enquiry.quote_amount?.toLocaleString() || "—"}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge 
-                          variant="outline"
-                          className={`text-xs font-medium ${
-                            enquiry.status === "new" 
-                              ? "border-blue-200 bg-blue-50 text-blue-700"
-                              : enquiry.status === "reviewing"
-                              ? "border-amber-200 bg-amber-50 text-amber-700"
-                              : enquiry.status === "accepted"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-slate-200 bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          {enquiry.status === "new" ? "New" :
-                           enquiry.status === "reviewing" ? "Reviewing" :
-                           enquiry.status === "accepted" ? "Accepted" :
-                           enquiry.status === "converted" ? "Converted" : enquiry.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-900">{formatDate(enquiry.created_at)}</p>
-                        <p className="text-xs text-slate-500">{formatTime(enquiry.created_at)}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-1">
-                          <Link href={`/admin/enquiries/${enquiry.id}`}>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100">
-                              <Eye className="h-4 w-4 text-slate-500" />
-                            </Button>
-                          </Link>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-emerald-50">
-                            <UserPlus className="h-4 w-4 text-emerald-600" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          </div>
+          <p className="text-2xl font-semibold text-slate-900">{stats.underReview}</p>
+          <p className="text-sm text-slate-500">Under Review</p>
+        </div>
+        
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
-          ) : (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-6 w-6 text-slate-400" />
-              </div>
-              <h3 className="font-medium text-slate-900 mb-1">No quote requests yet</h3>
-              <p className="text-sm text-slate-500 mb-4">When customers submit the intake form, their requests will appear here.</p>
-              <Link href="/start">
-                <Button variant="outline" size="sm" className="font-medium">
-                  View Intake Form
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+          </div>
+          <p className="text-2xl font-semibold text-slate-900">{stats.accepted}</p>
+          <p className="text-sm text-slate-500">Accepted</p>
+        </div>
+        
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+              <Users className="w-5 h-5 text-slate-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-semibold text-slate-900">{stats.total}</p>
+          <p className="text-sm text-slate-500">Total Enquiries</p>
+        </div>
+        
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 col-span-2 lg:col-span-1">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-semibold text-slate-900">£{stats.totalValue.toLocaleString()}</p>
+          <p className="text-sm text-slate-500">Total Quote Value</p>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-slate-900">Recent Quote Requests</h2>
+          <Link 
+            href="/admin/enquiries" 
+            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
+          >
+            View all
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        
+        {error ? (
+          <div className="p-8 text-center text-slate-500">
+            <p>Unable to load enquiries</p>
+            <p className="text-sm mt-1">{error.message}</p>
+          </div>
+        ) : allEnquiries.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-slate-900 font-medium">No quote requests yet</p>
+            <p className="text-sm text-slate-500 mt-1">When clients submit quotes, they will appear here</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {allEnquiries.map((enquiry) => (
+              <Link 
+                key={enquiry.id}
+                href={`/admin/enquiries/${enquiry.id}`}
+                className="flex items-center gap-6 px-6 py-4 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    <p className="font-medium text-slate-900">
+                      {enquiry.first_name} {enquiry.last_name}
+                    </p>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[enquiry.status] || "bg-slate-100 text-slate-700"}`}>
+                      {statusLabels[enquiry.status] || enquiry.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5" />
+                      {enquiry.email}
+                    </span>
+                    {enquiry.property_postcode && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {enquiry.property_postcode}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <p className="font-semibold text-slate-900">
+                    £{enquiry.quote_amount?.toLocaleString() || "—"}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {transactionLabels[enquiry.transaction_type || ""] || enquiry.transaction_type || "—"}
+                  </p>
+                </div>
+                
+                <div className="text-right w-20">
+                  <p className="text-sm text-slate-500">{formatDate(enquiry.created_at)}</p>
+                </div>
+                
+                <ArrowRight className="w-5 h-5 text-slate-300" />
               </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

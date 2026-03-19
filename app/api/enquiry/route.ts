@@ -66,15 +66,12 @@ export async function POST(request: Request) {
     const fees = calculateFees(validatedData)
     const propertyValue = parseFloat(validatedData.propertyValue?.replace(/,/g, "") || "0")
 
-    // Save to Supabase with ALL fields
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
       
-      // Only insert columns that exist in the database
-      // Run the ALTER TABLE SQL to add the missing columns for full functionality
       const { error: dbError } = await supabase.from("enquiries").insert({
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
@@ -84,18 +81,32 @@ export async function POST(request: Request) {
         property_postcode: validatedData.propertyPostcode || null,
         transaction_type: validatedData.transactionType,
         property_value: propertyValue || null,
+        tenure: validatedData.tenure || null,
+        owner_count: validatedData.ownerCount || null,
+        first_time_buyer: validatedData.firstTimeBuyer || null,
+        is_new_build: validatedData.isNewBuild || null,
+        has_mortgage: validatedData.hasMortgage || null,
+        is_company_purchase: validatedData.isCompanyPurchase || null,
+        has_gift_funds: validatedData.hasGiftFunds || null,
+        bank_funds_only: validatedData.bankFundsOnly || null,
+        legal_fee: fees.legalFee,
+        leasehold_supplement: fees.leaseholdSupplement,
+        mortgage_fee: fees.mortgageFee,
+        new_build_fee: fees.newBuildFee,
+        company_fee: fees.companyFee,
+        gift_funds_fee: fees.giftFundsFee,
+        subtotal: fees.subtotal,
+        vat: fees.vat,
+        disbursements: fees.disbursements,
         quote_amount: fees.total,
         status: "new"
       })
       
       if (dbError) {
-        console.error("[v0] DB error:", dbError.message)
-      } else {
-        console.log("[v0] Enquiry saved successfully")
+        console.error("[v0] DB insert error:", dbError.message)
       }
     }
 
-    // Send emails
     const apiKey = process.env.RESEND_API_KEY
     if (apiKey) {
       const { Resend } = await import("resend")
@@ -104,29 +115,22 @@ export async function POST(request: Request) {
       const customerEmail = getCustomerConfirmationEmail(validatedData)
       const internalEmail = getInternalAlertEmail(validatedData)
 
-      try {
-        await resend.emails.send({
+      await Promise.allSettled([
+        resend.emails.send({
           from: FROM_EMAIL,
           to: INTERNAL_EMAIL,
           subject: internalEmail.subject,
           html: internalEmail.html,
           text: internalEmail.text,
-        })
-      } catch (e) {
-        console.error("Internal email failed:", e)
-      }
-
-      try {
-        await resend.emails.send({
+        }),
+        resend.emails.send({
           from: FROM_EMAIL,
           to: validatedData.email,
           subject: customerEmail.subject,
           html: customerEmail.html,
           text: customerEmail.text,
         })
-      } catch (e) {
-        console.error("Customer email failed:", e)
-      }
+      ])
     }
 
     return NextResponse.json({ success: true })

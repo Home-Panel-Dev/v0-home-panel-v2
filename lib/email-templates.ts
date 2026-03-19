@@ -237,6 +237,251 @@ homepanel.co.uk
   }
 }
 
+// Client onboarding invite email with magic link
+export function getOnboardingInviteEmail(data: {
+  firstName: string
+  lastName: string
+  email: string
+  caseReference: string
+  magicLink: string
+}) {
+  const fullName = `${data.firstName} ${data.lastName}`
+  
+  return {
+    subject: `Welcome to HomePanel - Complete Your Onboarding`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fafaf8;">
+  <div style="background-color: white; border-radius: 24px; padding: 40px;">
+    
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h1 style="font-size: 24px; font-weight: 600; margin: 0 0 8px;">Welcome to HomePanel</h1>
+      <p style="color: #666; margin: 0;">Your conveyancing journey starts here</p>
+    </div>
+
+    <p style="margin-bottom: 24px;">Hi ${data.firstName},</p>
+    
+    <p style="margin-bottom: 24px;">Great news! Your quote has been accepted and we're ready to start working on your case. Your reference number is <strong>${data.caseReference}</strong>.</p>
+
+    <p style="margin-bottom: 24px;">To get started, please complete our secure onboarding process. This will take approximately 10-15 minutes and includes:</p>
+
+    <ul style="margin-bottom: 24px; padding-left: 20px; color: #666;">
+      <li style="margin-bottom: 8px;">Identity verification</li>
+      <li style="margin-bottom: 8px;">Source of funds declaration</li>
+      <li style="margin-bottom: 8px;">Document upload</li>
+      <li style="margin-bottom: 8px;">Terms and conditions</li>
+    </ul>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${data.magicLink}" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Start Onboarding</a>
+    </div>
+
+    <p style="color: #666; font-size: 14px; margin-bottom: 24px;">This link will expire in 24 hours. If you need a new link, please contact us.</p>
+
+    <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+      <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 12px;">Need help?</h3>
+      <p style="color: #666; margin: 0; font-size: 14px;">Our team is here to assist you every step of the way. Simply reply to this email or call us on <a href="tel:+441onal234567890" style="color: #1a1a1a;">01onal 234 567 890</a>.</p>
+    </div>
+
+    <p style="color: #1a1a1a; font-weight: 500; margin: 0; font-size: 14px;">
+      The HomePanel Team
+    </p>
+  </div>
+
+  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 24px;">
+    HomePanel | Simplifying your home move<br>
+    <a href="https://homepanel.co.uk" style="color: #999;">homepanel.co.uk</a>
+  </p>
+</body>
+</html>
+    `,
+    text: `
+Welcome to HomePanel
+
+Hi ${data.firstName},
+
+Great news! Your quote has been accepted and we're ready to start working on your case. Your reference number is ${data.caseReference}.
+
+To get started, please complete our secure onboarding process by clicking the link below:
+
+${data.magicLink}
+
+This will take approximately 10-15 minutes and includes:
+- Identity verification
+- Source of funds declaration
+- Document upload
+- Terms and conditions
+
+This link will expire in 24 hours. If you need a new link, please contact us.
+
+Need help? Our team is here to assist you every step of the way. Simply reply to this email.
+
+Best regards,
+The HomePanel Team
+    `
+  }
+}
+
+// Status update email
+export function getStatusUpdateEmail(data: {
+  firstName: string
+  caseReference: string
+  previousStatus: string
+  newStatus: string
+  message?: string
+}) {
+  const statusLabels: Record<string, string> = {
+    onboarding: "Onboarding",
+    active: "Active",
+    exchanged: "Contracts Exchanged",
+    completed: "Completed",
+    aborted: "Aborted"
+  }
+
+  const newStatusLabel = statusLabels[data.newStatus] || data.newStatus
+
+  return {
+    subject: `Case Update: ${data.caseReference} - ${newStatusLabel}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fafaf8;">
+  <div style="background-color: white; border-radius: 24px; padding: 40px;">
+    
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h1 style="font-size: 24px; font-weight: 600; margin: 0 0 8px;">Case Update</h1>
+      <p style="color: #666; margin: 0;">Reference: ${data.caseReference}</p>
+    </div>
+
+    <p style="margin-bottom: 24px;">Hi ${data.firstName},</p>
+    
+    <p style="margin-bottom: 24px;">Your case status has been updated to:</p>
+
+    <div style="background-color: #ecfdf5; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 24px;">
+      <p style="font-size: 18px; font-weight: 600; color: #059669; margin: 0;">${newStatusLabel}</p>
+    </div>
+
+    ${data.message ? `<p style="margin-bottom: 24px;">${data.message}</p>` : ""}
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="https://homepanel.co.uk/dashboard" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">View Your Dashboard</a>
+    </div>
+
+    <p style="color: #1a1a1a; font-weight: 500; margin: 0; font-size: 14px;">
+      The HomePanel Team
+    </p>
+  </div>
+</body>
+</html>
+    `,
+    text: `
+Case Update - ${data.caseReference}
+
+Hi ${data.firstName},
+
+Your case status has been updated to: ${newStatusLabel}
+
+${data.message || ""}
+
+View your dashboard: https://homepanel.co.uk/dashboard
+
+Best regards,
+The HomePanel Team
+    `
+  }
+}
+
+// Document request email
+export function getDocumentRequestEmail(data: {
+  firstName: string
+  caseReference: string
+  documents: string[]
+  message?: string
+}) {
+  const documentList = data.documents.map(doc => `<li style="margin-bottom: 8px;">${doc}</li>`).join("")
+  
+  return {
+    subject: `Document Request: ${data.caseReference}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fafaf8;">
+  <div style="background-color: white; border-radius: 24px; padding: 40px;">
+    
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h1 style="font-size: 24px; font-weight: 600; margin: 0 0 8px;">Documents Needed</h1>
+      <p style="color: #666; margin: 0;">Reference: ${data.caseReference}</p>
+    </div>
+
+    <p style="margin-bottom: 24px;">Hi ${data.firstName},</p>
+    
+    <p style="margin-bottom: 24px;">To progress your case, we need the following documents:</p>
+
+    <div style="background-color: #fef3c7; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+      <ul style="margin: 0; padding-left: 20px; color: #92400e;">
+        ${documentList}
+      </ul>
+    </div>
+
+    ${data.message ? `<p style="margin-bottom: 24px;">${data.message}</p>` : ""}
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="https://homepanel.co.uk/dashboard/documents" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Upload Documents</a>
+    </div>
+
+    <p style="color: #666; font-size: 14px;">Please upload these documents as soon as possible to avoid delays.</p>
+
+    <p style="color: #1a1a1a; font-weight: 500; margin: 24px 0 0; font-size: 14px;">
+      The HomePanel Team
+    </p>
+  </div>
+</body>
+</html>
+    `,
+    text: `
+Documents Needed - ${data.caseReference}
+
+Hi ${data.firstName},
+
+To progress your case, we need the following documents:
+
+${data.documents.map(doc => `- ${doc}`).join("\n")}
+
+${data.message || ""}
+
+Please upload these documents: https://homepanel.co.uk/dashboard/documents
+
+Best regards,
+The HomePanel Team
+    `
+  }
+}
+
 export function getInternalAlertEmail(data: EnquiryFormData) {
   const fees = calculateFees(data)
   const tenure = tenureLabels[data.tenure || ""] || data.tenure || "Not specified"
