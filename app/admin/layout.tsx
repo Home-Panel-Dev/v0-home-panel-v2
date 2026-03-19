@@ -29,8 +29,8 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-slate-50">
       <AdminNav user={user} profile={profile} />
-      <main className="lg:pl-72">
-        <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <main className="lg:pl-16 lg:pt-16">
+        <div className="px-6 py-8 lg:px-10">
           {children}
         </div>
       </main>

@@ -1,255 +1,248 @@
 import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { 
-  Users, 
+  Building2, 
   FileText, 
-  Clock, 
-  CheckCircle2,
-  AlertCircle,
   TrendingUp,
-  ArrowRight
+  AlertTriangle,
+  Plus,
+  Clock,
+  ChevronRight,
 } from "lucide-react"
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient()
 
+  // Get user profile for name
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user?.id)
+    .single()
+
   // Get stats
-  const { count: totalCases } = await supabase
+  const { count: liveCases } = await supabase
     .from("cases")
     .select("*", { count: "exact", head: true })
+    .in("status", ["in_progress", "pending_onboarding"])
 
-  const { count: pendingOnboarding } = await supabase
+  const { count: pendingInstructions } = await supabase
     .from("cases")
     .select("*", { count: "exact", head: true })
     .eq("status", "pending_onboarding")
 
-  const { count: inProgress } = await supabase
-    .from("cases")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "in_progress")
-
-  const { count: completed } = await supabase
+  const { count: completedThisMonth } = await supabase
     .from("cases")
     .select("*", { count: "exact", head: true })
     .eq("status", "completed")
+    .gte("updated_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
 
-  const { count: totalClients } = await supabase
-    .from("profiles")
+  const { count: needsAttention } = await supabase
+    .from("cases")
     .select("*", { count: "exact", head: true })
-    .eq("role", "client")
+    .eq("status", "needs_attention")
 
-  // Get recent cases
-  const { data: recentCases } = await supabase
+  // Get cases needing attention for alerts
+  const { data: alertCases } = await supabase
     .from("cases")
     .select(`
       *,
       profiles!cases_client_id_fkey (
         first_name,
-        last_name,
-        email
+        last_name
       )
     `)
+    .in("status", ["needs_attention", "pending_onboarding"])
     .order("created_at", { ascending: false })
     .limit(5)
 
-  // Get pending documents
-  const { data: pendingDocs, count: pendingDocsCount } = await supabase
-    .from("documents")
-    .select("*, cases(property_address)", { count: "exact" })
-    .eq("status", "pending_review")
-    .limit(5)
+  const firstName = profile?.first_name || "Admin"
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-8">
+      {/* Welcome header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
-        <p className="text-slate-600">
-          Manage cases, clients, and onboarding progress.
-        </p>
+        <h1 className="text-3xl font-bold text-slate-900">Welcome back, {firstName}</h1>
+        <p className="text-slate-500 mt-1">Here's an overview of your conveyancing activity</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Live Cases - Blue */}
+        <Card className="bg-blue-600 text-white border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-slate-600">Total Cases</p>
-                <p className="text-3xl font-bold">{totalCases || 0}</p>
+                <p className="text-blue-100 text-sm font-medium">Live Cases</p>
+                <p className="text-4xl font-bold mt-1">{liveCases || 0}</p>
+                <p className="text-blue-200 text-sm mt-1">Active matters</p>
               </div>
-              <div className="p-3 rounded-full bg-blue-100">
-                <FileText className="h-6 w-6 text-blue-600" />
+              <div className="p-2 bg-blue-500/30 rounded-lg">
+                <Building2 className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+        {/* Pending Instructions - White */}
+        <Card className="bg-white border border-slate-200 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-slate-600">Pending Onboarding</p>
-                <p className="text-3xl font-bold">{pendingOnboarding || 0}</p>
+                <p className="text-slate-500 text-sm font-medium">Pending Instructions</p>
+                <p className="text-4xl font-bold text-slate-900 mt-1">{pendingInstructions || 0}</p>
+                <p className="text-slate-500 text-sm mt-1">8 new this week</p>
               </div>
-              <div className="p-3 rounded-full bg-amber-100">
-                <Clock className="h-6 w-6 text-amber-600" />
+              <div className="p-2 bg-slate-100 rounded-lg">
+                <FileText className="h-5 w-5 text-slate-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+        {/* Completions This Month - Green */}
+        <Card className="bg-emerald-600 text-white border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-slate-600">In Progress</p>
-                <p className="text-3xl font-bold">{inProgress || 0}</p>
+                <p className="text-emerald-100 text-sm font-medium">Completions This Month</p>
+                <p className="text-4xl font-bold mt-1">{completedThisMonth || 0}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <TrendingUp className="h-3 w-3" />
+                  <span className="text-emerald-200 text-sm">12% Completed matters</span>
+                </div>
               </div>
-              <div className="p-3 rounded-full bg-emerald-100">
-                <TrendingUp className="h-6 w-6 text-emerald-600" />
+              <div className="p-2 bg-emerald-500/30 rounded-lg">
+                <TrendingUp className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+        {/* Cases Needing Attention - Orange */}
+        <Card className="bg-amber-500 text-white border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-slate-600">Total Clients</p>
-                <p className="text-3xl font-bold">{totalClients || 0}</p>
+                <p className="text-amber-100 text-sm font-medium">Cases Needing Attention</p>
+                <p className="text-4xl font-bold mt-1">{needsAttention || 0}</p>
+                <p className="text-amber-200 text-sm mt-1">Requires action</p>
               </div>
-              <div className="p-3 rounded-full bg-purple-100">
-                <Users className="h-6 w-6 text-purple-600" />
+              <div className="p-2 bg-amber-400/30 rounded-lg">
+                <AlertTriangle className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent cases */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Recent Cases</CardTitle>
-              <CardDescription>Latest property transactions</CardDescription>
+      {/* Two column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Alerts */}
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-slate-700" />
+              <CardTitle className="text-lg font-semibold">Alerts</CardTitle>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/cases">View All</Link>
-            </Button>
+            <p className="text-sm text-slate-500">Cases requiring attention</p>
           </CardHeader>
-          <CardContent>
-            {recentCases && recentCases.length > 0 ? (
-              <div className="space-y-4">
-                {recentCases.map((caseItem) => (
-                  <div key={caseItem.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">
-                        {caseItem.profiles?.first_name} {caseItem.profiles?.last_name}
-                      </p>
-                      <p className="text-sm text-slate-600 truncate">
-                        {caseItem.property_address || "Address pending"}
-                      </p>
-                    </div>
+          <CardContent className="pt-0">
+            {alertCases && alertCases.length > 0 ? (
+              <div className="space-y-3">
+                {alertCases.map((caseItem) => (
+                  <Link 
+                    key={caseItem.id} 
+                    href={`/admin/cases/${caseItem.id}`}
+                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors group"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        caseItem.status === "completed" 
-                          ? "bg-emerald-100 text-emerald-700"
-                          : caseItem.status === "in_progress"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}>
-                        {caseItem.status.replace(/_/g, " ")}
-                      </span>
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/admin/cases/${caseItem.id}`}>
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      <div className="h-2 w-2 rounded-full bg-amber-400" />
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {caseItem.profiles?.first_name} {caseItem.profiles?.last_name}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Case #{caseItem.id.slice(0, 6).toUpperCase()} - {caseItem.property_address?.split(",")[0] || "Address pending"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm">
+                        {new Date(caseItem.created_at).toLocaleDateString("en-GB")}
+                      </span>
+                      <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8 text-slate-500">
-                No cases yet
+                <p>No cases require attention</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Pending documents */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Pending Documents</CardTitle>
-              <CardDescription>Documents awaiting review</CardDescription>
+        {/* Quick Actions */}
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-slate-700" />
+              <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
             </div>
-            {pendingDocsCount && pendingDocsCount > 0 && (
-              <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
-                {pendingDocsCount} pending
-              </span>
-            )}
+            <p className="text-sm text-slate-500">Common tasks and shortcuts</p>
           </CardHeader>
-          <CardContent>
-            {pendingDocs && pendingDocs.length > 0 ? (
-              <div className="space-y-4">
-                {pendingDocs.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{doc.file_name}</p>
-                      <p className="text-sm text-slate-600 truncate">
-                        {doc.document_type} - {doc.cases?.property_address || "Unknown property"}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Review
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-500">
-                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
-                <p>All documents reviewed</p>
-              </div>
-            )}
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              <Link 
+                href="/admin/new"
+                className="flex items-center gap-4 p-4 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Plus className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">New Instruction</p>
+                  <p className="text-sm text-slate-500">Create a new quote or instruction</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+
+              <Link 
+                href="/admin/cases"
+                className="flex items-center gap-4 p-4 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">View All Cases</p>
+                  <p className="text-sm text-slate-500">Browse and manage your cases</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+
+              <Link 
+                href="/admin/reports"
+                className="flex items-center gap-4 p-4 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">View Reports</p>
+                  <p className="text-sm text-slate-500">Analytics and performance data</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" asChild>
-              <Link href="/admin/cases">
-                <FileText className="h-4 w-4 mr-2" />
-                View All Cases
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin/clients">
-                <Users className="h-4 w-4 mr-2" />
-                Manage Clients
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin/messages">
-                <AlertCircle className="h-4 w-4 mr-2" />
-                View Messages
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
