@@ -335,7 +335,18 @@ const nextStep = async () => {
         </div>
 
         {/* Form content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 pt-8">
+        <form 
+          onSubmit={(e) => {
+            // Only submit on the quote step - otherwise prevent and advance
+            if (currentStep !== "quote") {
+              e.preventDefault()
+              nextStep()
+              return
+            }
+            handleSubmit(onSubmit)(e)
+          }} 
+          className="p-6 pt-8"
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
