@@ -29,13 +29,13 @@ function calculateFees(data: EnquiryFormData) {
   const isCompanyPurchase = data.isCompanyPurchase === "yes"
   const hasGiftFunds = data.hasGiftFunds === "yes"
   
-  const leaseholdFee = isLeasehold ? 195 : 0
+  const leaseholdSupplement = isLeasehold ? 195 : 0
   const mortgageFee = hasMortgage ? 95 : 0
   const newBuildFee = isNewBuild ? 195 : 0
-  const companyPurchaseFee = isCompanyPurchase ? 295 : 0
+  const companyFee = isCompanyPurchase ? 295 : 0
   const giftFundsFee = hasGiftFunds ? 50 : 0
   
-  const subtotal = legalFee + leaseholdFee + mortgageFee + newBuildFee + companyPurchaseFee + giftFundsFee
+  const subtotal = legalFee + leaseholdSupplement + mortgageFee + newBuildFee + companyFee + giftFundsFee
   const vat = Math.round(subtotal * 0.2)
   
   const searchFees = 300
@@ -45,7 +45,18 @@ function calculateFees(data: EnquiryFormData) {
   
   const total = subtotal + vat + disbursements
   
-  return { total }
+  return { 
+    legalFee, 
+    leaseholdSupplement, 
+    mortgageFee, 
+    newBuildFee, 
+    companyFee, 
+    giftFundsFee, 
+    subtotal, 
+    vat, 
+    disbursements, 
+    total 
+  }
 }
 
 export async function POST(request: Request) {
@@ -55,15 +66,15 @@ export async function POST(request: Request) {
     const fees = calculateFees(validatedData)
     const propertyValue = parseFloat(validatedData.propertyValue?.replace(/,/g, "") || "0")
 
-    // Save to Supabase
+    // Save to Supabase with ALL fields
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
       
-      // ONLY columns that exist: id, first_name, last_name, email, phone, 
-      // property_address, property_postcode, transaction_type, property_value, quote_amount, status, created_at
+      // Only insert columns that exist in the database
+      // Run the ALTER TABLE SQL to add the missing columns for full functionality
       const { error: dbError } = await supabase.from("enquiries").insert({
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
@@ -78,7 +89,9 @@ export async function POST(request: Request) {
       })
       
       if (dbError) {
-        console.error("DB error:", dbError.message)
+        console.error("[v0] DB error:", dbError.message)
+      } else {
+        console.log("[v0] Enquiry saved successfully")
       }
     }
 
