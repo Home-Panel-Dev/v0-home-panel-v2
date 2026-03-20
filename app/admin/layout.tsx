@@ -24,7 +24,7 @@ export default async function AdminLayout({
     redirect("/auth/login")
   }
 
-  // Fetch profile data
+  // Fetch profile data and check admin role
   let profile: ProfileData | null = null
   const profileResult = await supabase
     .from("profiles")
@@ -34,6 +34,11 @@ export default async function AdminLayout({
   
   if (profileResult.data) {
     profile = profileResult.data
+  }
+
+  // Check if user has admin role
+  if (!profile || profile.role !== "admin") {
+    redirect("/auth/login?error=unauthorized")
   }
 
   return (

@@ -306,7 +306,7 @@ const nextStep = async () => {
   return (
     <div className="w-full max-w-xl mx-auto">
       {/* Form card */}
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
         {/* Back button and progress */}
         <div className="p-4 pb-0">
           <Button
