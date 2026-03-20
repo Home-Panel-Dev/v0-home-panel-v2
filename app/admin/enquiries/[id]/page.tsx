@@ -1,24 +1,11 @@
+// Enquiry Detail Page - Last updated: March 2026
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  ArrowLeft, 
-  Mail, 
-  Phone, 
-  Home,
-  Calendar,
-  FileCheck,
-  Clock,
-  Building2,
-  User,
-  Banknote,
-  Send,
-  ChevronRight,
-  UserPlus,
-} from "lucide-react"
+import { ArrowLeft, Mail, Phone, Home, Calendar, FileCheck, Clock, Building2, User, Banknote, Send, ChevronRight, UserPlus } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 
 interface EnquiryDetailPageProps {

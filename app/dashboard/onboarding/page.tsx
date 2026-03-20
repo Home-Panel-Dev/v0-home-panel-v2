@@ -518,13 +518,27 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               </div>
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base">
-                Connect Your Bank
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <a 
+                href="https://truelayer.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base">
+                  Connect Your Bank
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
+              </a>
               <p className="text-xs text-slate-500 text-center">
-                You&apos;ll be redirected to your bank&apos;s secure login
+                You&apos;ll be redirected to your bank&apos;s secure login. Once complete, return here and continue.
               </p>
+              <Button 
+                variant="outline" 
+                onClick={saveAndContinue}
+                className="w-full h-10 border-slate-200"
+              >
+                I&apos;ve connected my bank - Continue
+              </Button>
             </div>
           )}
 
