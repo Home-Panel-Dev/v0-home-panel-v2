@@ -1,12 +1,14 @@
+// Admin invite API - sends magic link to clients
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getOnboardingInviteEmail } from "@/lib/email-templates"
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
     
-    // Check if user is authenticated and is admin
+    // Check if user is authenticated
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -32,12 +34,28 @@ export async function POST(request: Request) {
     // Generate case reference
     const caseReference = `HP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(5, "0")}`
 
-    // Generate magic link for the client
+    // Use service role key for admin operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
+    }
+
+    // Create admin client with service role
+    const adminSupabase = createAdminClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
+    // Generate magic link for the client using admin API
     const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
       ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/onboarding`
       : "http://localhost:3000/dashboard/onboarding"
 
-    const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
+    const { data: magicLinkData, error: magicLinkError } = await adminSupabase.auth.admin.generateLink({
       type: "magiclink",
       email: enquiry.email,
       options: {
@@ -60,10 +78,7 @@ export async function POST(request: Request) {
     // Update enquiry status to onboarding
     await supabase
       .from("enquiries")
-      .update({ 
-        status: "onboarding",
-        case_reference: caseReference
-      })
+      .update({ status: "onboarding" })
       .eq("id", enquiryId)
 
     // Send onboarding invite email

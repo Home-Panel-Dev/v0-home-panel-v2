@@ -1,3 +1,4 @@
+// Server-side Supabase client
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
 import Link from "next/link"
@@ -244,51 +245,94 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
 
         {/* Right column - Quote & Actions */}
         <div className="space-y-6">
-          {/* Quote Summary */}
+          {/* Fee Breakdown */}
           <Card className="bg-white border-slate-200/60">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
                 <Banknote className="h-4 w-4 text-slate-400" />
-                Quote Summary
+                Fee Breakdown
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-slate-100">
-                <div className="px-6 py-4 flex justify-between items-center bg-emerald-50">
-                  <span className="text-sm font-semibold text-emerald-900">Total Quote</span>
-                  <span className="font-bold text-emerald-900">{formatCurrency(enquiry.quote_amount)}</span>
-                </div>
+                {(() => {
+                  // Calculate fees based on property value
+                  const propertyValue = Number(enquiry.property_value) || 0
+                  let legalFee = 595
+                  if (propertyValue > 250000) legalFee = 695
+                  if (propertyValue > 500000) legalFee = 895
+                  if (propertyValue > 1000000) legalFee = 1295
+                  
+                  const subtotal = legalFee
+                  const vat = Math.round(subtotal * 0.2)
+                  const landRegistryFee = propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100
+                  const searchFees = 300
+                  const bankTransferFee = 35
+                  const disbursements = landRegistryFee + searchFees + bankTransferFee
+                  
+                  return (
+                    <>
+                      <div className="px-6 py-3 flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Legal Fee</span>
+                        <span className="text-sm font-medium text-slate-900">{formatCurrency(legalFee)}</span>
+                      </div>
+                      <div className="px-6 py-3 flex justify-between items-center bg-slate-50/50">
+                        <span className="text-sm text-slate-600">Subtotal</span>
+                        <span className="text-sm font-medium text-slate-900">{formatCurrency(subtotal)}</span>
+                      </div>
+                      <div className="px-6 py-3 flex justify-between items-center">
+                        <span className="text-sm text-slate-600">VAT (20%)</span>
+                        <span className="text-sm font-medium text-slate-900">{formatCurrency(vat)}</span>
+                      </div>
+                      <div className="px-6 py-3 flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Search Fees</span>
+                        <span className="text-sm font-medium text-slate-900">{formatCurrency(searchFees)}</span>
+                      </div>
+                      <div className="px-6 py-3 flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Land Registry Fee</span>
+                        <span className="text-sm font-medium text-slate-900">{formatCurrency(landRegistryFee)}</span>
+                      </div>
+                      <div className="px-6 py-3 flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Bank Transfer Fee</span>
+                        <span className="text-sm font-medium text-slate-900">{formatCurrency(bankTransferFee)}</span>
+                      </div>
+                      <div className="px-6 py-4 flex justify-between items-center bg-emerald-50">
+                        <span className="text-sm font-semibold text-emerald-900">Total</span>
+                        <span className="font-bold text-emerald-900">{formatCurrency(enquiry.quote_amount)}</span>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </CardContent>
           </Card>
 
           {/* Quick Actions */}
-          <Card className="bg-white border-slate-200/60 ">
+          <Card className="bg-white border-slate-200/60">
             <CardHeader className="border-b border-slate-100 py-4 px-6">
               <CardTitle className="text-sm font-semibold tracking-tight">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-2">
-              <Button variant="outline" className="w-full justify-between group h-10" size="sm">
-                <span className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-slate-400" />
-                  Send Email
-                </span>
-                <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Button>
-              <Button variant="outline" className="w-full justify-between group h-10" size="sm">
-                <span className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-slate-400" />
-                  Log Phone Call
-                </span>
-                <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Button>
-              <Button variant="outline" className="w-full justify-between group h-10" size="sm">
-                <span className="flex items-center gap-2 text-sm">
-                  <FileCheck className="h-4 w-4 text-slate-400" />
-                  Update Status
-                </span>
-                <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Button>
+              <a href={`mailto:${enquiry.email}?subject=Your HomePanel Quote Request`}>
+                <Button variant="outline" className="w-full justify-between group h-10" size="sm">
+                  <span className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-slate-400" />
+                    Send Email
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </a>
+              {enquiry.phone && (
+                <a href={`tel:${enquiry.phone}`}>
+                  <Button variant="outline" className="w-full justify-between group h-10" size="sm">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      Call {enquiry.phone}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                  </Button>
+                </a>
+              )}
               <div className="pt-2">
                 <InviteClientButton 
                   enquiryId={enquiry.id}
