@@ -32,11 +32,16 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .single()
   
+  if (profileResult.error) {
+    // If profiles table doesn't exist or no profile found, deny access
+    console.error("Profile fetch error:", profileResult.error.message)
+  }
+  
   if (profileResult.data) {
     profile = profileResult.data
   }
 
-  // Check if user has admin role
+  // Check if user has admin role - redirect if not admin
   if (!profile || profile.role !== "admin") {
     redirect("/auth/login?error=unauthorized")
   }
