@@ -46,7 +46,8 @@ export async function POST(request: Request) {
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-    const redirectUrl = `${baseUrl}/dashboard/onboarding`
+    // Redirect to admin for now (client portal removed)
+    const redirectUrl = `${baseUrl}/admin`
 
     const { error: otpError } = await adminSupabase.auth.signInWithOtp({
       email: enquiry.email,
