@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { AdminNav } from "@/components/admin/admin-nav"
 
 type ProfileData = {
@@ -24,24 +25,38 @@ export default async function AdminLayout({
     redirect("/auth/login")
   }
 
-  // Fetch profile data and check admin role
+  // Use admin client to bypass RLS for profile operations
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // Fetch profile data
   let profile: ProfileData | null = null
-  const profileResult = await supabase
+  const { data: profileData, error: profileError } = await adminSupabase
     .from("profiles")
     .select("id, email, first_name, last_name, role")
     .eq("id", user.id)
     .single()
   
-  if (profileResult.error) {
-    // If profiles table doesn't exist or no profile found, deny access
-    console.error("Profile fetch error:", profileResult.error.message)
-  }
-  
-  if (profileResult.data) {
-    profile = profileResult.data
+  if (profileError && profileError.code === "PGRST116") {
+    // Profile doesn't exist - create one with admin role
+    const { data: newProfile } = await adminSupabase
+      .from("profiles")
+      .insert({
+        id: user.id,
+        email: user.email,
+        role: "admin"
+      })
+      .select()
+      .single()
+    
+    profile = newProfile
+  } else if (profileData) {
+    profile = profileData
   }
 
-  // Check if user has admin role - redirect if not admin
+  // Check if user has admin role
   if (!profile || profile.role !== "admin") {
     redirect("/auth/login?error=unauthorized")
   }
