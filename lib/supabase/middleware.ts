@@ -56,7 +56,7 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
   if (isAuthPage && user && !request.nextUrl.pathname.includes('error')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/admin'
     return NextResponse.redirect(url)
   }
 

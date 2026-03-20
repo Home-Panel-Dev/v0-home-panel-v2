@@ -1,7 +1,10 @@
-// Client Invite API - Sends magic link via Supabase OTP - Updated March 2026
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
+import { Resend } from "resend"
+import { getOnboardingInviteEmail } from "@/lib/email-templates"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: Request) {
   try {
@@ -28,8 +31,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enquiry not found" }, { status: 404 })
     }
 
+    // Generate case reference
     const caseReference = `HP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(5, "0")}`
 
+    // Create admin Supabase client with service role
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -44,40 +49,74 @@ export async function POST(request: Request) {
       }
     })
 
+    // Generate magic link using admin client
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-    // Redirect to admin for now (client portal removed)
-    const redirectUrl = `${baseUrl}/admin`
 
-    const { error: otpError } = await adminSupabase.auth.signInWithOtp({
+    const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
+      type: "magiclink",
       email: enquiry.email,
       options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          first_name: enquiry.first_name,
-          last_name: enquiry.last_name,
-          role: "client",
-          enquiry_id: enquiryId,
-          case_reference: caseReference
-        },
-        shouldCreateUser: true
+        redirectTo: `${baseUrl}/admin`,
       }
     })
 
-    if (otpError) {
-      console.error("OTP error:", otpError)
-      return NextResponse.json({ error: otpError.message }, { status: 500 })
+    if (linkError) {
+      console.error("Magic link generation error:", linkError)
+      return NextResponse.json({ error: linkError.message }, { status: 500 })
     }
 
+    // Get the magic link URL
+    const magicLink = linkData.properties?.action_link || `${baseUrl}/auth/login`
+
+    // Send email via Resend with our custom template
+    const emailContent = getOnboardingInviteEmail({
+      firstName: enquiry.first_name,
+      lastName: enquiry.last_name,
+      email: enquiry.email,
+      caseReference,
+      magicLink,
+    })
+
+    const { error: emailError } = await resend.emails.send({
+      from: "HomePanel <noreply@homepanel.co.uk>",
+      to: enquiry.email,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text,
+    })
+
+    if (emailError) {
+      console.error("Resend email error:", emailError)
+      return NextResponse.json({ error: "Failed to send email" }, { status: 500 })
+    }
+
+    // Update enquiry status
     await supabase
       .from("enquiries")
-      .update({ status: "onboarding" })
+      .update({ 
+        status: "onboarding",
+        case_reference: caseReference 
+      })
       .eq("id", enquiryId)
+
+    // Create client profile
+    if (linkData.user) {
+      await adminSupabase
+        .from("profiles")
+        .upsert({
+          id: linkData.user.id,
+          email: enquiry.email,
+          first_name: enquiry.first_name,
+          last_name: enquiry.last_name,
+          role: "client",
+        })
+    }
 
     return NextResponse.json({ 
       success: true, 
       caseReference,
-      message: `Magic link sent to ${enquiry.email}` 
+      message: `Onboarding invite sent to ${enquiry.email}` 
     })
 
   } catch (error) {
