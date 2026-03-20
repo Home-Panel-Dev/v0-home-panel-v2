@@ -464,13 +464,27 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               </div>
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base">
-                Start ID Verification
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <a 
+                href="https://www.yoti.com/business/identity-verification/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base">
+                  Start ID Verification
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
+              </a>
               <p className="text-xs text-slate-500 text-center">
-                You&apos;ll be redirected to Yoti&apos;s secure site
+                You&apos;ll be redirected to Yoti&apos;s secure site. Once complete, return here and continue.
               </p>
+              <Button 
+                variant="outline" 
+                onClick={saveAndContinue}
+                className="w-full h-10 border-slate-200"
+              >
+                I&apos;ve completed verification - Continue
+              </Button>
             </div>
           )}
 
