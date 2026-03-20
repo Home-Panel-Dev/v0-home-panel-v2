@@ -45,8 +45,42 @@ export default function OnboardingPage() {
     propertyPostcode: "",
     additionalNotes: ""
   })
+  const [uploadedDocs, setUploadedDocs] = useState<{[key: string]: {name: string, uploading: boolean}}>({})
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const supabase = createClient()
+
+  const handleDocUpload = async (docType: string, file: File) => {
+    setUploadError(null)
+    setUploadedDocs(prev => ({ ...prev, [docType]: { name: file.name, uploading: true } }))
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("documentType", docType)
+
+      const response = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Upload failed")
+      }
+
+      setUploadedDocs(prev => ({ ...prev, [docType]: { name: file.name, uploading: false } }))
+    } catch (err) {
+      console.error("Upload error:", err)
+      setUploadError(err instanceof Error ? err.message : "Upload failed")
+      setUploadedDocs(prev => {
+        const newDocs = { ...prev }
+        delete newDocs[docType]
+        return newDocs
+      })
+    }
+  }
 
   useEffect(() => {
     loadProfile()
@@ -548,28 +582,73 @@ export default function OnboardingPage() {
                 Upload any documents required for your transaction. You can always add more later from your dashboard.
               </p>
 
+              {uploadError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-700">{uploadError}</p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {[
-                  { name: "Proof of Address", desc: "Utility bill or bank statement (last 3 months)" },
-                  { name: "Mortgage Offer", desc: "If you&apos;re getting a mortgage" },
-                  { name: "Gift Letter", desc: "If receiving gift funds" }
-                ].map((doc, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-emerald-200 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-slate-500" />
+                  { key: "proof_of_address", name: "Proof of Address", desc: "Utility bill or bank statement (last 3 months)" },
+                  { key: "mortgage_offer", name: "Mortgage Offer", desc: "If you're getting a mortgage" },
+                  { key: "gift_letter", name: "Gift Letter", desc: "If receiving gift funds" }
+                ].map((doc) => {
+                  const uploaded = uploadedDocs[doc.key]
+                  return (
+                    <div key={doc.key} className={`flex items-center justify-between p-4 border rounded-xl transition-colors ${uploaded ? "border-emerald-200 bg-emerald-50/50" : "border-slate-200 hover:border-emerald-200"}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${uploaded ? "bg-emerald-100" : "bg-slate-100"}`}>
+                          {uploaded ? (
+                            <Check className="h-5 w-5 text-emerald-600" />
+                          ) : (
+                            <FileText className="h-5 w-5 text-slate-500" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">{doc.name}</p>
+                          <p className="text-xs text-slate-500">
+                            {uploaded ? uploaded.name : doc.desc}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{doc.name}</p>
-                        <p className="text-xs text-slate-500">{doc.desc}</p>
-                      </div>
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,.heic,.doc,.docx"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              handleDocUpload(doc.key, file)
+                              e.target.value = ""
+                            }
+                          }}
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-2 pointer-events-none"
+                          disabled={uploaded?.uploading}
+                        >
+                          {uploaded?.uploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : uploaded ? (
+                            <>
+                              <Check className="h-4 w-4 text-emerald-600" />
+                              Uploaded
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Upload
+                            </>
+                          )}
+                        </Button>
+                      </label>
                     </div>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Upload className="h-4 w-4" />
-                      Upload
-                    </Button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
 
               <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
