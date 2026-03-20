@@ -94,8 +94,11 @@ export default function Page() {
                     {isLoading ? 'Logging in...' : 'Login'}
                   </Button>
                 </div>
-                <div className="mt-4 text-center text-sm text-slate-500">
-                  Admin access only
+                <div className="mt-4 text-center text-sm">
+                  Need an account?{' '}
+                  <Link href="/auth/sign-up" className="underline underline-offset-4">
+                    Sign up
+                  </Link>
                 </div>
               </form>
             </CardContent>

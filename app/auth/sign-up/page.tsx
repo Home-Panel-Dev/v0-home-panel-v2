@@ -36,16 +36,26 @@ export default function Page() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-            `${window.location.origin}/protected`,
-        },
       })
       if (error) throw error
+      
+      // Create admin profile for the new user
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: data.user.email,
+            role: 'admin',
+          })
+        if (profileError) {
+          console.error('Profile creation error:', profileError)
+        }
+      }
+      
       router.push('/auth/sign-up-success')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
@@ -60,8 +70,8 @@ export default function Page() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Sign up</CardTitle>
-              <CardDescription>Create a new account</CardDescription>
+              <CardTitle className="text-2xl">Admin Setup</CardTitle>
+              <CardDescription>Create your admin account</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSignUp}>
