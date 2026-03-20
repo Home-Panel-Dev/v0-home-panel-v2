@@ -42,18 +42,13 @@ export default function Page() {
       })
       if (error) throw error
       
-      // Create admin profile for the new user
+      // Create admin profile via API (bypasses RLS)
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: data.user.email,
-            role: 'admin',
-          })
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-        }
+        await fetch('/api/auth/create-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: data.user.id, email: data.user.email }),
+        })
       }
       
       router.push('/auth/sign-up-success')
