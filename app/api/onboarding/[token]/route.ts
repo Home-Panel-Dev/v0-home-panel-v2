@@ -128,8 +128,8 @@ export async function POST(
     if (notifyAdmin && process.env.RESEND_API_KEY) {
       try {
         await resend.emails.send({
-          from: "HomePanel <notifications@homepanel.co.uk>",
-          to: process.env.ADMIN_EMAIL || "admin@homepanel.co.uk",
+          from: process.env.RESEND_FROM_EMAIL || "HomePanel <onboarding@resend.dev>",
+          to: process.env.ADMIN_EMAIL || "joshua@madebymclean.com",
           subject: `Onboarding Update: ${enquiry.first_name} - ${stepLabel}`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">

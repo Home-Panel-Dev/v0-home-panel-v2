@@ -4,8 +4,8 @@ import { z } from "zod"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "team@homepanel.co.uk"
-const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <noreply@homepanel.co.uk>"
+const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "joshua@madebymclean.com"
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "HomePanel <onboarding@resend.dev>"
 
 const contactSchema = z.object({
   name: z.string().min(2),
