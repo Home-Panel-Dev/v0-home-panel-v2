@@ -63,9 +63,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect logged-in users away from auth pages
+  // Redirect logged-in users away from auth pages (except reset-password and callback)
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
-  if (isAuthPage && user && !request.nextUrl.pathname.includes('error')) {
+  const isResetPasswordPage = request.nextUrl.pathname === '/auth/reset-password'
+  const isCallbackPage = request.nextUrl.pathname === '/auth/callback'
+  if (isAuthPage && user && !request.nextUrl.pathname.includes('error') && !isResetPasswordPage && !isCallbackPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/admin'
     return NextResponse.redirect(url)

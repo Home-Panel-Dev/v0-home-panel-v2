@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { 
@@ -20,6 +20,7 @@ import {
   ShieldCheck
 } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
+import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
 
 interface EnquiryDetailPageProps {
   params: Promise<{ id: string }>
@@ -164,10 +165,10 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
             <Send className="h-4 w-4" />
             Message
           </Button>
-          <Button className="bg-foreground hover:bg-foreground/90 text-background gap-2 font-medium" size="sm">
-            <User className="h-4 w-4" />
-            Convert to Case
-          </Button>
+          <ConvertToCaseButton 
+            enquiryId={enquiry.id} 
+            disabled={enquiry.status === "converted"}
+          />
         </div>
       </div>
 

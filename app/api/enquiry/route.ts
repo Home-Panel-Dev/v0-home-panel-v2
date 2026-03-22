@@ -3,6 +3,7 @@ import { z } from "zod"
 import { createClient } from "@supabase/supabase-js"
 import type { EnquiryFormData } from "@/lib/form-schema"
 import { getCustomerConfirmationEmail, getInternalAlertEmail } from "@/lib/email-templates"
+import { logActivity } from "@/lib/database"
 
 const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "joshua@madebymclean.com"
 const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <onboarding@resend.dev>"
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
       
       // Insert only basic columns - run setup_homepanel.sql for full functionality
-      const { error: dbError } = await supabase.from("enquiries").insert({
+      const { data: newEnquiry, error: dbError } = await supabase.from("enquiries").insert({
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
         email: validatedData.email,
@@ -84,10 +85,24 @@ export async function POST(request: Request) {
         property_value: propertyValue || null,
         quote_amount: fees.total,
         status: "new"
-      })
+      }).select("id").single()
       
       if (dbError) {
         console.error("[v0] DB insert error:", dbError.message)
+      }
+
+      // Log activity
+      if (newEnquiry?.id) {
+        await logActivity({
+          enquiryId: newEnquiry.id,
+          actorType: "system",
+          action: "enquiry_submitted",
+          description: `New enquiry from ${validatedData.firstName} ${validatedData.lastName}`,
+          metadata: { 
+            transaction_type: validatedData.transactionType,
+            quote_amount: fees.total 
+          }
+        })
       }
     }
 
