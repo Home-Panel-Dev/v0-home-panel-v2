@@ -2,13 +2,11 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
-import { Home } from 'lucide-react'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -37,8 +35,6 @@ function LoginForm() {
         password,
       })
       if (error) throw error
-      
-      // Redirect to admin - the layout will check role
       router.push('/admin')
       router.refresh()
     } catch (error: unknown) {
@@ -49,80 +45,110 @@ function LoginForm() {
   }
 
   return (
-    <Card className="border-slate-200">
-      <CardHeader className="space-y-1">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
-            <Home className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-semibold text-xl tracking-tight">HomePanel</span>
+    <div className="w-full max-w-sm">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 mb-12">
+        <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
+          <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
         </div>
-        <CardTitle className="text-2xl font-semibold tracking-tight">Welcome back</CardTitle>
-        <CardDescription>Sign in to your account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleLogin}>
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
-              />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/auth/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-700">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
-              />
-            </div>
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-            <Button 
-              type="submit" 
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 font-medium" 
-              disabled={isLoading}
+        <span className="text-lg font-semibold tracking-tight">HomePanel</span>
+      </div>
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight mb-2">Welcome back</h1>
+        <p className="text-muted-foreground">Sign in to your account to continue</p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleLogin} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-11 bg-background border-border"
+            autoComplete="email"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+            <Link 
+              href="/auth/forgot-password" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </div>
-          <div className="mt-6 text-center text-sm text-slate-500">
-            First time?{' '}
-            <Link href="/auth/sign-up" className="text-emerald-600 hover:text-emerald-700 font-medium">
-              Create an account
+              Forgot password?
             </Link>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+          <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-11 bg-background border-border"
+            autoComplete="current-password"
+          />
+        </div>
+
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
+
+        <Button 
+          type="submit" 
+          className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium" 
+          disabled={isLoading}
+        >
+          {isLoading ? 'Signing in...' : 'Sign in'}
+        </Button>
+      </form>
+
+      {/* Footer */}
+      <p className="mt-8 text-center text-sm text-muted-foreground">
+        Need an account?{' '}
+        <Link href="/auth/sign-up" className="text-foreground hover:underline font-medium">
+          Create one
+        </Link>
+      </p>
+    </div>
   )
 }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md">
-        <Suspense fallback={<div className="h-96 animate-pulse bg-slate-100 rounded-lg" />}>
+    <div className="min-h-screen flex">
+      {/* Left side - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
+        <Suspense fallback={<div className="w-full max-w-sm h-96 animate-pulse bg-muted rounded-lg" />}>
           <LoginForm />
         </Suspense>
+      </div>
+      
+      {/* Right side - Visual (hidden on mobile) */}
+      <div className="hidden lg:flex flex-1 bg-muted items-center justify-center p-12">
+        <div className="max-w-md text-center">
+          <div className="w-16 h-16 rounded-2xl bg-foreground/5 flex items-center justify-center mx-auto mb-8">
+            <svg className="w-8 h-8 text-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold tracking-tight mb-3">Streamline your conveyancing</h2>
+          <p className="text-muted-foreground leading-relaxed">
+            Manage quote requests, track client onboarding, and deliver exceptional service from one unified dashboard.
+          </p>
+        </div>
       </div>
     </div>
   )

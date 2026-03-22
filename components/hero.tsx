@@ -24,28 +24,28 @@ export function Hero({
 }: HeroProps) {
   return (
     <section className="relative overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-24 lg:py-32">
+      <div className="mx-auto max-w-5xl px-6 lg:px-8 py-28 lg:py-40">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="max-w-3xl mx-auto text-center"
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="text-center"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-balance leading-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-balance leading-[1.1]">
             {title}
           </h1>
-          <p className="mt-6 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-6 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto text-pretty">
             {subtitle}
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button asChild size="lg" className="rounded-full px-8 h-12 text-base">
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button asChild size="lg" className="rounded-full px-8 h-12 text-base bg-foreground hover:bg-foreground/90 text-background">
               <Link href={ctaHref}>
                 {ctaText}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             {secondaryCtaText && secondaryCtaHref && (
-              <Button asChild variant="outline" size="lg" className="rounded-full px-8 h-12 text-base">
+              <Button asChild variant="outline" size="lg" className="rounded-full px-8 h-12 text-base border-border">
                 <Link href={secondaryCtaHref}>{secondaryCtaText}</Link>
               </Button>
             )}

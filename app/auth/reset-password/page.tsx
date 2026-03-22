@@ -2,19 +2,11 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Home, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -25,7 +17,6 @@ export default function ResetPasswordPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if we have a valid session from the reset link
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -65,81 +56,79 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-slate-50">
-        <div className="w-full max-w-sm">
-          <Card className="border-0 bg-white">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-              </div>
-              <CardTitle className="text-2xl text-slate-900">Password updated</CardTitle>
-              <CardDescription className="text-slate-600">
-                Redirecting you to login...
-              </CardDescription>
-            </CardHeader>
-          </Card>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="h-6 w-6 text-accent" />
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight mb-2">Password updated</h1>
+          <p className="text-muted-foreground">Redirecting you to login...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card className="border-0 bg-white">
-            <CardHeader className="text-center">
-              <Link href="/" className="flex items-center justify-center gap-2 mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
-                  <Home className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-semibold text-slate-900">HomePanel</span>
-              </Link>
-              <CardTitle className="text-2xl text-slate-900">Set new password</CardTitle>
-              <CardDescription className="text-slate-600">
-                Enter your new password below
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleUpdatePassword}>
-                <div className="flex flex-col gap-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="password" className="text-slate-700">New Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="confirmPassword" className="text-slate-700">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
-                    />
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-600">{error}</p>
-                  )}
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-emerald-600 hover:bg-emerald-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Updating...' : 'Update Password'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 mb-12">
+          <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
+            <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            </svg>
+          </div>
+          <span className="text-lg font-semibold tracking-tight">HomePanel</span>
         </div>
+
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight mb-2">Set new password</h1>
+          <p className="text-muted-foreground">Enter your new password below</p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleUpdatePassword} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium">New password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-11 bg-background border-border"
+              autoComplete="new-password"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="h-11 bg-background border-border"
+              autoComplete="new-password"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          <Button 
+            type="submit" 
+            className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Updating...' : 'Update Password'}
+          </Button>
+        </form>
       </div>
     </div>
   )

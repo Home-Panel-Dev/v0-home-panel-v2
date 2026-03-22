@@ -2,13 +2,11 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Home } from 'lucide-react'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -44,7 +42,6 @@ export default function SignUpPage() {
       
       if (signUpError) throw signUpError
       
-      // Create profile via API (uses service role to bypass RLS)
       if (data.user) {
         const response = await fetch('/api/auth/create-profile', {
           method: 'POST',
@@ -70,78 +67,107 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md">
-        <Card className="border-slate-200">
-          <CardHeader className="space-y-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
-                <Home className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-semibold text-xl tracking-tight">HomePanel</span>
+    <div className="min-h-screen flex">
+      {/* Left side - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
+        <div className="w-full max-w-sm">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 mb-12">
+            <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
+              <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              </svg>
             </div>
-            <CardTitle className="text-2xl font-semibold tracking-tight">Create account</CardTitle>
-            <CardDescription>Set up your admin account</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="flex flex-col gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                )}
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 font-medium" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Creating account...' : 'Create account'}
-                </Button>
+            <span className="text-lg font-semibold tracking-tight">HomePanel</span>
+          </div>
+
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">Create account</h1>
+            <p className="text-muted-foreground">Set up your admin account to get started</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 bg-background border-border"
+                autoComplete="email"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-11 bg-background border-border"
+                autoComplete="new-password"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password" className="text-sm font-medium">Confirm password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="h-11 bg-background border-border"
+                autoComplete="new-password"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
+                <p className="text-sm text-destructive">{error}</p>
               </div>
-              <div className="mt-6 text-center text-sm text-slate-500">
-                Already have an account?{' '}
-                <Link href="/auth/login" className="text-emerald-600 hover:text-emerald-700 font-medium">
-                  Sign in
-                </Link>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+            )}
+
+            <Button 
+              type="submit" 
+              className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium" 
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating account...' : 'Create account'}
+            </Button>
+          </form>
+
+          {/* Footer */}
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-foreground hover:underline font-medium">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+      
+      {/* Right side - Visual */}
+      <div className="hidden lg:flex flex-1 bg-muted items-center justify-center p-12">
+        <div className="max-w-md text-center">
+          <div className="w-16 h-16 rounded-2xl bg-foreground/5 flex items-center justify-center mx-auto mb-8">
+            <svg className="w-8 h-8 text-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold tracking-tight mb-3">Join HomePanel</h2>
+          <p className="text-muted-foreground leading-relaxed">
+            Create your account to start managing quote requests and streamline your conveyancing workflow.
+          </p>
+        </div>
       </div>
     </div>
   )

@@ -85,29 +85,29 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      new: "bg-blue-50 text-blue-700 border-blue-200",
-      under_review: "bg-amber-50 text-amber-700 border-amber-200",
-      accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      onboarding_invited: "bg-purple-50 text-purple-700 border-purple-200",
-      onboarding: "bg-purple-50 text-purple-700 border-purple-200",
-      active: "bg-green-50 text-green-700 border-green-200",
-      completed: "bg-slate-50 text-slate-700 border-slate-200",
-      rejected: "bg-red-50 text-red-700 border-red-200"
+      new: "bg-blue-50 text-blue-700",
+      under_review: "bg-amber-50 text-amber-700",
+      accepted: "bg-accent/10 text-accent",
+      onboarding_invited: "bg-purple-50 text-purple-700",
+      onboarding: "bg-purple-50 text-purple-700",
+      active: "bg-green-50 text-green-700",
+      completed: "bg-muted text-muted-foreground",
+      rejected: "bg-red-50 text-red-700"
     }
     const labels: Record<string, string> = {
       new: "New",
-      under_review: "Under Review",
+      under_review: "Reviewing",
       accepted: "Accepted",
-      onboarding_invited: "Onboarding Invited",
+      onboarding_invited: "Invited",
       onboarding: "Onboarding",
       active: "Active",
-      completed: "Completed",
-      rejected: "Rejected"
+      completed: "Complete",
+      rejected: "Declined"
     }
     return (
-      <Badge variant="outline" className={`${styles[status] || styles.new} font-medium`}>
+      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${styles[status] || styles.new}`}>
         {labels[status] || status}
-      </Badge>
+      </span>
     )
   }
 
@@ -162,11 +162,11 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2 border-border">
             <Send className="h-4 w-4" />
             Message
           </Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2 font-medium" size="sm">
+          <Button className="bg-foreground hover:bg-foreground/90 text-background gap-2 font-medium" size="sm">
             <User className="h-4 w-4" />
             Convert to Case
           </Button>
@@ -178,34 +178,32 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
         {/* Left Column - Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Quote Hero Card */}
-          <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-0 overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-emerald-100 text-sm font-medium mb-1">Quote Amount</p>
-                  <p className="text-3xl font-bold">{formatCurrency(enquiry.quote_amount)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-emerald-100 text-sm mb-1">{getTransactionLabel(enquiry.transaction_type)}</p>
-                  <p className="text-emerald-100 text-sm flex items-center justify-end gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {formatDate(enquiry.created_at).split(",")[0]}
-                  </p>
-                </div>
+          <div className="bg-foreground text-background rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-background/60 text-sm font-medium mb-1">Quote Amount</p>
+                <p className="text-3xl font-semibold tracking-tight">{formatCurrency(enquiry.quote_amount)}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-right">
+                <p className="text-background/60 text-sm mb-1">{getTransactionLabel(enquiry.transaction_type)}</p>
+                <p className="text-background/60 text-sm flex items-center justify-end gap-1.5">
+                  <Calendar className="h-4 w-4" />
+                  {formatDate(enquiry.created_at).split(",")[0]}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Onboarding Progress - Show if onboarding has started */}
           {(enquiry.status === "onboarding_invited" || enquiry.status === "onboarding" || enquiry.onboarding_status) && (
-            <Card className="bg-white border-slate-200/60">
-              <CardHeader className="border-b border-slate-100 py-4 px-6">
-                <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-slate-400" />
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="border-b border-border py-4 px-6">
+                <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                   Onboarding Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
+                </h3>
+              </div>
+              <div className="p-6">
                 <div className="space-y-4">
                   {[
                     { id: "personal", label: "Personal Details", icon: User },
@@ -217,7 +215,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                     return (
                       <div key={step.id} className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          status === "complete" ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
+                          status === "complete" ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
                         }`}>
                           {status === "complete" ? (
                             <CheckCircle2 className="h-4 w-4" />
@@ -226,14 +224,14 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className={`text-sm font-medium ${status === "complete" ? "text-slate-900" : "text-slate-500"}`}>
+                          <p className={`text-sm font-medium ${status === "complete" ? "text-foreground" : "text-muted-foreground"}`}>
                             {step.label}
                           </p>
                         </div>
                         {status === "complete" && (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
-                            Complete
-                          </Badge>
+                          <span className="bg-accent/10 text-accent px-2 py-0.5 rounded text-xs font-medium">
+                            Done
+                          </span>
                         )}
                       </div>
                     )
@@ -242,25 +240,25 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
 
                 {/* Onboarding Data Details */}
                 {onboardingData?.personal_details && (
-                  <div className="mt-6 pt-6 border-t border-slate-100">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Submitted Details</h4>
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Submitted Details</h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       {onboardingData.personal_details.date_of_birth && (
                         <div>
-                          <p className="text-slate-500">Date of Birth</p>
-                          <p className="font-medium text-slate-900">{onboardingData.personal_details.date_of_birth}</p>
+                          <p className="text-muted-foreground">Date of Birth</p>
+                          <p className="font-medium">{onboardingData.personal_details.date_of_birth}</p>
                         </div>
                       )}
                       {onboardingData.personal_details.current_address && (
                         <div className="col-span-2">
-                          <p className="text-slate-500">Current Address</p>
-                          <p className="font-medium text-slate-900">{onboardingData.personal_details.current_address}</p>
+                          <p className="text-muted-foreground">Current Address</p>
+                          <p className="font-medium">{onboardingData.personal_details.current_address}</p>
                         </div>
                       )}
                       {onboardingData.personal_details.ni_number && (
                         <div>
-                          <p className="text-slate-500">NI Number</p>
-                          <p className="font-medium text-slate-900">{onboardingData.personal_details.ni_number}</p>
+                          <p className="text-muted-foreground">NI Number</p>
+                          <p className="font-medium font-mono">{onboardingData.personal_details.ni_number}</p>
                         </div>
                       )}
                     </div>
@@ -268,98 +266,98 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                 )}
 
                 {onboardingData?.documents?.uploaded && onboardingData.documents.uploaded.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-slate-100">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Uploaded Documents</h4>
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Uploaded Documents</h4>
                     <div className="space-y-2">
                       {onboardingData.documents.uploaded.map((doc, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
-                          <FileText className="h-4 w-4 text-slate-400" />
-                          <span className="text-slate-900">{doc}</span>
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>{doc}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Contact Details */}
-          <Card className="bg-white border-slate-200/60">
-            <CardHeader className="border-b border-slate-100 py-4 px-6">
-              <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                <User className="h-4 w-4 text-slate-400" />
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="border-b border-border py-4 px-6">
+              <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
                 Contact Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
+              </h3>
+            </div>
+            <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</label>
-                  <p className="mt-1 text-slate-900 font-medium text-sm">{enquiry.first_name} {enquiry.last_name}</p>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Full Name</label>
+                  <p className="mt-1 font-medium text-sm">{enquiry.first_name} {enquiry.last_name}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Email</label>
-                  <a href={`mailto:${enquiry.email}`} className="mt-1 text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1">
-                    <Mail className="h-3.5 w-3.5" />
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</label>
+                  <a href={`mailto:${enquiry.email}`} className="mt-1 text-foreground hover:text-accent font-medium text-sm flex items-center gap-1 transition-colors">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                     {enquiry.email}
                   </a>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Phone</label>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Phone</label>
                   {enquiry.phone ? (
-                    <a href={`tel:${enquiry.phone}`} className="mt-1 text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-1">
-                      <Phone className="h-3.5 w-3.5" />
+                    <a href={`tel:${enquiry.phone}`} className="mt-1 text-foreground hover:text-accent font-medium text-sm flex items-center gap-1 transition-colors">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                       {enquiry.phone}
                     </a>
                   ) : (
-                    <p className="mt-1 text-slate-400 text-sm">Not provided</p>
+                    <p className="mt-1 text-muted-foreground text-sm">Not provided</p>
                   )}
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Transaction Type</label>
-                  <p className="mt-1 text-slate-900 font-medium text-sm">{getTransactionLabel(enquiry.transaction_type)}</p>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Transaction</label>
+                  <p className="mt-1 font-medium text-sm">{getTransactionLabel(enquiry.transaction_type)}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Property Details */}
-          <Card className="bg-white border-slate-200/60">
-            <CardHeader className="border-b border-slate-100 py-4 px-6">
-              <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-slate-400" />
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="border-b border-border py-4 px-6">
+              <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
                 Property Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
+              </h3>
+            </div>
+            <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Property Address</label>
-                  <p className="mt-1 text-slate-900 font-medium text-sm flex items-start gap-2">
-                    <Home className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Address</label>
+                  <p className="mt-1 font-medium text-sm flex items-start gap-2">
+                    <Home className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     {enquiry.property_address || "Not yet provided"}
                     {enquiry.property_postcode && `, ${enquiry.property_postcode}`}
                   </p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Property Value</label>
-                  <p className="mt-1 text-slate-900 font-medium text-sm">{formatCurrency(enquiry.property_value)}</p>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Value</label>
+                  <p className="mt-1 font-medium text-sm">{formatCurrency(enquiry.property_value)}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Fee Breakdown */}
-          <Card className="bg-white border-slate-200/60">
-            <CardHeader className="border-b border-slate-100 py-4 px-6">
-              <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                <Banknote className="h-4 w-4 text-slate-400" />
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="border-b border-border py-4 px-6">
+              <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                <Banknote className="h-4 w-4 text-muted-foreground" />
                 Fee Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-slate-100">
+              </h3>
+            </div>
+            <div>
+              <div className="divide-y divide-border">
                 {(() => {
                   const propertyValue = Number(enquiry.property_value) || 0
                   let legalFee = 595
@@ -376,66 +374,66 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                   return (
                     <>
                       <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Legal Fee</span>
-                        <span className="text-sm font-medium text-slate-900">{formatCurrency(legalFee)}</span>
+                        <span className="text-sm text-muted-foreground">Legal Fee</span>
+                        <span className="text-sm font-medium">{formatCurrency(legalFee)}</span>
                       </div>
-                      <div className="px-6 py-3 flex justify-between items-center bg-slate-50/50">
-                        <span className="text-sm text-slate-600">Subtotal</span>
-                        <span className="text-sm font-medium text-slate-900">{formatCurrency(subtotal)}</span>
-                      </div>
-                      <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-slate-600">VAT (20%)</span>
-                        <span className="text-sm font-medium text-slate-900">{formatCurrency(vat)}</span>
+                      <div className="px-6 py-3 flex justify-between items-center bg-muted/50">
+                        <span className="text-sm text-muted-foreground">Subtotal</span>
+                        <span className="text-sm font-medium">{formatCurrency(subtotal)}</span>
                       </div>
                       <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Search Fees</span>
-                        <span className="text-sm font-medium text-slate-900">{formatCurrency(searchFees)}</span>
+                        <span className="text-sm text-muted-foreground">VAT (20%)</span>
+                        <span className="text-sm font-medium">{formatCurrency(vat)}</span>
                       </div>
                       <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Land Registry Fee</span>
-                        <span className="text-sm font-medium text-slate-900">{formatCurrency(landRegistryFee)}</span>
+                        <span className="text-sm text-muted-foreground">Search Fees</span>
+                        <span className="text-sm font-medium">{formatCurrency(searchFees)}</span>
                       </div>
                       <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Bank Transfer Fee</span>
-                        <span className="text-sm font-medium text-slate-900">{formatCurrency(bankTransferFee)}</span>
+                        <span className="text-sm text-muted-foreground">Land Registry</span>
+                        <span className="text-sm font-medium">{formatCurrency(landRegistryFee)}</span>
                       </div>
-                      <div className="px-6 py-4 flex justify-between items-center bg-emerald-50">
-                        <span className="text-sm font-semibold text-emerald-900">Total</span>
-                        <span className="font-bold text-emerald-900">{formatCurrency(enquiry.quote_amount)}</span>
+                      <div className="px-6 py-3 flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Bank Transfer</span>
+                        <span className="text-sm font-medium">{formatCurrency(bankTransferFee)}</span>
+                      </div>
+                      <div className="px-6 py-4 flex justify-between items-center bg-foreground text-background">
+                        <span className="text-sm font-semibold">Total</span>
+                        <span className="font-semibold">{formatCurrency(enquiry.quote_amount)}</span>
                       </div>
                     </>
                   )
                 })()}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Right Column - Actions & Timeline */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card className="bg-white border-slate-200/60">
-            <CardHeader className="border-b border-slate-100 py-4 px-6">
-              <CardTitle className="text-sm font-semibold tracking-tight">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-2">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="border-b border-border py-4 px-6">
+              <h3 className="text-sm font-semibold tracking-tight">Quick Actions</h3>
+            </div>
+            <div className="p-4 space-y-2">
               <a href={`mailto:${enquiry.email}?subject=Your HomePanel Quote Request`}>
-                <Button variant="outline" className="w-full justify-between group h-10" size="sm">
+                <Button variant="outline" className="w-full justify-between group h-10 border-border" size="sm">
                   <span className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-slate-400" />
+                    <Mail className="h-4 w-4 text-muted-foreground" />
                     Send Email
                   </span>
-                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
                 </Button>
               </a>
               {enquiry.phone && (
                 <a href={`tel:${enquiry.phone}`}>
-                  <Button variant="outline" className="w-full justify-between group h-10 mt-2" size="sm">
+                  <Button variant="outline" className="w-full justify-between group h-10 mt-2 border-border" size="sm">
                     <span className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-slate-400" />
+                      <Phone className="h-4 w-4 text-muted-foreground" />
                       Call {enquiry.phone}
                     </span>
-                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </a>
               )}
@@ -446,75 +444,75 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                   currentStatus={enquiry.status}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Activity Timeline */}
-          <Card className="bg-white border-slate-200/60">
-            <CardHeader className="border-b border-slate-100 py-4 px-6">
-              <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
-                <Clock className="h-4 w-4 text-slate-400" />
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="border-b border-border py-4 px-6">
+              <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
                 Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
+              </h3>
+            </div>
+            <div className="p-4">
               <div className="space-y-4">
                 <div className="flex gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">Quote submitted</p>
-                    <p className="text-xs text-slate-500">{formatDate(enquiry.created_at)}</p>
+                    <p className="text-sm font-medium">Quote submitted</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(enquiry.created_at)}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">Confirmation email sent</p>
-                    <p className="text-xs text-slate-500">Automated</p>
+                    <p className="text-sm font-medium">Confirmation sent</p>
+                    <p className="text-xs text-muted-foreground">Automated</p>
                   </div>
                 </div>
                 {(enquiry.status === "onboarding_invited" || enquiry.status === "onboarding") && (
                   <div className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0"></div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">Onboarding invite sent</p>
-                      <p className="text-xs text-slate-500">Email sent to client</p>
+                      <p className="text-sm font-medium">Onboarding invited</p>
+                      <p className="text-xs text-muted-foreground">Email sent</p>
                     </div>
                   </div>
                 )}
                 {onboardingData?.personal_details && (
                   <div className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">Personal details submitted</p>
-                      <p className="text-xs text-slate-500">By client</p>
+                      <p className="text-sm font-medium">Details submitted</p>
+                      <p className="text-xs text-muted-foreground">By client</p>
                     </div>
                   </div>
                 )}
                 {onboardingData?.id_verification?.completed && (
                   <div className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">ID verification completed</p>
-                      <p className="text-xs text-slate-500">Via Yoti</p>
+                      <p className="text-sm font-medium">ID verified</p>
+                      <p className="text-xs text-muted-foreground">Via Yoti</p>
                     </div>
                   </div>
                 )}
                 {onboardingData?.source_of_funds?.completed && (
                   <div className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">Source of funds verified</p>
-                      <p className="text-xs text-slate-500">Via Open Banking</p>
+                      <p className="text-sm font-medium">Funds verified</p>
+                      <p className="text-xs text-muted-foreground">Via Open Banking</p>
                     </div>
                   </div>
                 )}
                 {onboardingData?.completed_at && (
                   <div className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">Onboarding complete</p>
-                      <p className="text-xs text-slate-500">{formatDate(onboardingData.completed_at)}</p>
+                      <p className="text-sm font-medium">Onboarding complete</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(onboardingData.completed_at)}</p>
                     </div>
                   </div>
                 )}
