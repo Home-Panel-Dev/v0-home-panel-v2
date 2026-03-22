@@ -120,14 +120,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to send email" }, { status: 500 })
     }
 
-    // Log activity
-    await adminSupabase.from("activity_log").insert({
-      enquiry_id: enquiryId,
-      action: "onboarding_invited",
-      description: `Onboarding invite sent to ${enquiry.email}`,
-      actor_type: "admin",
-      actor_id: user.id,
-    }).catch(() => {})
+    // Log activity (ignore errors since this is non-critical)
+    try {
+      await adminSupabase.from("activity_log").insert({
+        enquiry_id: enquiryId,
+        action: "onboarding_invited",
+        description: `Onboarding invite sent to ${enquiry.email}`,
+        actor_type: "admin",
+        actor_id: user.id,
+      })
+    } catch {
+      // Activity logging is non-critical, ignore errors
+    }
 
     return NextResponse.json({ 
       success: true, 
