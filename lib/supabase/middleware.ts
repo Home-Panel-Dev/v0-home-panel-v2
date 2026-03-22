@@ -37,18 +37,20 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getUser() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Handle auth code redirects (password reset, email confirmation, etc.)
+  // Handle auth code redirects FIRST (password reset, email confirmation, etc.)
+  // This must happen before getUser() to avoid session issues
   const code = request.nextUrl.searchParams.get('code')
+  const type = request.nextUrl.searchParams.get('type')
   if (code && request.nextUrl.pathname === '/') {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/callback'
-    // Preserve the code parameter
+    // Keep the code and type params
     return NextResponse.redirect(url)
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Protect dashboard and admin routes
   const isProtectedRoute = 
