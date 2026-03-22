@@ -1,74 +1,86 @@
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { 
   ArrowRight,
   Search,
-  Filter
+  FileText,
+  Loader2,
+  RefreshCw
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { getStatusLabel, getStatusStyle } from "@/lib/database"
+import { formatCurrency, formatDate, getTransactionLabel, getInitials } from "@/lib/utils/format"
 
-export default async function EnquiriesPage() {
-  const supabase = await createClient()
+interface Enquiry {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  phone: string | null
+  property_address: string | null
+  transaction_type: string | null
+  quote_amount: number | null
+  status: string
+  created_at: string
+}
 
-  const { data: enquiries } = await supabase
-    .from("enquiries")
-    .select("*")
-    .order("created_at", { ascending: false })
+export default function EnquiriesPage() {
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency: "GBP",
-      minimumFractionDigits: 0,
-    }).format(amount)
+  const fetchEnquiries = async () => {
+    try {
+      setError(null)
+      const res = await fetch("/api/admin/enquiries")
+      if (!res.ok) throw new Error("Failed to fetch enquiries")
+      const data = await res.json()
+      setEnquiries(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    })
-  }
+  useEffect(() => {
+    fetchEnquiries()
+  }, [])
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      new: "bg-blue-50 text-blue-700",
-      under_review: "bg-amber-50 text-amber-700",
-      accepted: "bg-green-50 text-green-700",
-      onboarding_invited: "bg-purple-50 text-purple-700",
-      onboarding: "bg-purple-50 text-purple-700",
-      active: "bg-green-50 text-green-700",
-      completed: "bg-muted text-muted-foreground",
-      rejected: "bg-red-50 text-red-700"
-    }
-    const labels: Record<string, string> = {
-      new: "New",
-      under_review: "Reviewing",
-      accepted: "Accepted",
-      onboarding_invited: "Invited",
-      onboarding: "Onboarding",
-      active: "Active",
-      completed: "Complete",
-      rejected: "Declined"
-    }
+  const filteredEnquiries = useMemo(() => {
+    if (!searchQuery.trim()) return enquiries
+    const query = searchQuery.toLowerCase()
+    return enquiries.filter(e => 
+      e.first_name?.toLowerCase().includes(query) ||
+      e.last_name?.toLowerCase().includes(query) ||
+      e.email?.toLowerCase().includes(query) ||
+      e.property_address?.toLowerCase().includes(query) ||
+      `${e.first_name} ${e.last_name}`.toLowerCase().includes(query)
+    )
+  }, [enquiries, searchQuery])
+
+  if (loading) {
     return (
-      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${styles[status] || styles.new}`}>
-        {labels[status] || status}
-      </span>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
-  const getTransactionLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      buying: "Buying",
-      selling: "Selling",
-      "buying-and-selling": "Buying & Selling",
-      remortgage: "Remortgage",
-      "transfer-of-equity": "Transfer of Equity"
-    }
-    return labels[type] || type
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <p className="text-muted-foreground">{error}</p>
+        <Button variant="outline" onClick={fetchEnquiries}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Try again
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -78,35 +90,53 @@ export default async function EnquiriesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Enquiries</h1>
           <p className="text-muted-foreground mt-1">
-            {enquiries?.length || 0} total enquiries
+            {enquiries.length} total enquiries
           </p>
         </div>
       </div>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search enquiries..." 
+            placeholder="Search by name, email, or property..." 
             className="pl-9 h-10 bg-background border-border"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button variant="outline" size="sm" className="gap-2 h-10 border-border">
-          <Filter className="h-4 w-4" />
-          Filter
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={fetchEnquiries}
+          className="h-10 w-10"
+        >
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Enquiries List */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        {!enquiries || enquiries.length === 0 ? (
+        {filteredEnquiries.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-muted-foreground">No enquiries yet</p>
+            <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              {searchQuery ? "No enquiries match your search" : "No enquiries yet"}
+            </p>
+            {searchQuery && (
+              <Button 
+                variant="link" 
+                className="mt-2" 
+                onClick={() => setSearchQuery("")}
+              >
+                Clear search
+              </Button>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {enquiries.map((enquiry) => (
+            {filteredEnquiries.map((enquiry) => (
               <Link 
                 key={enquiry.id} 
                 href={`/admin/enquiries/${enquiry.id}`}
@@ -115,7 +145,7 @@ export default async function EnquiriesPage() {
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-medium text-muted-foreground">
-                      {enquiry.first_name?.[0]}{enquiry.last_name?.[0]}
+                      {getInitials(enquiry.first_name, enquiry.last_name)}
                     </span>
                   </div>
                   <div className="min-w-0">
@@ -135,14 +165,16 @@ export default async function EnquiriesPage() {
                   </div>
                   <div className="w-24">
                     <p className="text-muted-foreground text-xs">Quote</p>
-                    <p className="font-medium">{formatCurrency(enquiry.quote_amount || 0)}</p>
+                    <p className="font-medium">{formatCurrency(enquiry.quote_amount)}</p>
                   </div>
                   <div className="w-24">
                     <p className="text-muted-foreground text-xs">Date</p>
                     <p className="font-medium">{formatDate(enquiry.created_at)}</p>
                   </div>
                   <div className="w-24">
-                    {getStatusBadge(enquiry.status || "new")}
+                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(enquiry.status || "new")}`}>
+                      {getStatusLabel(enquiry.status || "new")}
+                    </span>
                   </div>
                 </div>
 

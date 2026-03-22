@@ -15,12 +15,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { enquiryId } = await request.json()
-    
-    if (!enquiryId) {
-      return NextResponse.json({ error: "Enquiry ID required" }, { status: 400 })
-    }
-
     // Create admin Supabase client with service role
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -30,6 +24,23 @@ export async function POST(request: Request) {
     }
 
     const adminSupabase = createAdminClient(supabaseUrl, serviceRoleKey)
+    
+    // Verify admin role
+    const { data: profile } = await adminSupabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const { enquiryId } = await request.json()
+    
+    if (!enquiryId) {
+      return NextResponse.json({ error: "Enquiry ID required" }, { status: 400 })
+    }
 
     const { data: enquiry, error: enquiryError } = await adminSupabase
       .from("enquiries")
@@ -45,9 +56,11 @@ export async function POST(request: Request) {
     const onboardingToken = randomUUID()
     const caseReference = enquiry.case_reference || `HP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(5, "0")}`
 
-    // Build onboarding URL
+    // Build onboarding URL - use production URL for emails
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+      || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || "https://v0-home-panel-v2.vercel.app"
     const onboardingUrl = `${baseUrl}/onboarding/${onboardingToken}`
 
     // Update enquiry with token and status

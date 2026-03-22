@@ -58,7 +58,7 @@ export function ConvertToCaseButton({ enquiryId, disabled }: ConvertToCaseButton
         Convert to Case
       </Button>
       {error && (
-        <p className="text-xs text-red-600 mt-1">{error}</p>
+        <p className="text-xs text-destructive mt-1">{error}</p>
       )}
     </div>
   )

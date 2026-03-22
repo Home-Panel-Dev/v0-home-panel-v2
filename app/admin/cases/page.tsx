@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,9 +8,12 @@ import {
   Search, 
   ArrowRight,
   Building2,
-  Briefcase
+  Briefcase,
+  Loader2,
+  RefreshCw
 } from "lucide-react"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
+import { formatCurrency, formatDate } from "@/lib/utils/format"
 
 interface Case {
   id: string
@@ -52,32 +55,16 @@ export default function AdminCasesPage() {
     }
   }
 
-  const filteredCases = cases.filter(c => {
+  const filteredCases = useMemo(() => {
+    if (!searchQuery.trim()) return cases
     const query = searchQuery.toLowerCase()
-    return (
+    return cases.filter(c => 
       c.client_name?.toLowerCase().includes(query) ||
       c.client_email?.toLowerCase().includes(query) ||
       c.case_reference?.toLowerCase().includes(query) ||
       c.property_address?.toLowerCase().includes(query)
     )
-  })
-
-  const formatCurrency = (value: number | null) => {
-    if (!value) return "-"
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency: "GBP",
-      maximumFractionDigits: 0,
-    }).format(value)
-  }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    })
-  }
+  }, [cases, searchQuery])
 
   const getComplianceProgress = (c: Case) => {
     let completed = 0

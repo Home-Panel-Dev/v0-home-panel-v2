@@ -4,24 +4,42 @@ import { createAdminClient, generateCaseReference, logActivity } from "@/lib/dat
 
 // GET: List all cases
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const adminClient = createAdminClient()
+    
+    // Verify admin role
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const { data: cases, error } = await adminClient
+      .from("cases")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Failed to fetch cases:", error)
+      return NextResponse.json({ error: "Failed to fetch cases" }, { status: 500 })
+    }
+
+    return NextResponse.json(cases || [])
+  } catch (error) {
+    console.error("Cases API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-
-  const adminClient = createAdminClient()
-  const { data: cases, error } = await adminClient
-    .from("cases")
-    .select("*")
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(cases)
 }
 
 // POST: Create a new case from an enquiry

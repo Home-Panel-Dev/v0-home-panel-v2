@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
-import { createAdminClient } from "@/lib/database"
+import { createAdminClient, getStatusLabel, getStatusStyle } from "@/lib/database"
 import Link from "next/link"
 import { FileText, Clock, CheckCircle, Users, ArrowRight, TrendingUp, Briefcase, Activity } from "lucide-react"
+import { formatCurrency, formatRelativeTime, getTransactionLabel } from "@/lib/utils/format"
 
 type Enquiry = {
   id: string
@@ -78,45 +79,6 @@ export default async function AdminDashboard() {
     active: allCases.filter(c => !["completed", "cancelled"].includes(c.status)).length,
     completed: allCases.filter(c => c.status === "completed").length,
     total: allCases.length,
-  }
-
-  const statusConfig: Record<string, { label: string; className: string }> = {
-    new: { label: "New", className: "bg-blue-50 text-blue-700" },
-    under_review: { label: "Reviewing", className: "bg-amber-50 text-amber-700" },
-    accepted: { label: "Accepted", className: "bg-accent/10 text-accent" },
-    onboarding_invited: { label: "Invited", className: "bg-purple-50 text-purple-700" },
-    onboarding: { label: "Onboarding", className: "bg-purple-50 text-purple-700" },
-    converted: { label: "Converted", className: "bg-accent/10 text-accent" },
-    completed: { label: "Complete", className: "bg-muted text-muted-foreground" },
-    rejected: { label: "Declined", className: "bg-red-50 text-red-700" },
-    pending_onboarding: { label: "Pending", className: "bg-amber-50 text-amber-700" },
-    onboarding_complete: { label: "Onboarded", className: "bg-accent/10 text-accent" },
-    in_progress: { label: "In Progress", className: "bg-blue-50 text-blue-700" },
-    with_firm: { label: "With Firm", className: "bg-purple-50 text-purple-700" },
-  }
-
-  const transactionLabels: Record<string, string> = {
-    purchase: "Purchase",
-    buying: "Purchase",
-    sale: "Sale",
-    selling: "Sale",
-    both: "Sale & Purchase",
-    "buying-selling": "Sale & Purchase",
-    "buying-and-selling": "Sale & Purchase",
-    remortgage: "Remortgage",
-  }
-
-  function formatDate(dateString: string) {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    
-    if (diffHours < 1) return "Just now"
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
   }
 
   function formatActivityAction(action: string): string {
@@ -201,8 +163,8 @@ export default async function AdminDashboard() {
                         <p className="font-medium truncate">
                           {enquiry.first_name} {enquiry.last_name}
                         </p>
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusConfig[enquiry.status]?.className || "bg-muted text-muted-foreground"}`}>
-                          {statusConfig[enquiry.status]?.label || enquiry.status}
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(enquiry.status)}`}>
+                          {getStatusLabel(enquiry.status)}
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">{enquiry.email}</p>
@@ -210,15 +172,15 @@ export default async function AdminDashboard() {
                     
                     <div className="text-right hidden sm:block">
                       <p className="font-semibold">
-                        {enquiry.quote_amount ? `£${enquiry.quote_amount.toLocaleString()}` : "—"}
+                        {formatCurrency(enquiry.quote_amount)}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {transactionLabels[enquiry.transaction_type || ""] || "—"}
+                        {getTransactionLabel(enquiry.transaction_type)}
                       </p>
                     </div>
                     
                     <div className="text-right w-20 hidden md:block">
-                      <p className="text-sm text-muted-foreground">{formatDate(enquiry.created_at)}</p>
+                      <p className="text-sm text-muted-foreground">{formatRelativeTime(enquiry.created_at)}</p>
                     </div>
                     
                     <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
@@ -253,15 +215,15 @@ export default async function AdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-0.5">
                           <p className="font-mono text-sm font-medium">{caseItem.case_reference}</p>
-                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusConfig[caseItem.status]?.className || "bg-muted text-muted-foreground"}`}>
-                            {statusConfig[caseItem.status]?.label || caseItem.status}
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(caseItem.status)}`}>
+                            {getStatusLabel(caseItem.status)}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">{caseItem.client_name}</p>
                       </div>
                       
                       <div className="text-right w-20 hidden md:block">
-                        <p className="text-sm text-muted-foreground">{formatDate(caseItem.created_at)}</p>
+                        <p className="text-sm text-muted-foreground">{formatRelativeTime(caseItem.created_at)}</p>
                       </div>
                       
                       <ArrowRight className="w-4 h-4 text-muted-foreground/50" />
@@ -297,7 +259,7 @@ export default async function AdminDashboard() {
                         {activity.description || formatActivityAction(activity.action)}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatDate(activity.created_at)}
+                        {formatRelativeTime(activity.created_at)}
                         {activity.enquiry_id && (
                           <Link href={`/admin/enquiries/${activity.enquiry_id}`} className="ml-1 hover:underline">
                             View enquiry

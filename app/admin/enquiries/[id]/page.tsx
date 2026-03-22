@@ -8,7 +8,6 @@ import {
   Phone, 
   Home, 
   Calendar, 
-  Clock, 
   Building2, 
   User, 
   Banknote, 
@@ -21,6 +20,8 @@ import {
 } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
+import { getStatusLabel, getStatusStyle } from "@/lib/database"
+import { formatCurrency, formatDateTime, getTransactionLabel } from "@/lib/utils/format"
 
 interface EnquiryDetailPageProps {
   params: Promise<{ id: string }>
@@ -67,60 +68,6 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
 
   const onboardingData = enquiry.onboarding_data as OnboardingData | null
 
-  const formatCurrency = (amount: number | null) => {
-    if (!amount) return "—"
-    return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
-  }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    })
-  }
-
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      new: "bg-blue-50 text-blue-700",
-      under_review: "bg-amber-50 text-amber-700",
-      accepted: "bg-accent/10 text-accent",
-      onboarding_invited: "bg-purple-50 text-purple-700",
-      onboarding: "bg-purple-50 text-purple-700",
-      active: "bg-green-50 text-green-700",
-      completed: "bg-muted text-muted-foreground",
-      rejected: "bg-red-50 text-red-700"
-    }
-    const labels: Record<string, string> = {
-      new: "New",
-      under_review: "Reviewing",
-      accepted: "Accepted",
-      onboarding_invited: "Invited",
-      onboarding: "Onboarding",
-      active: "Active",
-      completed: "Complete",
-      rejected: "Declined"
-    }
-    return (
-      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${styles[status] || styles.new}`}>
-        {labels[status] || status}
-      </span>
-    )
-  }
-
-  const getTransactionLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      buying: "Buying",
-      selling: "Selling",
-      "buying-and-selling": "Buying & Selling",
-      remortgage: "Remortgage",
-      "transfer-of-equity": "Transfer of Equity"
-    }
-    return labels[type] || type
-  }
-
   const getOnboardingStepStatus = (step: string): "complete" | "pending" | "not_started" => {
     if (!onboardingData) return "not_started"
     switch (step) {
@@ -153,7 +100,9 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
               <h1 className="text-xl font-semibold tracking-tight text-slate-900">
                 {enquiry.first_name} {enquiry.last_name}
               </h1>
-              {getStatusBadge(enquiry.status)}
+              <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(enquiry.status || "new")}`}>
+                {getStatusLabel(enquiry.status || "new")}
+              </span>
             </div>
             <p className="text-sm text-slate-500 mt-0.5">
               {enquiry.case_reference || `Enquiry #${enquiry.id.slice(0, 8)}`}
@@ -187,7 +136,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                 <p className="text-background/60 text-sm mb-1">{getTransactionLabel(enquiry.transaction_type)}</p>
                 <p className="text-background/60 text-sm flex items-center justify-end gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  {formatDate(enquiry.created_at).split(",")[0]}
+                  {formatDateTime(enquiry.created_at).split(",")[0]}
                 </p>
               </div>
             </div>
