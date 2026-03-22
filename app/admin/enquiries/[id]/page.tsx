@@ -10,18 +10,41 @@ import {
   Phone, 
   Home, 
   Calendar, 
-  FileCheck, 
   Clock, 
   Building2, 
   User, 
   Banknote, 
   Send, 
-  ChevronRight
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  ShieldCheck,
+  FileText
 } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 
 interface EnquiryDetailPageProps {
   params: Promise<{ id: string }>
+}
+
+interface OnboardingData {
+  personal_details?: {
+    date_of_birth?: string
+    current_address?: string
+    ni_number?: string
+  }
+  id_verification?: {
+    completed: boolean
+    completed_at?: string
+  }
+  source_of_funds?: {
+    completed: boolean
+    completed_at?: string
+  }
+  documents?: {
+    uploaded: string[]
+  }
+  completed_at?: string
 }
 
 export default async function EnquiryDetailPage({ params }: EnquiryDetailPageProps) {
@@ -33,29 +56,17 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
     redirect("/auth/login")
   }
 
-  // Select only columns that exist in the database
   const { data: enquiry, error } = await supabase
     .from("enquiries")
-    .select(`
-      id,
-      first_name,
-      last_name,
-      email,
-      phone,
-      property_address,
-      property_postcode,
-      transaction_type,
-      property_value,
-      quote_amount,
-      status,
-      created_at
-    `)
+    .select("*")
     .eq("id", id)
     .single()
 
   if (error || !enquiry) {
     notFound()
   }
+
+  const onboardingData = enquiry.onboarding_data as OnboardingData | null
 
   const formatCurrency = (amount: number | null) => {
     if (!amount) return "—"
@@ -77,6 +88,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
       new: "bg-blue-50 text-blue-700 border-blue-200",
       under_review: "bg-amber-50 text-amber-700 border-amber-200",
       accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      onboarding_invited: "bg-purple-50 text-purple-700 border-purple-200",
       onboarding: "bg-purple-50 text-purple-700 border-purple-200",
       active: "bg-green-50 text-green-700 border-green-200",
       completed: "bg-slate-50 text-slate-700 border-slate-200",
@@ -86,6 +98,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
       new: "New",
       under_review: "Under Review",
       accepted: "Accepted",
+      onboarding_invited: "Onboarding Invited",
       onboarding: "Onboarding",
       active: "Active",
       completed: "Completed",
@@ -109,6 +122,22 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
     return labels[type] || type
   }
 
+  const getOnboardingStepStatus = (step: string): "complete" | "pending" | "not_started" => {
+    if (!onboardingData) return "not_started"
+    switch (step) {
+      case "personal":
+        return onboardingData.personal_details ? "complete" : "not_started"
+      case "id":
+        return onboardingData.id_verification?.completed ? "complete" : "not_started"
+      case "funds":
+        return onboardingData.source_of_funds?.completed ? "complete" : "not_started"
+      case "documents":
+        return onboardingData.documents?.uploaded?.length ? "complete" : "not_started"
+      default:
+        return "not_started"
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -128,7 +157,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
               {getStatusBadge(enquiry.status)}
             </div>
             <p className="text-sm text-slate-500 mt-0.5">
-              Enquiry #{enquiry.id.slice(0, 8)}
+              {enquiry.case_reference || `Enquiry #${enquiry.id.slice(0, 8)}`}
             </p>
           </div>
         </div>
@@ -166,6 +195,94 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
               </div>
             </CardContent>
           </Card>
+
+          {/* Onboarding Progress - Show if onboarding has started */}
+          {(enquiry.status === "onboarding_invited" || enquiry.status === "onboarding" || enquiry.onboarding_status) && (
+            <Card className="bg-white border-slate-200/60">
+              <CardHeader className="border-b border-slate-100 py-4 px-6">
+                <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-slate-400" />
+                  Onboarding Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {[
+                    { id: "personal", label: "Personal Details", icon: User },
+                    { id: "id", label: "ID Verification", icon: ShieldCheck },
+                    { id: "funds", label: "Source of Funds", icon: Building2 },
+                    { id: "documents", label: "Documents", icon: FileText },
+                  ].map((step) => {
+                    const status = getOnboardingStepStatus(step.id)
+                    return (
+                      <div key={step.id} className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          status === "complete" ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
+                        }`}>
+                          {status === "complete" ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <Circle className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${status === "complete" ? "text-slate-900" : "text-slate-500"}`}>
+                            {step.label}
+                          </p>
+                        </div>
+                        {status === "complete" && (
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+                            Complete
+                          </Badge>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Onboarding Data Details */}
+                {onboardingData?.personal_details && (
+                  <div className="mt-6 pt-6 border-t border-slate-100">
+                    <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Submitted Details</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      {onboardingData.personal_details.date_of_birth && (
+                        <div>
+                          <p className="text-slate-500">Date of Birth</p>
+                          <p className="font-medium text-slate-900">{onboardingData.personal_details.date_of_birth}</p>
+                        </div>
+                      )}
+                      {onboardingData.personal_details.current_address && (
+                        <div className="col-span-2">
+                          <p className="text-slate-500">Current Address</p>
+                          <p className="font-medium text-slate-900">{onboardingData.personal_details.current_address}</p>
+                        </div>
+                      )}
+                      {onboardingData.personal_details.ni_number && (
+                        <div>
+                          <p className="text-slate-500">NI Number</p>
+                          <p className="font-medium text-slate-900">{onboardingData.personal_details.ni_number}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {onboardingData?.documents?.uploaded && onboardingData.documents.uploaded.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-slate-100">
+                    <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Uploaded Documents</h4>
+                    <div className="space-y-2">
+                      {onboardingData.documents.uploaded.map((doc, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <FileText className="h-4 w-4 text-slate-400" />
+                          <span className="text-slate-900">{doc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Contact Details */}
           <Card className="bg-white border-slate-200/60">
@@ -356,12 +473,48 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                     <p className="text-xs text-slate-500">Automated</p>
                   </div>
                 </div>
-                {enquiry.status === "onboarding" && (
+                {(enquiry.status === "onboarding_invited" || enquiry.status === "onboarding") && (
                   <div className="flex gap-3">
                     <div className="w-2 h-2 rounded-full bg-purple-500 mt-2 flex-shrink-0"></div>
                     <div>
                       <p className="text-sm font-medium text-slate-900">Onboarding invite sent</p>
-                      <p className="text-xs text-slate-500">Magic link email</p>
+                      <p className="text-xs text-slate-500">Email sent to client</p>
+                    </div>
+                  </div>
+                )}
+                {onboardingData?.personal_details && (
+                  <div className="flex gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">Personal details submitted</p>
+                      <p className="text-xs text-slate-500">By client</p>
+                    </div>
+                  </div>
+                )}
+                {onboardingData?.id_verification?.completed && (
+                  <div className="flex gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">ID verification completed</p>
+                      <p className="text-xs text-slate-500">Via Yoti</p>
+                    </div>
+                  </div>
+                )}
+                {onboardingData?.source_of_funds?.completed && (
+                  <div className="flex gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">Source of funds verified</p>
+                      <p className="text-xs text-slate-500">Via Open Banking</p>
+                    </div>
+                  </div>
+                )}
+                {onboardingData?.completed_at && (
+                  <div className="flex gap-3">
+                    <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">Onboarding complete</p>
+                      <p className="text-xs text-slate-500">{formatDate(onboardingData.completed_at)}</p>
                     </div>
                   </div>
                 )}
