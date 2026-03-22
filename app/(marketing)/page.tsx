@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Hero } from "@/components/hero"
 import { Section, SectionHeader } from "@/components/section"
 import { FeatureCard } from "@/components/feature-card"
@@ -74,6 +76,16 @@ const partners = [
 ]
 
 export default function HomePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const code = searchParams.get('code')
+    if (code) {
+      router.replace(`/auth/callback?code=${code}`)
+    }
+  }, [searchParams, router])
+
   return (
     <>
       <Hero

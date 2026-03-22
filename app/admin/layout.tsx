@@ -25,13 +25,11 @@ export default async function AdminLayout({
     redirect("/auth/login")
   }
 
-  // Use admin client to bypass RLS for profile operations
   const adminSupabase = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Fetch profile data
   let profile: ProfileData | null = null
   const { data: profileData, error: profileError } = await adminSupabase
     .from("profiles")
@@ -40,7 +38,6 @@ export default async function AdminLayout({
     .single()
   
   if (profileError && profileError.code === "PGRST116") {
-    // Profile doesn't exist - create one with admin role
     const { data: newProfile } = await adminSupabase
       .from("profiles")
       .insert({
@@ -56,16 +53,15 @@ export default async function AdminLayout({
     profile = profileData
   }
 
-  // Check if user has admin role
   if (!profile || profile.role !== "admin") {
     redirect("/auth/login?error=unauthorized")
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       <AdminNav user={user} profile={profile} />
-      <main className="lg:pl-16 lg:pt-16">
-        <div className="px-6 py-6 lg:px-8 lg:py-8">
+      <main className="lg:pl-16 pt-16">
+        <div className="px-6 py-8 lg:px-10 lg:py-10">
           {children}
         </div>
       </main>

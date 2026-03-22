@@ -51,7 +51,7 @@ export function InviteClientButton({ enquiryId, clientName, currentStatus }: Inv
     return (
       <Button 
         disabled 
-        className="w-full justify-center gap-2 h-10 font-medium bg-slate-100 text-slate-500"
+        className="w-full justify-center gap-2 h-10 font-medium bg-muted text-muted-foreground"
         size="sm"
       >
         <Check className="h-4 w-4" />
@@ -65,18 +65,18 @@ export function InviteClientButton({ enquiryId, clientName, currentStatus }: Inv
       <Button 
         onClick={handleInvite}
         disabled={isLoading || isSuccess}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 justify-center gap-2 h-10 font-medium" 
+        className="w-full bg-foreground hover:bg-foreground/90 text-background justify-center gap-2 h-10 font-medium" 
         size="sm"
       >
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Sending Invite...
+            Sending...
           </>
         ) : isSuccess ? (
           <>
             <Check className="h-4 w-4" />
-            Invite Sent!
+            Sent!
           </>
         ) : (
           <>
@@ -86,7 +86,7 @@ export function InviteClientButton({ enquiryId, clientName, currentStatus }: Inv
         )}
       </Button>
       {error && (
-        <p className="text-xs text-red-600 text-center">{error}</p>
+        <p className="text-xs text-destructive text-center">{error}</p>
       )}
     </div>
   )

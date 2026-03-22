@@ -323,10 +323,10 @@ const nextStep = async () => {
         </div>
         
         {/* Progress bar */}
-        <div className="px-4 pt-4">
-          <div className="h-1.5 bg-border rounded-full overflow-hidden">
+        <div className="px-6 pt-4">
+          <div className="h-1 bg-border rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-emerald-500"
+              className="h-full bg-foreground"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}
@@ -457,13 +457,13 @@ const nextStep = async () => {
           )}
 
           {/* Navigation */}
-          <div className="flex justify-end mt-6">
+          <div className="flex justify-end mt-8">
             {currentStep === "quote" ? (
               <Button
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleSubmit(onSubmit)}
-                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+                className="rounded-lg bg-foreground hover:bg-foreground/90 text-background px-8 h-11"
               >
                 {isSubmitting ? (
                   <>
@@ -478,7 +478,7 @@ const nextStep = async () => {
               <Button
                 type="button"
                 onClick={nextStep}
-                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="rounded-lg bg-foreground hover:bg-foreground/90 text-background h-11"
               >
                 Get My Quote
                 <ChevronRight className="ml-1 h-4 w-4" />
@@ -487,9 +487,9 @@ const nextStep = async () => {
               <Button
                 type="button"
                 onClick={nextStep}
-                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="rounded-lg bg-foreground hover:bg-foreground/90 text-background h-11"
               >
-                Next
+                Continue
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             )}
@@ -538,7 +538,7 @@ function PillButton({
 // Info box component
 function InfoBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="p-4 rounded-xl bg-slate-100 text-sm text-muted-foreground leading-relaxed">
+    <div className="p-4 rounded-xl bg-muted text-sm text-muted-foreground leading-relaxed">
       {children}
     </div>
   )
