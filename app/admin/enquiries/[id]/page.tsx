@@ -16,7 +16,8 @@ import {
   ChevronRight,
   CheckCircle2,
   Circle,
-  FileText
+  FileText,
+  ShieldCheck
 } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 
