@@ -45,9 +45,11 @@ export async function POST(request: Request) {
     const onboardingToken = randomUUID()
     const caseReference = enquiry.case_reference || `HP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(5, "0")}`
 
-    // Build onboarding URL
+    // Build onboarding URL - use production URL for emails
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+      || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || "https://v0-home-panel-v2.vercel.app"
     const onboardingUrl = `${baseUrl}/onboarding/${onboardingToken}`
 
     // Update enquiry with token and status
