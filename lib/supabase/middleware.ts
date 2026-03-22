@@ -41,6 +41,15 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Handle auth code redirects (password reset, email confirmation, etc.)
+  const code = request.nextUrl.searchParams.get('code')
+  if (code && request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    // Preserve the code parameter
+    return NextResponse.redirect(url)
+  }
+
   // Protect dashboard and admin routes
   const isProtectedRoute = 
     request.nextUrl.pathname.startsWith('/dashboard') ||
