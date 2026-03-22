@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
-import { redirect, notFound } from "next/navigation"
+import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
   ArrowLeft, 
   Mail, 
@@ -18,7 +16,6 @@ import {
   ChevronRight,
   CheckCircle2,
   Circle,
-  ShieldCheck,
   FileText
 } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
@@ -517,8 +514,8 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
