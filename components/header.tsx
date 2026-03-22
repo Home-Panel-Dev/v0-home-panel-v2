@@ -22,9 +22,7 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <nav className="flex items-center justify-between h-16 lg:h-20">
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-foreground flex items-center justify-center">
-              <span className="text-background font-semibold text-sm">H</span>
-            </div>
+            <img src="/logo.svg" alt="HomePanel" className="h-8 w-8" />
             <span className="font-semibold text-lg tracking-tight">HomePanel</span>
           </Link>
 

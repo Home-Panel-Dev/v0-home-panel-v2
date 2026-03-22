@@ -33,6 +33,70 @@ type StepType =
   | "gift-funds"
   | "bank-funds-only"
   | "personal-details"
+  | "quote"
+
+// Agent data for the quote step
+const agents = [
+  {
+    name: "Sarah Mitchell",
+    role: "Senior Conveyancer",
+    image: "/agents/sarah-mitchell.jpg",
+  },
+  {
+    name: "James Thompson",
+    role: "Property Solicitor",
+    image: "/agents/james-thompson.jpg",
+  },
+]
+
+// Fee calculation logic
+function calculateFees(data: Partial<EnquiryFormData>) {
+  const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
+  const transactionType = data.transactionType || "buying"
+  
+  // Base legal fee
+  let legalFee = 595
+  if (propertyValue > 250000) legalFee = 695
+  if (propertyValue > 500000) legalFee = 895
+  if (propertyValue > 1000000) legalFee = 1295
+  
+  // Additional fees based on transaction type
+  const isLeasehold = data.tenure === "leasehold"
+  const hasMortgage = data.hasMortgage === "yes"
+  const isNewBuild = data.isNewBuild === "yes"
+  const isCompanyPurchase = data.isCompanyPurchase === "yes"
+  const hasGiftFunds = data.hasGiftFunds === "yes"
+  
+  const fees = {
+    legalFee,
+    leaseholdSupplement: isLeasehold ? 195 : 0,
+    mortgageFee: hasMortgage ? 95 : 0,
+    newBuildFee: isNewBuild ? 195 : 0,
+    companyFee: isCompanyPurchase ? 295 : 0,
+    giftFundsFee: hasGiftFunds ? 50 : 0,
+    searchFees: 300,
+    landRegistryFee: propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100,
+    bankTransferFee: 35,
+  }
+  
+  const subtotal = fees.legalFee + fees.leaseholdSupplement + fees.mortgageFee + 
+    fees.newBuildFee + fees.companyFee + fees.giftFundsFee
+  const vat = Math.round(subtotal * 0.2)
+  const disbursements = fees.searchFees + fees.landRegistryFee + fees.bankTransferFee
+  const total = subtotal + vat + disbursements
+  
+  return {
+    ...fees,
+    subtotal,
+    vat,
+    disbursements,
+    total,
+    transactionLabel: transactionType === "buying" ? "purchase" : 
+      transactionType === "selling" ? "sale" : 
+      transactionType === "buying-selling" ? "purchase & sale" :
+      transactionType === "remortgage" ? "remortgage" : "transfer of equity"
+  }
+}
 
 function getStepsForTransaction(transactionType: string): StepType[] {
   const baseSteps: StepType[] = ["transaction-type"]
@@ -52,6 +116,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
       "gift-funds",
       "bank-funds-only",
       "personal-details",
+      "quote",
     ]
   }
   
@@ -64,6 +129,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
       "owner-count",
       "mortgage",
       "personal-details",
+      "quote",
     ]
   }
   
@@ -75,6 +141,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
       "property-value",
       "owner-count",
       "personal-details",
+      "quote",
     ]
   }
   
@@ -87,6 +154,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
       "owner-count",
       "mortgage",
       "personal-details",
+      "quote",
     ]
   }
   
@@ -168,12 +236,14 @@ export function MultiStepForm() {
       case "personal-details":
         const result = await trigger(["firstName", "lastName", "email", "phone"])
         return result
+      case "quote":
+        return true
       default:
         return true
     }
   }
 
-  const nextStep = async () => {
+const nextStep = async () => {
     const isValid = await validateCurrentStep()
     if (isValid && currentStepIndex < steps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1)
@@ -189,16 +259,17 @@ export function MultiStepForm() {
   const onSubmit = async (data: EnquiryFormData) => {
     setIsSubmitting(true)
     setError(null)
-
+    
     try {
-      const response = await fetch("/api/submit-enquiry", {
+      const response = await fetch("/api/enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-
+      
       if (!response.ok) {
-        throw new Error("Something went wrong. Please try again.")
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Something went wrong. Please try again.")
       }
 
       setIsSuccess(true)
@@ -209,15 +280,9 @@ export function MultiStepForm() {
     }
   }
 
-  // Auto-advance for radio selections
+// Handle radio selection without auto-advance
   const handleRadioSelect = (field: keyof EnquiryFormData, value: string) => {
     setValue(field, value)
-    // Small delay for visual feedback before advancing
-    setTimeout(() => {
-      if (currentStepIndex < steps.length - 1) {
-        setCurrentStepIndex((prev) => prev + 1)
-      }
-    }, 200)
   }
 
   if (isSuccess) {
@@ -241,7 +306,7 @@ export function MultiStepForm() {
   return (
     <div className="w-full max-w-xl mx-auto">
       {/* Form card */}
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
         {/* Back button and progress */}
         <div className="p-4 pb-0">
           <Button
@@ -269,8 +334,8 @@ export function MultiStepForm() {
           </div>
         </div>
 
-        {/* Form content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 pt-8">
+        {/* Form content - NO form element until quote step to prevent accidental submission */}
+        <div className="p-6 pt-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -375,6 +440,13 @@ export function MultiStepForm() {
                   isSubmitting={isSubmitting}
                 />
               )}
+
+              {currentStep === "quote" && (
+                <QuoteStep
+                  values={watchedValues}
+                  isSubmitting={isSubmitting}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
 
@@ -384,40 +456,45 @@ export function MultiStepForm() {
             </div>
           )}
 
-          {/* Navigation - only show Next for steps that need it */}
-          {(currentStep === "property-address" || currentStep === "property-value" || currentStep === "personal-details") && (
-            <div className="flex justify-end mt-6">
-              {currentStep === "personal-details" ? (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Next
-                      <ChevronRight className="ml-1 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  Next
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          )}
-        </form>
+          {/* Navigation */}
+          <div className="flex justify-end mt-6">
+            {currentStep === "quote" ? (
+              <Button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleSubmit(onSubmit)}
+                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Proceed with HomePanel"
+                )}
+              </Button>
+            ) : currentStep === "personal-details" ? (
+              <Button
+                type="button"
+                onClick={nextStep}
+                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                Get My Quote
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={nextStep}
+                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -935,6 +1012,126 @@ function PersonalDetailsStep({
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// Step: Quote
+function QuoteStep({
+  values,
+  isSubmitting,
+}: {
+  values: EnquiryFormData
+  isSubmitting: boolean
+}) {
+  const fees = calculateFees(values)
+  
+  return (
+    <div className="text-center">
+      {/* Logo/Brand mark */}
+      <img src="/logo.svg" alt="HomePanel" className="w-12 h-12 mx-auto mb-4" />
+      
+      <h2 className="text-xl font-semibold mb-1">
+        If you let us handle this
+      </h2>
+      <p className="text-xl font-semibold mb-6">
+        journey for you
+      </p>
+      
+      {/* Main fee display */}
+      <p className="text-muted-foreground mb-2">
+        Our fee for your {fees.transactionLabel} would be:
+      </p>
+      <p className="text-4xl font-bold mb-8">
+        £{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
+      
+      {/* Fee breakdown */}
+      <div className="text-left bg-slate-50 rounded-xl p-4 mb-8">
+        <h3 className="font-medium mb-3 text-sm">Fee breakdown</h3>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Legal fee</span>
+            <span>£{fees.legalFee}</span>
+          </div>
+          {fees.leaseholdSupplement > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Leasehold supplement</span>
+              <span>£{fees.leaseholdSupplement}</span>
+            </div>
+          )}
+          {fees.mortgageFee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Mortgage work</span>
+              <span>£{fees.mortgageFee}</span>
+            </div>
+          )}
+          {fees.newBuildFee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">New build supplement</span>
+              <span>£{fees.newBuildFee}</span>
+            </div>
+          )}
+          {fees.companyFee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Company purchase</span>
+              <span>£{fees.companyFee}</span>
+            </div>
+          )}
+          {fees.giftFundsFee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gift funds verification</span>
+              <span>£{fees.giftFundsFee}</span>
+            </div>
+          )}
+          <div className="flex justify-between pt-2 border-t">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span>£{fees.subtotal}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">VAT (20%)</span>
+            <span>£{fees.vat}</span>
+          </div>
+          <div className="flex justify-between pt-2 border-t">
+            <span className="text-muted-foreground">Disbursements (searches, Land Registry, etc.)</span>
+            <span>£{fees.disbursements}</span>
+          </div>
+          <div className="flex justify-between pt-2 border-t font-medium">
+            <span>Total</span>
+            <span>£{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Agents section */}
+      <p className="text-muted-foreground mb-4">
+        Your case would directly be handled by
+      </p>
+      
+      <div className="flex items-center justify-center gap-4 mb-4">
+        {agents.map((agent, index) => (
+          <div key={agent.name} className="flex items-center gap-4">
+            {index > 0 && (
+              <span className="text-sm text-muted-foreground">or</span>
+            )}
+            <div className="text-center">
+              <div className="w-20 h-20 rounded-full bg-slate-200 mx-auto mb-2 overflow-hidden">
+                <img 
+                  src={agent.image} 
+                  alt={agent.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="font-medium text-sm">{agent.name}</p>
+              <p className="text-xs text-muted-foreground">{agent.role}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <p className="text-sm text-muted-foreground">
+        Experts in their field.
+      </p>
     </div>
   )
 }

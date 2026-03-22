@@ -32,7 +32,7 @@ export function PartnerCard({ title, description, href, iconName, index = 0 }: P
     >
       <Link
         href={href}
-        className="group block p-8 rounded-2xl bg-card border border-border hover:border-foreground/20 transition-all hover:shadow-lg"
+        className="group block p-8 rounded-2xl bg-card border border-border hover:border-foreground/20 transition-all"
       >
         <div className="h-12 w-12 rounded-xl bg-foreground flex items-center justify-center mb-6">
           <Icon className="h-6 w-6 text-background" />
