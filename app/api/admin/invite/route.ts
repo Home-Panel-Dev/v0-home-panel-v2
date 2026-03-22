@@ -68,8 +68,10 @@ export async function POST(request: Request) {
     }
 
     // Send email via Resend
+    // Use resend.dev for testing until homepanel.co.uk is verified at https://resend.com/domains
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "HomePanel <onboarding@resend.dev>"
     const { error: emailError } = await resend.emails.send({
-      from: "HomePanel <noreply@homepanel.co.uk>",
+      from: fromEmail,
       to: enquiry.email,
       subject: `Complete Your Onboarding - ${caseReference}`,
       html: `
