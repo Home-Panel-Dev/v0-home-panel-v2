@@ -23,6 +23,7 @@ import {
   Loader2
 } from "lucide-react"
 import { getStatusLabel, getStatusStyle, CASE_STATUSES } from "@/lib/database"
+import { formatCurrency, formatDateTime, getTransactionLabel } from "@/lib/utils/format"
 
 interface CaseData {
   id: string
@@ -114,35 +115,6 @@ export default function CaseDetailPage() {
     } finally {
       setUpdating(false)
     }
-  }
-
-  const formatCurrency = (value: number | null | undefined) => {
-    if (!value) return "-"
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency: "GBP",
-      maximumFractionDigits: 0,
-    }).format(value)
-  }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-
-  const getTransactionLabel = (type: string | null) => {
-    const labels: Record<string, string> = {
-      buying: "Purchase",
-      selling: "Sale",
-      "buying-and-selling": "Sale & Purchase",
-      remortgage: "Remortgage",
-    }
-    return type ? labels[type] || type : "Unknown"
   }
 
   const complianceSteps = [
@@ -464,7 +436,7 @@ export default function CaseDetailPage() {
                       <div>
                         <p className="text-sm font-medium">{activity.description || activity.action.replace(/_/g, " ")}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDate(activity.created_at)}
+                          {formatDateTime(activity.created_at)}
                         </p>
                       </div>
                     </div>
@@ -474,7 +446,7 @@ export default function CaseDetailPage() {
                     <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></div>
                     <div>
                       <p className="text-sm font-medium">Case created</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(caseData.created_at)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateTime(caseData.created_at)}</p>
                     </div>
                   </div>
                 )}

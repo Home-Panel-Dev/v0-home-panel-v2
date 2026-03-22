@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       type: "magiclink",
       email: enquiry.email,
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/onboarding`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://v0-home-panel-v2.vercel.app"}/dashboard/onboarding`,
       },
     })
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       
       // Fallback: create invite link manually
       const { data: inviteLinkData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(enquiry.email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/onboarding`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://v0-home-panel-v2.vercel.app"}/dashboard/onboarding`,
         data: {
           first_name: enquiry.first_name,
           last_name: enquiry.last_name,
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         email: enquiry.email,
         caseReference,
         magicLink: magicLinkData?.properties?.action_link || 
-          `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/login?email=${encodeURIComponent(enquiry.email)}`,
+          `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://v0-home-panel-v2.vercel.app"}/auth/login?email=${encodeURIComponent(enquiry.email)}`,
       })
 
       await resend.emails.send({

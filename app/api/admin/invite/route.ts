@@ -15,12 +15,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { enquiryId } = await request.json()
-    
-    if (!enquiryId) {
-      return NextResponse.json({ error: "Enquiry ID required" }, { status: 400 })
-    }
-
     // Create admin Supabase client with service role
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -30,6 +24,23 @@ export async function POST(request: Request) {
     }
 
     const adminSupabase = createAdminClient(supabaseUrl, serviceRoleKey)
+    
+    // Verify admin role
+    const { data: profile } = await adminSupabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const { enquiryId } = await request.json()
+    
+    if (!enquiryId) {
+      return NextResponse.json({ error: "Enquiry ID required" }, { status: 400 })
+    }
 
     const { data: enquiry, error: enquiryError } = await adminSupabase
       .from("enquiries")
