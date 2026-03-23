@@ -24,7 +24,7 @@ import { InviteClientButton } from "@/components/admin/invite-client-button"
 import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
 import { EnquiryComplianceSection } from "@/components/admin/enquiry-compliance-section"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
-import { formatCurrency, formatDateTime, getTransactionLabel } from "@/lib/utils/format"
+import { formatCurrency, formatDateTime, formatDate, getTransactionLabel } from "@/lib/utils/format"
 
 interface EnquiryDetailPageProps {
   params: Promise<{ id: string }>
