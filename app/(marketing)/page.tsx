@@ -1,12 +1,10 @@
-"use client"
-
-import { useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import { Hero } from "@/components/hero"
 import { Section, SectionHeader } from "@/components/section"
 import { FeatureCard } from "@/components/feature-card"
 import { PartnerCard } from "@/components/partner-card"
 import { CTASection } from "@/components/cta-section"
+import { AuthRedirectHandler } from "@/components/auth-redirect-handler"
 
 const steps = [
   {
@@ -76,18 +74,11 @@ const partners = [
 ]
 
 export default function HomePage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const code = searchParams.get('code')
-    if (code) {
-      router.replace(`/auth/callback?code=${code}`)
-    }
-  }, [searchParams, router])
-
   return (
     <>
+      <Suspense fallback={null}>
+        <AuthRedirectHandler />
+      </Suspense>
       <Hero
         title="Moving home, made simple"
         subtitle="HomePanel guides you through the conveyancing process with care. Submit your details, and we'll prepare everything for a smooth solicitor allocation."
