@@ -8,6 +8,7 @@ import {
   Phone, 
   Home, 
   Calendar, 
+  Clock,
   Building2, 
   User, 
   Banknote, 
