@@ -137,6 +137,100 @@ export const DOCUMENT_REVIEW_STATUSES = [
   "replacement_requested",
 ] as const
 
+// Internal decision statuses
+export const INTERNAL_STATUSES = [
+  "awaiting_client",
+  "awaiting_reports",
+  "pending_internal_review",
+  "approved_to_proceed",
+  "escalated",
+  "rejected",
+] as const
+
+// Matter readiness
+export const MATTER_READINESS = [
+  "not_ready",
+  "pending_compliance",
+  "pending_documents",
+  "ready_for_review",
+  "approved",
+  "blocked",
+  "manual_review_required",
+] as const
+
+// Compliance check types
+export const CHECK_TYPES = {
+  IDENTITY: "identity_verification",
+  SOURCE_OF_FUNDS: "source_of_funds",
+} as const
+
+// Provider names
+export const PROVIDERS = {
+  YOTI: "yoti",
+  ARMALYTIX: "armalytix",
+} as const
+
+// Document types for compliance
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  passport: "Passport",
+  driving_licence: "Driving Licence",
+  proof_of_address: "Proof of Address",
+  bank_statement: "Bank Statement",
+  payslip: "Payslip",
+  source_of_funds_evidence: "Source of Funds Evidence",
+  gifted_deposit_letter: "Gifted Deposit Letter",
+  other: "Other Document",
+}
+
+// Compliance summary type
+export interface ComplianceSummary {
+  identity: {
+    status: string
+    provider?: string
+    completedAt?: string
+    reviewStatus?: string
+  }
+  sourceOfFunds: {
+    status: string
+    provider?: string
+    completedAt?: string
+    reviewStatus?: string
+  }
+  documents: {
+    total: number
+    approved: number
+    pending: number
+    rejected: number
+  }
+  overallReadiness: string
+}
+
+// Calculate overall compliance status
+export function calculateComplianceReadiness(
+  identityStatus: string,
+  sofStatus: string,
+  documentsApproved: number,
+  documentsTotal: number
+): string {
+  const identityPassed = identityStatus === "approved"
+  const sofPassed = sofStatus === "approved"
+  const documentsComplete = documentsApproved === documentsTotal && documentsTotal > 0
+  
+  if (identityPassed && sofPassed && documentsComplete) {
+    return "approved"
+  }
+  
+  if (identityStatus === "rejected" || sofStatus === "rejected") {
+    return "blocked"
+  }
+  
+  if (identityStatus === "manual_review_required" || sofStatus === "manual_review_required") {
+    return "manual_review_required"
+  }
+  
+  return "pending_compliance"
+}
+
 // Status display helpers
 export function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
