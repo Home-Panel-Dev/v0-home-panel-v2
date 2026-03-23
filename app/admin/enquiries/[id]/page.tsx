@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/database"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,6 +9,7 @@ import {
   Phone, 
   Home, 
   Calendar, 
+  Clock,
   Building2, 
   User, 
   Banknote, 
@@ -20,8 +22,9 @@ import {
 } from "lucide-react"
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
+import { EnquiryComplianceSection } from "@/components/admin/enquiry-compliance-section"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
-import { formatCurrency, formatDateTime, getTransactionLabel } from "@/lib/utils/format"
+import { formatCurrency, formatDateTime, formatDate, getTransactionLabel } from "@/lib/utils/format"
 
 interface EnquiryDetailPageProps {
   params: Promise<{ id: string }>
@@ -65,6 +68,23 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
   if (error || !enquiry) {
     notFound()
   }
+
+  // Fetch compliance checks and documents
+  const adminClient = createAdminClient()
+  
+  const [complianceResult, documentsResult] = await Promise.all([
+    adminClient
+      .from("compliance_checks")
+      .select("*")
+      .eq("enquiry_id", id),
+    adminClient
+      .from("documents")
+      .select("*")
+      .eq("enquiry_id", id)
+  ])
+
+  const complianceChecks = complianceResult.data || []
+  const documents = documentsResult.data || []
 
   const onboardingData = enquiry.onboarding_data as OnboardingData | null
 
@@ -220,7 +240,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                       {onboardingData.documents.uploaded.map((doc, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
                           <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span>{doc}</span>
+                          <span>{typeof doc === 'string' ? doc : doc.name}</span>
                         </div>
                       ))}
                     </div>
@@ -228,6 +248,16 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                 )}
               </div>
             </div>
+          )}
+
+          {/* Compliance Review Section */}
+          {(enquiry.onboarding_status === "completed" || complianceChecks.length > 0) && (
+            <EnquiryComplianceSection
+              enquiryId={enquiry.id}
+              complianceChecks={complianceChecks}
+              documents={documents}
+              internalStatus={enquiry.internal_status || "awaiting_client"}
+            />
           )}
 
           {/* Contact Details */}

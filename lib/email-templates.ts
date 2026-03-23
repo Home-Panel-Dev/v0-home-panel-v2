@@ -654,3 +654,151 @@ Please follow up with this client within 24 hours.
     `,
   }
 }
+
+// Compliance completion notification to admin
+export function getComplianceCompletionEmail(data: {
+  clientName: string
+  caseReference: string
+  enquiryId: string
+  checkType: "identity_verification" | "source_of_funds"
+  provider: string
+  result: "passed" | "failed" | "review_required"
+}) {
+  const checkLabels: Record<string, string> = {
+    identity_verification: "Identity Verification",
+    source_of_funds: "Source of Funds Check"
+  }
+  
+  const resultLabels: Record<string, { label: string; color: string; bgColor: string }> = {
+    passed: { label: "Passed", color: "#059669", bgColor: "#ecfdf5" },
+    failed: { label: "Failed", color: "#dc2626", bgColor: "#fef2f2" },
+    review_required: { label: "Manual Review Required", color: "#d97706", bgColor: "#fef3c7" }
+  }
+
+  const checkLabel = checkLabels[data.checkType] || data.checkType
+  const resultInfo = resultLabels[data.result] || resultLabels.review_required
+
+  return {
+    subject: `[Action Required] ${checkLabel} ${resultInfo.label} - ${data.caseReference}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fafaf8;">
+  <div style="background-color: white; border-radius: 24px; padding: 40px;">
+    
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h1 style="font-size: 20px; font-weight: 600; margin: 0 0 8px;">Compliance Check Complete</h1>
+      <p style="color: #666; margin: 0;">${data.caseReference}</p>
+    </div>
+
+    <div style="background-color: ${resultInfo.bgColor}; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+      <p style="margin: 0 0 8px; font-weight: 600;">${checkLabel}</p>
+      <p style="margin: 0; color: ${resultInfo.color}; font-weight: 600; font-size: 18px;">${resultInfo.label}</p>
+    </div>
+
+    <table style="width: 100%; margin-bottom: 24px; font-size: 14px;">
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Client</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: 500;">${data.clientName}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Provider</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: 500;">${data.provider}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #666;">Time</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: 500;">${new Date().toLocaleString("en-GB")}</td>
+      </tr>
+    </table>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="https://v0-home-panel-v2.vercel.app/admin/enquiries/${data.enquiryId}" style="display: inline-block; background-color: #1a1a1a; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Review in Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    text: `
+Compliance Check Complete - ${data.caseReference}
+
+${checkLabel}: ${resultInfo.label}
+
+Client: ${data.clientName}
+Provider: ${data.provider}
+Time: ${new Date().toLocaleString("en-GB")}
+
+Review in dashboard: https://v0-home-panel-v2.vercel.app/admin/enquiries/${data.enquiryId}
+    `
+  }
+}
+
+// Onboarding complete notification to admin
+export function getOnboardingCompleteEmail(data: {
+  clientName: string
+  caseReference: string
+  enquiryId: string
+  completedSteps: string[]
+}) {
+  const stepsHtml = data.completedSteps.map(step => 
+    `<li style="margin-bottom: 8px; color: #059669;">&#10003; ${step}</li>`
+  ).join("")
+
+  return {
+    subject: `[Ready for Review] Onboarding Complete - ${data.caseReference}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fafaf8;">
+  <div style="background-color: white; border-radius: 24px; padding: 40px;">
+    
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="background-color: #ecfdf5; border-radius: 50%; width: 64px; height: 64px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 28px;">&#10003;</span>
+      </div>
+      <h1 style="font-size: 20px; font-weight: 600; margin: 0 0 8px;">Client Onboarding Complete</h1>
+      <p style="color: #666; margin: 0;">${data.caseReference}</p>
+    </div>
+
+    <p style="margin-bottom: 16px;"><strong>${data.clientName}</strong> has completed all onboarding steps:</p>
+
+    <ul style="background-color: #f8f8f6; border-radius: 12px; padding: 16px 16px 16px 36px; margin-bottom: 24px; list-style: none;">
+      ${stepsHtml}
+    </ul>
+
+    <p style="color: #666; font-size: 14px; margin-bottom: 24px;">This case is now ready for internal compliance review before being assigned to a conveyancing firm.</p>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="https://v0-home-panel-v2.vercel.app/admin/enquiries/${data.enquiryId}" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Review &amp; Approve</a>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    text: `
+Client Onboarding Complete - ${data.caseReference}
+
+${data.clientName} has completed all onboarding steps:
+${data.completedSteps.map(step => `- ${step}`).join("\n")}
+
+This case is now ready for internal compliance review before being assigned to a conveyancing firm.
+
+Review in dashboard: https://v0-home-panel-v2.vercel.app/admin/enquiries/${data.enquiryId}
+    `
+  }
+}
