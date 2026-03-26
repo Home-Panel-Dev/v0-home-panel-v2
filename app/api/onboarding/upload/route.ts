@@ -122,8 +122,7 @@ export async function POST(request: Request) {
       enquiryId: enquiry.id,
       actorType: "client",
       action: "document_uploaded",
-      description: `Document "${file.name}" uploaded during onboarding`,
-      metadata: { document_type: documentType, file_name: file.name }
+      description: `Document "${file.name}" (${documentType}) uploaded during onboarding`,
     }).catch(err => console.error("Activity log failed:", err))
 
     return NextResponse.json({

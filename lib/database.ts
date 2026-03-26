@@ -30,7 +30,6 @@ export async function logActivity({
   actorId,
   action,
   description,
-  metadata = {},
 }: {
   enquiryId?: string
   caseId?: string
@@ -38,10 +37,11 @@ export async function logActivity({
   actorId?: string
   action: ActivityAction
   description?: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown> // kept for API compatibility but not used
 }) {
   const adminClient = createAdminClient()
   
+  // Only insert columns that exist in the activity_log table
   const { error } = await adminClient.from("activity_log").insert({
     enquiry_id: enquiryId,
     case_id: caseId,
@@ -49,7 +49,6 @@ export async function logActivity({
     actor_id: actorId,
     action,
     description,
-    metadata,
   })
 
   if (error) {
