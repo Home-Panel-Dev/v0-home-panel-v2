@@ -23,7 +23,7 @@ import {
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
 import { EnquiryComplianceSection } from "@/components/admin/enquiry-compliance-section"
-import { FirmAssignmentPanel } from "@/components/admin/firm-assignment-panel"
+import { AssignFirmButton } from "@/components/admin/assign-firm-button"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
 import { formatCurrency, formatDateTime, formatDate, getTransactionLabel } from "@/lib/utils/format"
 
@@ -269,17 +269,6 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
             />
           )}
 
-          {/* Firm Assignment Section - Always visible */}
-          <FirmAssignmentPanel
-            enquiryId={enquiry.id}
-            assignedFirm={assignedFirm}
-            clientName={`${enquiry.first_name} ${enquiry.last_name}`}
-            clientEmail={enquiry.email}
-            caseReference={enquiry.case_reference || `HP-${enquiry.id.slice(0, 8).toUpperCase()}`}
-            propertyAddress={enquiry.property_address}
-            transactionType={enquiry.transaction_type}
-          />
-
           {/* Contact Details */}
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="border-b border-border py-4 px-6">
@@ -435,7 +424,11 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                   </Button>
                 </a>
               )}
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
+                <AssignFirmButton 
+                  enquiryId={enquiry.id}
+                  assignedFirm={assignedFirm}
+                />
                 <InviteClientButton 
                   enquiryId={enquiry.id}
                   clientName={`${enquiry.first_name} ${enquiry.last_name}`}
