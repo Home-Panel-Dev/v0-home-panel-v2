@@ -269,18 +269,16 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
             />
           )}
 
-          {/* Firm Assignment Section */}
-          {(enquiry.onboarding_status === "completed" || enquiry.internal_status === "approved_to_proceed") && (
-            <FirmAssignmentPanel
-              enquiryId={enquiry.id}
-              assignedFirm={assignedFirm}
-              clientName={`${enquiry.first_name} ${enquiry.last_name}`}
-              clientEmail={enquiry.email}
-              caseReference={enquiry.case_reference || `HP-${enquiry.id.slice(0, 8).toUpperCase()}`}
-              propertyAddress={enquiry.property_address}
-              transactionType={enquiry.transaction_type}
-            />
-          )}
+          {/* Firm Assignment Section - Always visible */}
+          <FirmAssignmentPanel
+            enquiryId={enquiry.id}
+            assignedFirm={assignedFirm}
+            clientName={`${enquiry.first_name} ${enquiry.last_name}`}
+            clientEmail={enquiry.email}
+            caseReference={enquiry.case_reference || `HP-${enquiry.id.slice(0, 8).toUpperCase()}`}
+            propertyAddress={enquiry.property_address}
+            transactionType={enquiry.transaction_type}
+          />
 
           {/* Contact Details */}
           <div className="bg-card border border-border rounded-xl overflow-hidden">
