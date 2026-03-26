@@ -31,6 +31,15 @@ interface ComplianceCheck {
   summary_json?: Record<string, unknown>
 }
 
+interface FirmBranding {
+  id: string
+  name: string
+  brand_color?: string
+  logo_url?: string
+  contact_email?: string
+  contact_phone?: string
+}
+
 interface EnquiryData {
   id: string
   first_name: string
@@ -41,6 +50,8 @@ interface EnquiryData {
   transaction_type: string
   case_reference: string
   onboarding_status: string
+  assigned_firm_id?: string
+  firm?: FirmBranding
   onboarding_data: {
     personal_details?: {
       date_of_birth?: string
@@ -353,18 +364,37 @@ export default function OnboardingPage() {
     )
   }
 
+  // Get firm branding colors
+  const firmColor = enquiry.firm?.brand_color || "#1a1a1a"
+  
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Header - with firm branding if available */}
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-              <svg className="w-4 h-4 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>
-            </div>
-            <span className="font-semibold text-sm">HomePanel</span>
+            {enquiry.firm?.logo_url ? (
+              <img 
+                src={enquiry.firm.logo_url} 
+                alt={enquiry.firm.name} 
+                className="h-8 w-auto object-contain"
+              />
+            ) : (
+              <>
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: firmColor }}
+                >
+                  <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  </svg>
+                </div>
+                <span className="font-semibold text-sm">{enquiry.firm?.name || "HomePanel"}</span>
+              </>
+            )}
+            {enquiry.firm?.logo_url && (
+              <span className="font-semibold text-sm">{enquiry.firm.name}</span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">

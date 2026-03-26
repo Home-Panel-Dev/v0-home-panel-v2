@@ -23,6 +23,7 @@ import {
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
 import { EnquiryComplianceSection } from "@/components/admin/enquiry-compliance-section"
+import { FirmAssignmentPanel } from "@/components/admin/firm-assignment-panel"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
 import { formatCurrency, formatDateTime, formatDate, getTransactionLabel } from "@/lib/utils/format"
 
@@ -69,10 +70,10 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
     notFound()
   }
 
-  // Fetch compliance checks and documents
+  // Fetch compliance checks, documents, and firm data
   const adminClient = createAdminClient()
   
-  const [complianceResult, documentsResult] = await Promise.all([
+  const [complianceResult, documentsResult, firmResult] = await Promise.all([
     adminClient
       .from("compliance_checks")
       .select("*")
@@ -80,11 +81,19 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
     adminClient
       .from("documents")
       .select("*")
-      .eq("enquiry_id", id)
+      .eq("enquiry_id", id),
+    enquiry.assigned_firm_id 
+      ? adminClient
+          .from("firms")
+          .select("id, name, brand_color, logo_url, contact_email, contact_phone, sra_number")
+          .eq("id", enquiry.assigned_firm_id)
+          .single()
+      : Promise.resolve({ data: null })
   ])
 
   const complianceChecks = complianceResult.data || []
   const documents = documentsResult.data || []
+  const assignedFirm = firmResult.data
 
   const onboardingData = enquiry.onboarding_data as OnboardingData | null
 
@@ -257,6 +266,19 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
               complianceChecks={complianceChecks}
               documents={documents}
               internalStatus={enquiry.internal_status || "awaiting_client"}
+            />
+          )}
+
+          {/* Firm Assignment Section */}
+          {(enquiry.onboarding_status === "completed" || enquiry.internal_status === "approved_to_proceed") && (
+            <FirmAssignmentPanel
+              enquiryId={enquiry.id}
+              assignedFirm={assignedFirm}
+              clientName={`${enquiry.first_name} ${enquiry.last_name}`}
+              clientEmail={enquiry.email}
+              caseReference={enquiry.case_reference || `HP-${enquiry.id.slice(0, 8).toUpperCase()}`}
+              propertyAddress={enquiry.property_address}
+              transactionType={enquiry.transaction_type}
             />
           )}
 
