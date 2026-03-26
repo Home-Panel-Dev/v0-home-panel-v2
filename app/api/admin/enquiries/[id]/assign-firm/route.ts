@@ -46,10 +46,11 @@ export async function POST(
       return NextResponse.json({ error: "Firm not found" }, { status: 404 })
     }
     
-    // Update the enquiry
+    // Update the enquiry - set both columns for compatibility
     const { data: updatedEnquiry, error: updateError } = await adminClient
       .from("enquiries")
       .update({
+        assigned_firm_id: firmId,
         firm_id: firmId,
         firm_assigned_at: new Date().toISOString(),
       })
@@ -62,15 +63,14 @@ export async function POST(
       return NextResponse.json({ error: "Failed to assign firm" }, { status: 500 })
     }
     
-    // Log activity
-    await logActivity({
+    // Log activity (non-blocking)
+    logActivity({
       enquiryId,
       actorType: "admin",
       actorId: user.id,
       action: "firm_assigned",
       description: `Firm assigned: ${firm.name}`,
-      metadata: { firm_id: firmId, firm_name: firm.name },
-    })
+    }).catch(err => console.error("Activity log failed:", err))
     
     return NextResponse.json({ 
       success: true, 
