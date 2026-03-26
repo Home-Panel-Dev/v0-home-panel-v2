@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Building2,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
@@ -28,6 +29,7 @@ interface Profile {
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: Home },
   { name: "Enquiries", href: "/admin/enquiries", icon: FileText },
+  { name: "Firms", href: "/admin/firms", icon: Building2 },
 ]
 
 export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profile | null }) {
@@ -207,6 +209,8 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
               <span className="font-medium">
                 {pathname.includes("/enquiries/") ? "Enquiry Details" : 
                  pathname === "/admin/enquiries" ? "Enquiries" :
+                 pathname.includes("/firms/") ? "Firm Details" :
+                 pathname === "/admin/firms" ? "Firms" :
                  pathname.split("/").pop()?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
               </span>
             </>
