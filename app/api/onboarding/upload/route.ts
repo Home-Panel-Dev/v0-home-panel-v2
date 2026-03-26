@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import { createClient } from "@supabase/supabase-js"
-import { logActivity } from "@/lib/database"
 
 export async function POST(request: Request) {
+  console.log("[v0] Upload API called")
+  
   try {
     // Check environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing Supabase environment variables")
+      console.error("[v0] Missing Supabase environment variables")
       return NextResponse.json(
         { error: "Server configuration error" },
         { status: 500 }
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     if (!blobToken) {
-      console.error("Missing BLOB_READ_WRITE_TOKEN")
+      console.error("[v0] Missing BLOB_READ_WRITE_TOKEN")
       return NextResponse.json(
         { error: "Storage not configured" },
         { status: 500 }
@@ -32,6 +33,8 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File
     const token = formData.get("token") as string
     const documentType = formData.get("documentType") as string || "other"
+
+    console.log("[v0] Upload request:", { fileName: file?.name, hasToken: !!token, documentType })
 
     if (!file || !token) {
       return NextResponse.json(
@@ -48,12 +51,14 @@ export async function POST(request: Request) {
       .single()
 
     if (fetchError || !enquiry) {
-      console.error("Token lookup failed:", fetchError)
+      console.error("[v0] Token lookup failed:", fetchError)
       return NextResponse.json(
         { error: "Invalid token" },
         { status: 404 }
       )
     }
+
+    console.log("[v0] Enquiry found:", enquiry.id)
 
     // Upload to Vercel Blob
     let blob
@@ -63,67 +68,53 @@ export async function POST(request: Request) {
         file, 
         { access: "public" }
       )
+      console.log("[v0] Blob uploaded:", blob.url)
     } catch (blobError) {
-      console.error("Blob upload failed:", blobError)
+      console.error("[v0] Blob upload failed:", blobError)
       return NextResponse.json(
         { error: "File upload failed" },
         { status: 500 }
       )
     }
 
-    // Create document record in database
-    // Use column names that match the actual schema
-    const documentData = {
-      enquiry_id: enquiry.id,
-      name: file.name, // Try 'name' first (from earlier simplified schema)
-      file_type: file.type,
-      file_url: blob.url,
-      file_size: file.size,
-      document_type: documentType,
-      status: "pending",
-      uploaded_by: `${enquiry.first_name} ${enquiry.last_name}`,
-    }
-
+    // Create document record in database - try simple insert first
     const { data: document, error: insertError } = await supabase
       .from("documents")
-      .insert(documentData)
+      .insert({
+        enquiry_id: enquiry.id,
+        name: file.name,
+        file_name: file.name,
+        file_type: file.type,
+        mime_type: file.type,
+        file_url: blob.url,
+        file_size: file.size,
+        document_type: documentType,
+        status: "pending",
+        review_status: "pending_review",
+        uploaded_by: `${enquiry.first_name} ${enquiry.last_name}`,
+        uploaded_by_type: "client",
+      })
       .select()
       .single()
 
     if (insertError) {
-      console.error("Document record insert failed:", insertError)
-      // Try alternate column names if first attempt fails
-      const altDocumentData = {
-        enquiry_id: enquiry.id,
-        file_name: file.name,
-        file_url: blob.url,
-        file_size: file.size,
-        mime_type: file.type,
-        document_type: documentType,
-        review_status: "pending_review",
-        uploaded_by_type: "client",
-        uploaded_by_id: token,
-      }
-      
-      const { data: altDoc, error: altError } = await supabase
-        .from("documents")
-        .insert(altDocumentData)
-        .select()
-        .single()
-        
-      if (altError) {
-        console.error("Alt document insert also failed:", altError)
-        // Still return success since blob was uploaded
-      }
+      console.error("[v0] Document insert error:", insertError)
+      // Don't fail - the blob was uploaded successfully
+    } else {
+      console.log("[v0] Document record created:", document?.id)
     }
 
-    // Log activity (non-blocking)
-    logActivity({
-      enquiryId: enquiry.id,
-      actorType: "client",
+    // Log activity without blocking (ignore errors)
+    supabase.from("activity_log").insert({
+      enquiry_id: enquiry.id,
+      actor_type: "client",
       action: "document_uploaded",
-      description: `Document "${file.name}" (${documentType}) uploaded during onboarding`,
-    }).catch(err => console.error("Activity log failed:", err))
+      description: `Document "${file.name}" (${documentType}) uploaded`,
+    }).then(() => {
+      console.log("[v0] Activity logged")
+    }).catch(err => {
+      console.error("[v0] Activity log failed (non-blocking):", err)
+    })
 
     return NextResponse.json({
       success: true,
@@ -132,7 +123,7 @@ export async function POST(request: Request) {
       documentId: document?.id,
     })
   } catch (err) {
-    console.error("Upload error:", err)
+    console.error("[v0] Upload error:", err)
     return NextResponse.json(
       { error: "Upload failed" },
       { status: 500 }
