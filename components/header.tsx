@@ -23,11 +23,7 @@ export function Header() {
         <nav className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-              <svg className="w-4 h-4 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>
-            </div>
+            <img src="/logo.svg" alt="HomePanel" className="w-8 h-8" />
             <span className="font-semibold text-base tracking-tight">HomePanel</span>
           </Link>
 

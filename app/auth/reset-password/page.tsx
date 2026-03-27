@@ -73,11 +73,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex items-center gap-2.5 mb-12">
-          <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
-            <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            </svg>
-          </div>
+          <img src="/logo.svg" alt="HomePanel" className="w-9 h-9" />
           <span className="text-lg font-semibold tracking-tight">HomePanel</span>
         </div>
 

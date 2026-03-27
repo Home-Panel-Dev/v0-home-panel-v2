@@ -102,7 +102,7 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
     
     <!-- Logo -->
     <div style="text-align: center; margin-bottom: 32px;">
-      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+      <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
     </div>
 
     <!-- Heading -->
@@ -260,7 +260,7 @@ export function getOnboardingInviteEmail(data: {
   <div style="background-color: white; border-radius: 24px; padding: 40px;">
     
     <div style="text-align: center; margin-bottom: 32px;">
-      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+      <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
     </div>
 
     <div style="text-align: center; margin-bottom: 32px;">
@@ -362,7 +362,7 @@ export function getStatusUpdateEmail(data: {
   <div style="background-color: white; border-radius: 24px; padding: 40px;">
     
     <div style="text-align: center; margin-bottom: 32px;">
-      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+      <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
     </div>
 
     <div style="text-align: center; margin-bottom: 32px;">
@@ -430,7 +430,7 @@ export function getDocumentRequestEmail(data: {
   <div style="background-color: white; border-radius: 24px; padding: 40px;">
     
     <div style="text-align: center; margin-bottom: 32px;">
-      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+      <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
     </div>
 
     <div style="text-align: center; margin-bottom: 32px;">
@@ -507,7 +507,7 @@ export function getInternalAlertEmail(data: EnquiryFormData) {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
   <div style="text-align: center; margin-bottom: 40px;">
-    <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+    <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
     <h1 style="margin: 16px 0 0; font-size: 24px; font-weight: 600;">New Enquiry</h1>
     <p style="margin: 8px 0 0; font-size: 32px; font-weight: 700; color: #059669;">£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</p>
   </div>
@@ -691,7 +691,7 @@ export function getComplianceCompletionEmail(data: {
   <div style="background-color: white; border-radius: 24px; padding: 40px;">
     
     <div style="text-align: center; margin-bottom: 24px;">
-      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+      <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
     </div>
 
     <div style="text-align: center; margin-bottom: 32px;">
@@ -764,7 +764,7 @@ export function getOnboardingCompleteEmail(data: {
   <div style="background-color: white; border-radius: 24px; padding: 40px;">
     
     <div style="text-align: center; margin-bottom: 24px;">
-      <div style="display: inline-block; background-color: #1a1a1a; color: white; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-weight: 600; font-size: 18px;">H</div>
+      <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
     </div>
 
     <div style="text-align: center; margin-bottom: 32px;">

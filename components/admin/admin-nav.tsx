@@ -65,11 +65,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
           <Menu className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2 ml-3">
-          <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center">
-            <svg className="w-4 h-4 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            </svg>
-          </div>
+          <img src="/logo.svg" alt="HomePanel" className="w-7 h-7" />
           <span className="font-semibold text-sm">HomePanel</span>
         </div>
       </header>
@@ -81,11 +77,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
           <div className="fixed inset-y-0 left-0 w-72 bg-card border-r border-border">
             <div className="flex items-center justify-between h-14 px-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center">
-                  <svg className="w-4 h-4 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                  </svg>
-                </div>
+                <img src="/logo.svg" alt="HomePanel" className="w-7 h-7" />
                 <span className="font-semibold text-sm">HomePanel</span>
               </div>
               <button onClick={() => setMobileMenuOpen(false)} className="p-2 -mr-2 text-muted-foreground">
@@ -131,11 +123,7 @@ export function AdminNav({ user, profile }: { user: SupabaseUser; profile: Profi
         <div className="flex flex-col items-center py-4 h-full">
           {/* Logo */}
           <Link href="/admin" className="mb-8">
-            <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
-              <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>
-            </div>
+            <img src="/logo.svg" alt="HomePanel" className="w-9 h-9" />
           </Link>
 
           {/* Navigation */}
