@@ -2,48 +2,90 @@ import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import { createClient } from "@supabase/supabase-js"
 
+// Max file size: 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+// Allowed file types
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg", 
+  "image/png",
+]
+
 export async function POST(request: Request) {
-  console.log("[v0] Upload API called")
-  
   try {
-    // Check environment variables
+    // 1. Check environment variables first
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("[v0] Missing Supabase environment variables")
+      console.error("Missing Supabase environment variables")
       return NextResponse.json(
-        { error: "Server configuration error" },
+        { error: "Upload service not configured" },
         { status: 500 }
       )
     }
 
     if (!blobToken) {
-      console.error("[v0] Missing BLOB_READ_WRITE_TOKEN")
+      console.error("Missing BLOB_READ_WRITE_TOKEN")
       return NextResponse.json(
-        { error: "Storage not configured" },
+        { error: "Upload service not configured" },
         { status: 500 }
       )
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    const formData = await request.formData()
-    const file = formData.get("file") as File
-    const token = formData.get("token") as string
-    const documentType = formData.get("documentType") as string || "other"
-
-    console.log("[v0] Upload request:", { fileName: file?.name, hasToken: !!token, documentType })
-
-    if (!file || !token) {
+    // 2. Parse form data
+    let formData: FormData
+    try {
+      formData = await request.formData()
+    } catch {
       return NextResponse.json(
-        { error: "Missing file or token" },
+        { error: "Invalid request format" },
         { status: 400 }
       )
     }
 
-    // Verify token and get enquiry
+    const file = formData.get("file") as File | null
+    const token = formData.get("token") as string | null
+    const documentType = (formData.get("documentType") as string) || "other"
+
+    // 3. Validate inputs
+    if (!file) {
+      return NextResponse.json(
+        { error: "No file provided" },
+        { status: 400 }
+      )
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Missing authentication token" },
+        { status: 400 }
+      )
+    }
+
+    // 4. Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File too large (max 10MB)" },
+        { status: 400 }
+      )
+    }
+
+    // 5. Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Unsupported file type. Please upload PDF, JPEG, or PNG files." },
+        { status: 400 }
+      )
+    }
+
+    // 6. Initialize Supabase with service role
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // 7. Verify token and get enquiry
     const { data: enquiry, error: fetchError } = await supabase
       .from("enquiries")
       .select("id, first_name, last_name")
@@ -51,81 +93,62 @@ export async function POST(request: Request) {
       .single()
 
     if (fetchError || !enquiry) {
-      console.error("[v0] Token lookup failed:", fetchError)
+      console.error("Token lookup failed:", fetchError)
       return NextResponse.json(
-        { error: "Invalid token" },
+        { error: "Invalid or expired token" },
         { status: 404 }
       )
     }
 
-    console.log("[v0] Enquiry found:", enquiry.id)
+    // 8. Generate unique filename
+    const timestamp = Date.now()
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
+    const path = `onboarding/${enquiry.id}/${timestamp}-${safeName}`
 
-    // Upload to Vercel Blob
+    // 9. Upload to Vercel Blob
     let blob
     try {
-      blob = await put(
-        `onboarding/${enquiry.id}/${Date.now()}-${file.name}`, 
-        file, 
-        { access: "public" }
-      )
-      console.log("[v0] Blob uploaded:", blob.url)
+      blob = await put(path, file, {
+        access: "public",
+      })
     } catch (blobError) {
-      console.error("[v0] Blob upload failed:", blobError)
+      console.error("Blob upload failed:", blobError)
       return NextResponse.json(
-        { error: "File upload failed" },
+        { error: "File upload failed. Please try again." },
         { status: 500 }
       )
     }
 
-    // Create document record in database - try simple insert first
-    const { data: document, error: insertError } = await supabase
-      .from("documents")
-      .insert({
-        enquiry_id: enquiry.id,
-        name: file.name,
-        file_name: file.name,
-        file_type: file.type,
-        mime_type: file.type,
-        file_url: blob.url,
-        file_size: file.size,
-        document_type: documentType,
-        status: "pending",
-        review_status: "pending_review",
-        uploaded_by: `${enquiry.first_name} ${enquiry.last_name}`,
-        uploaded_by_type: "client",
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error("[v0] Document insert error:", insertError)
-      // Don't fail - the blob was uploaded successfully
-    } else {
-      console.log("[v0] Document record created:", document?.id)
+    // 10. Save document record to database (non-blocking on failure)
+    const documentRecord = {
+      enquiry_id: enquiry.id,
+      name: file.name,
+      file_url: blob.url,
+      file_size: file.size,
+      document_type: documentType,
+      status: "pending",
     }
 
-    // Log activity without blocking (ignore errors)
-    supabase.from("activity_log").insert({
-      enquiry_id: enquiry.id,
-      actor_type: "client",
-      action: "document_uploaded",
-      description: `Document "${file.name}" (${documentType}) uploaded`,
-    }).then(() => {
-      console.log("[v0] Activity logged")
-    }).catch(err => {
-      console.error("[v0] Activity log failed (non-blocking):", err)
-    })
+    const { error: insertError } = await supabase
+      .from("documents")
+      .insert(documentRecord)
 
+    if (insertError) {
+      // Log but don't fail - the file is already uploaded successfully
+      console.error("Document record insert failed:", insertError)
+    }
+
+    // 11. Return success
     return NextResponse.json({
       success: true,
       url: blob.url,
       filename: file.name,
-      documentId: document?.id,
     })
+
   } catch (err) {
-    console.error("[v0] Upload error:", err)
+    console.error("Upload error:", err)
     return NextResponse.json(
-      { error: "Upload failed" },
+      { error: "Upload failed. Please try again." },
       { status: 500 }
     )
   }
