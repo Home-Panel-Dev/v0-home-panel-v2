@@ -37,6 +37,7 @@ export async function GET(
         case_reference, 
         onboarding_status, 
         onboarding_data,
+        assigned_firm_id,
         created_at
       `)
       .eq("onboarding_token", token)
@@ -67,9 +68,21 @@ export async function GET(
       .select("id, check_type, provider, status, completed_at, summary_json")
       .eq("enquiry_id", enquiry.id)
 
+    // Fetch firm data if assigned
+    let firmData = null
+    if (enquiry.assigned_firm_id) {
+      const { data: firm } = await supabase
+        .from("firms")
+        .select("id, name, brand_color, logo_url, contact_email, contact_phone")
+        .eq("id", enquiry.assigned_firm_id)
+        .single()
+      firmData = firm
+    }
+
     return NextResponse.json({ 
       enquiry: {
         ...enquiry,
+        firm: firmData,
         compliance_checks: complianceChecks || []
       }
     })

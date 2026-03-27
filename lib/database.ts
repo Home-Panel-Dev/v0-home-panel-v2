@@ -22,38 +22,42 @@ export type ActivityAction =
   | "note_added"
   | "email_sent"
 
-// Log activity
+// Log activity - simplified to only use columns that exist in the table
 export async function logActivity({
   enquiryId,
-  caseId,
   actorType,
   actorId,
   action,
   description,
-  metadata = {},
 }: {
   enquiryId?: string
-  caseId?: string
+  caseId?: string // kept for API compatibility but not used
   actorType: "system" | "admin" | "client"
   actorId?: string
   action: ActivityAction
   description?: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown> // kept for API compatibility but not used
 }) {
-  const adminClient = createAdminClient()
-  
-  const { error } = await adminClient.from("activity_log").insert({
-    enquiry_id: enquiryId,
-    case_id: caseId,
-    actor_type: actorType,
-    actor_id: actorId,
-    action,
-    description,
-    metadata,
-  })
+  try {
+    const adminClient = createAdminClient()
+    
+    // Only insert columns that exist in the activity_log table
+    // Based on errors, the table only has: enquiry_id, actor_type, actor_id, action, description
+    const { error } = await adminClient.from("activity_log").insert({
+      enquiry_id: enquiryId,
+      actor_type: actorType,
+      actor_id: actorId,
+      action,
+      description,
+    })
 
-  if (error) {
-    console.error("[v0] Failed to log activity:", error)
+    if (error) {
+      // Log but don't throw - activity logging should never break the main flow
+      console.error("[v0] Activity log insert failed:", error.message)
+    }
+  } catch (err) {
+    // Catch any unexpected errors
+    console.error("[v0] Activity logging error:", err)
   }
 }
 

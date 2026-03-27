@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import { createClient } from "@supabase/supabase-js"
-import { logActivity } from "@/lib/database"
+
+// Max file size: 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+// Allowed file types
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg", 
+  "image/png",
+]
 
 export async function POST(request: Request) {
   try {
-    // Check environment variables
+    // 1. Check environment variables first
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN
@@ -13,7 +23,7 @@ export async function POST(request: Request) {
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Missing Supabase environment variables")
       return NextResponse.json(
-        { error: "Server configuration error" },
+        { error: "Upload service not configured" },
         { status: 500 }
       )
     }
@@ -21,26 +31,61 @@ export async function POST(request: Request) {
     if (!blobToken) {
       console.error("Missing BLOB_READ_WRITE_TOKEN")
       return NextResponse.json(
-        { error: "Storage not configured" },
+        { error: "Upload service not configured" },
         { status: 500 }
       )
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    const formData = await request.formData()
-    const file = formData.get("file") as File
-    const token = formData.get("token") as string
-    const documentType = formData.get("documentType") as string || "other"
-
-    if (!file || !token) {
+    // 2. Parse form data
+    let formData: FormData
+    try {
+      formData = await request.formData()
+    } catch {
       return NextResponse.json(
-        { error: "Missing file or token" },
+        { error: "Invalid request format" },
         { status: 400 }
       )
     }
 
-    // Verify token and get enquiry
+    const file = formData.get("file") as File | null
+    const token = formData.get("token") as string | null
+    const documentType = (formData.get("documentType") as string) || "other"
+
+    // 3. Validate inputs
+    if (!file) {
+      return NextResponse.json(
+        { error: "No file provided" },
+        { status: 400 }
+      )
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Missing authentication token" },
+        { status: 400 }
+      )
+    }
+
+    // 4. Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File too large (max 10MB)" },
+        { status: 400 }
+      )
+    }
+
+    // 5. Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Unsupported file type. Please upload PDF, JPEG, or PNG files." },
+        { status: 400 }
+      )
+    }
+
+    // 6. Initialize Supabase with service role
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // 7. Verify token and get enquiry
     const { data: enquiry, error: fetchError } = await supabase
       .from("enquiries")
       .select("id, first_name, last_name")
@@ -48,94 +93,84 @@ export async function POST(request: Request) {
       .single()
 
     if (fetchError || !enquiry) {
-      console.error("Token lookup failed:", fetchError)
       return NextResponse.json(
-        { error: "Invalid token" },
+        { error: "Invalid or expired token" },
         { status: 404 }
       )
     }
 
-    // Upload to Vercel Blob
+    // 8. Generate unique filename
+    const timestamp = Date.now()
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
+    const path = `onboarding/${enquiry.id}/${timestamp}-${safeName}`
+
+    // 9. Upload to Vercel Blob
+    // Try public first (most common), fall back to private if needed
     let blob
     try {
-      blob = await put(
-        `onboarding/${enquiry.id}/${Date.now()}-${file.name}`, 
-        file, 
-        { access: "public" }
-      )
-    } catch (blobError) {
-      console.error("Blob upload failed:", blobError)
-      return NextResponse.json(
-        { error: "File upload failed" },
-        { status: 500 }
-      )
+      console.log("[v0] Attempting blob upload to path:", path)
+      blob = await put(path, file, {
+        access: "public",
+      })
+      console.log("[v0] Blob upload success:", blob.url)
+    } catch (blobError: unknown) {
+      const errorMessage = blobError instanceof Error ? blobError.message : String(blobError)
+      console.error("[v0] Blob upload failed:", errorMessage)
+      
+      // If public fails, try private
+      try {
+        console.log("[v0] Retrying with private access")
+        blob = await put(path, file, {
+          access: "private",
+        })
+        console.log("[v0] Private blob upload success")
+      } catch (privateBlobError: unknown) {
+        const privateErrorMessage = privateBlobError instanceof Error ? privateBlobError.message : String(privateBlobError)
+        console.error("[v0] Private blob upload also failed:", privateErrorMessage)
+        return NextResponse.json(
+          { error: `File upload failed: ${privateErrorMessage}` },
+          { status: 500 }
+        )
+      }
     }
 
-    // Create document record in database
-    // Use column names that match the actual schema
-    const documentData = {
+    // 10. Save document record to database (non-blocking on failure)
+    // Use blob.url directly for public blobs
+    const fileUrl = blob.url
+    
+    const documentRecord = {
       enquiry_id: enquiry.id,
-      name: file.name, // Try 'name' first (from earlier simplified schema)
-      file_type: file.type,
-      file_url: blob.url,
+      name: file.name,
+      file_url: fileUrl,
       file_size: file.size,
       document_type: documentType,
       status: "pending",
-      uploaded_by: `${enquiry.first_name} ${enquiry.last_name}`,
     }
 
-    const { data: document, error: insertError } = await supabase
+    console.log("[v0] Inserting document record for enquiry:", enquiry.id)
+    const { error: insertError } = await supabase
       .from("documents")
-      .insert(documentData)
-      .select()
-      .single()
+      .insert(documentRecord)
 
     if (insertError) {
-      console.error("Document record insert failed:", insertError)
-      // Try alternate column names if first attempt fails
-      const altDocumentData = {
-        enquiry_id: enquiry.id,
-        file_name: file.name,
-        file_url: blob.url,
-        file_size: file.size,
-        mime_type: file.type,
-        document_type: documentType,
-        review_status: "pending_review",
-        uploaded_by_type: "client",
-        uploaded_by_id: token,
-      }
-      
-      const { data: altDoc, error: altError } = await supabase
-        .from("documents")
-        .insert(altDocumentData)
-        .select()
-        .single()
-        
-      if (altError) {
-        console.error("Alt document insert also failed:", altError)
-        // Still return success since blob was uploaded
-      }
+      // Log but don't fail - the file is already uploaded successfully
+      console.error("[v0] Document record insert failed:", insertError.message)
+    } else {
+      console.log("[v0] Document record saved successfully")
     }
 
-    // Log activity (non-blocking)
-    logActivity({
-      enquiryId: enquiry.id,
-      actorType: "client",
-      action: "document_uploaded",
-      description: `Document "${file.name}" uploaded during onboarding`,
-      metadata: { document_type: documentType, file_name: file.name }
-    }).catch(err => console.error("Activity log failed:", err))
-
+    // 11. Return success
+    console.log("[v0] Upload complete, returning success")
     return NextResponse.json({
       success: true,
-      url: blob.url,
+      url: fileUrl,
       filename: file.name,
-      documentId: document?.id,
     })
+
   } catch (err) {
     console.error("Upload error:", err)
     return NextResponse.json(
-      { error: "Upload failed" },
+      { error: "Upload failed. Please try again." },
       { status: 500 }
     )
   }

@@ -23,6 +23,7 @@ import {
 import { InviteClientButton } from "@/components/admin/invite-client-button"
 import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
 import { EnquiryComplianceSection } from "@/components/admin/enquiry-compliance-section"
+import { AssignFirmButton } from "@/components/admin/assign-firm-button"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
 import { formatCurrency, formatDateTime, formatDate, getTransactionLabel } from "@/lib/utils/format"
 
@@ -69,10 +70,10 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
     notFound()
   }
 
-  // Fetch compliance checks and documents
+  // Fetch compliance checks, documents, and firm data
   const adminClient = createAdminClient()
   
-  const [complianceResult, documentsResult] = await Promise.all([
+  const [complianceResult, documentsResult, firmResult] = await Promise.all([
     adminClient
       .from("compliance_checks")
       .select("*")
@@ -80,11 +81,19 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
     adminClient
       .from("documents")
       .select("*")
-      .eq("enquiry_id", id)
+      .eq("enquiry_id", id),
+    enquiry.assigned_firm_id 
+      ? adminClient
+          .from("firms")
+          .select("id, name, brand_color, logo_url, contact_email, contact_phone, sra_number")
+          .eq("id", enquiry.assigned_firm_id)
+          .single()
+      : Promise.resolve({ data: null })
   ])
 
   const complianceChecks = complianceResult.data || []
   const documents = documentsResult.data || []
+  const assignedFirm = firmResult.data
 
   const onboardingData = enquiry.onboarding_data as OnboardingData | null
 
@@ -415,7 +424,11 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
                   </Button>
                 </a>
               )}
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
+                <AssignFirmButton 
+                  enquiryId={enquiry.id}
+                  assignedFirm={assignedFirm}
+                />
                 <InviteClientButton 
                   enquiryId={enquiry.id}
                   clientName={`${enquiry.first_name} ${enquiry.last_name}`}
