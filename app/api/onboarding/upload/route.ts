@@ -14,18 +14,14 @@ const ALLOWED_TYPES = [
 ]
 
 export async function POST(request: Request) {
-  console.log("[v0] Upload API called")
-  
   try {
     // 1. Check environment variables first
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN
 
-    console.log("[v0] Env check - Supabase:", !!supabaseUrl, "Blob:", !!blobToken)
-
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("[v0] Missing Supabase environment variables")
+      console.error("Missing Supabase environment variables")
       return NextResponse.json(
         { error: "Upload service not configured" },
         { status: 500 }
@@ -33,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     if (!blobToken) {
-      console.error("[v0] Missing BLOB_READ_WRITE_TOKEN")
+      console.error("Missing BLOB_READ_WRITE_TOKEN")
       return NextResponse.json(
         { error: "Upload service not configured" },
         { status: 500 }
@@ -90,7 +86,6 @@ export async function POST(request: Request) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // 7. Verify token and get enquiry
-    console.log("[v0] Looking up token:", token.slice(0, 8) + "...")
     const { data: enquiry, error: fetchError } = await supabase
       .from("enquiries")
       .select("id, first_name, last_name")
@@ -98,29 +93,25 @@ export async function POST(request: Request) {
       .single()
 
     if (fetchError || !enquiry) {
-      console.error("[v0] Token lookup failed:", fetchError?.message)
       return NextResponse.json(
         { error: "Invalid or expired token" },
         { status: 404 }
       )
     }
-    console.log("[v0] Found enquiry:", enquiry.id)
 
     // 8. Generate unique filename
     const timestamp = Date.now()
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
     const path = `onboarding/${enquiry.id}/${timestamp}-${safeName}`
 
-    // 9. Upload to Vercel Blob
-    console.log("[v0] Uploading to Blob:", path)
+    // 9. Upload to Vercel Blob (private store)
     let blob
     try {
       blob = await put(path, file, {
-        access: "public",
+        access: "private",
       })
-      console.log("[v0] Blob upload successful:", blob.url)
     } catch (blobError) {
-      console.error("[v0] Blob upload failed:", blobError)
+      console.error("Blob upload failed:", blobError)
       return NextResponse.json(
         { error: "File upload failed. Please try again." },
         { status: 500 }
@@ -128,32 +119,32 @@ export async function POST(request: Request) {
     }
 
     // 10. Save document record to database (non-blocking on failure)
+    // For private blobs, store the pathname instead of URL
+    const fileUrl = `/api/files?pathname=${encodeURIComponent(blob.pathname)}`
+    
     const documentRecord = {
       enquiry_id: enquiry.id,
       name: file.name,
-      file_url: blob.url,
+      file_url: fileUrl,
       file_size: file.size,
       document_type: documentType,
       status: "pending",
     }
 
-    console.log("[v0] Inserting document record")
     const { error: insertError } = await supabase
       .from("documents")
       .insert(documentRecord)
 
     if (insertError) {
       // Log but don't fail - the file is already uploaded successfully
-      console.error("[v0] Document record insert failed:", insertError.message)
-    } else {
-      console.log("[v0] Document record saved")
+      console.error("Document record insert failed:", insertError.message)
     }
 
     // 11. Return success
-    console.log("[v0] Upload complete, returning success")
     return NextResponse.json({
       success: true,
-      url: blob.url,
+      url: fileUrl,
+      pathname: blob.pathname,
       filename: file.name,
     })
 
