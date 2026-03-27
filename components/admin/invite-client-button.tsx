@@ -47,7 +47,7 @@ export function InviteClientButton({ enquiryId, clientName, currentStatus }: Inv
   }
 
   // Already onboarding or beyond
-  if (["onboarding", "active", "completed"].includes(currentStatus)) {
+  if (["onboarding_invited", "onboarding", "active", "completed"].includes(currentStatus)) {
     return (
       <Button 
         disabled 
