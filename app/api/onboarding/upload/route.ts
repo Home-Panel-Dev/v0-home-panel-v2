@@ -104,23 +104,39 @@ export async function POST(request: Request) {
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
     const path = `onboarding/${enquiry.id}/${timestamp}-${safeName}`
 
-    // 9. Upload to Vercel Blob (private store)
+    // 9. Upload to Vercel Blob
+    // Try public first (most common), fall back to private if needed
     let blob
     try {
+      console.log("[v0] Attempting blob upload to path:", path)
       blob = await put(path, file, {
-        access: "private",
+        access: "public",
       })
-    } catch (blobError) {
-      console.error("Blob upload failed:", blobError)
-      return NextResponse.json(
-        { error: "File upload failed. Please try again." },
-        { status: 500 }
-      )
+      console.log("[v0] Blob upload success:", blob.url)
+    } catch (blobError: unknown) {
+      const errorMessage = blobError instanceof Error ? blobError.message : String(blobError)
+      console.error("[v0] Blob upload failed:", errorMessage)
+      
+      // If public fails, try private
+      try {
+        console.log("[v0] Retrying with private access")
+        blob = await put(path, file, {
+          access: "private",
+        })
+        console.log("[v0] Private blob upload success")
+      } catch (privateBlobError: unknown) {
+        const privateErrorMessage = privateBlobError instanceof Error ? privateBlobError.message : String(privateBlobError)
+        console.error("[v0] Private blob upload also failed:", privateErrorMessage)
+        return NextResponse.json(
+          { error: `File upload failed: ${privateErrorMessage}` },
+          { status: 500 }
+        )
+      }
     }
 
     // 10. Save document record to database (non-blocking on failure)
-    // For private blobs, store the pathname instead of URL
-    const fileUrl = `/api/files?pathname=${encodeURIComponent(blob.pathname)}`
+    // Use blob.url directly for public blobs
+    const fileUrl = blob.url
     
     const documentRecord = {
       enquiry_id: enquiry.id,
@@ -131,20 +147,23 @@ export async function POST(request: Request) {
       status: "pending",
     }
 
+    console.log("[v0] Inserting document record for enquiry:", enquiry.id)
     const { error: insertError } = await supabase
       .from("documents")
       .insert(documentRecord)
 
     if (insertError) {
       // Log but don't fail - the file is already uploaded successfully
-      console.error("Document record insert failed:", insertError.message)
+      console.error("[v0] Document record insert failed:", insertError.message)
+    } else {
+      console.log("[v0] Document record saved successfully")
     }
 
     // 11. Return success
+    console.log("[v0] Upload complete, returning success")
     return NextResponse.json({
       success: true,
       url: fileUrl,
-      pathname: blob.pathname,
       filename: file.name,
     })
 
