@@ -16,25 +16,74 @@ export async function GET(request: NextRequest) {
   const caseId = searchParams.get("caseId")
 
   const adminClient = createAdminClient()
-  let query = adminClient.from("case_property_transaction").select("*")
 
+  // Try dedicated table first
+  try {
+    let query = adminClient.from("case_property_transaction").select("*")
+    if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    if (caseId) query = query.eq("case_id", caseId)
+
+    const { data, error } = await query.maybeSingle()
+    if (!error && data) {
+      return NextResponse.json({ data })
+    }
+  } catch {
+    // Table doesn't exist
+  }
+
+  // Fallback: get from enquiries/cases table
   if (enquiryId) {
-    query = query.eq("enquiry_id", enquiryId)
+    const { data: enquiry } = await adminClient
+      .from("enquiries")
+      .select("property_address, transaction_type, property_value, property_transaction_data")
+      .eq("id", enquiryId)
+      .single()
+
+    if (enquiry) {
+      const txData = enquiry.property_transaction_data as Record<string, unknown> || {}
+      return NextResponse.json({
+        data: {
+          transaction_type: enquiry.transaction_type || "sale",
+          property_details: enquiry.property_address || "",
+          amount: enquiry.property_value || 0,
+          holding_type: txData.holding_type || "freehold",
+          property_number: txData.property_number || "",
+          postcode: txData.postcode || "",
+          street_no: txData.street_no || "",
+          street: txData.street || "",
+          district: txData.district || "",
+          town: txData.town || "",
+          county: txData.county || "",
+          ...txData
+        }
+      })
+    }
   }
+
   if (caseId) {
-    query = query.eq("case_id", caseId)
+    const { data: caseData } = await adminClient
+      .from("cases")
+      .select("property_address, transaction_type, value, property_transaction_data")
+      .eq("id", caseId)
+      .single()
+
+    if (caseData) {
+      const txData = caseData.property_transaction_data as Record<string, unknown> || {}
+      return NextResponse.json({
+        data: {
+          transaction_type: caseData.transaction_type || "sale",
+          property_details: caseData.property_address || "",
+          amount: caseData.value || 0,
+          ...txData
+        }
+      })
+    }
   }
 
-  const { data, error } = await query.maybeSingle()
-
-  if (error) {
-    return NextResponse.json({ data: null })
-  }
-
-  return NextResponse.json({ data })
+  return NextResponse.json({ data: null })
 }
 
-// POST: Save or update property transaction
+// POST: Save property transaction
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -48,27 +97,52 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  // Check if record exists
-  let existingQuery = adminClient.from("case_property_transaction").select("id")
-  if (enquiryId) existingQuery = existingQuery.eq("enquiry_id", enquiryId)
-  if (caseId) existingQuery = existingQuery.eq("case_id", caseId)
+  // Try dedicated table first
+  try {
+    let existingQuery = adminClient.from("case_property_transaction").select("id")
+    if (enquiryId) existingQuery = existingQuery.eq("enquiry_id", enquiryId)
+    if (caseId) existingQuery = existingQuery.eq("case_id", caseId)
 
-  const { data: existing } = await existingQuery.maybeSingle()
+    const { data: existing } = await existingQuery.maybeSingle()
 
-  if (existing) {
+    if (existing) {
+      await adminClient
+        .from("case_property_transaction")
+        .update({ ...transactionData, updated_at: new Date().toISOString() })
+        .eq("id", existing.id)
+    } else {
+      await adminClient.from("case_property_transaction").insert({
+        enquiry_id: enquiryId || null,
+        case_id: caseId || null,
+        ...transactionData
+      })
+    }
+    return NextResponse.json({ success: true })
+  } catch {
+    // Table doesn't exist
+  }
+
+  // Fallback: save to enquiries/cases
+  if (enquiryId) {
     await adminClient
-      .from("case_property_transaction")
-      .update({
-        ...transactionData,
+      .from("enquiries")
+      .update({ 
+        property_transaction_data: transactionData,
+        property_value: transactionData.amount || undefined,
         updated_at: new Date().toISOString()
       })
-      .eq("id", existing.id)
-  } else {
-    await adminClient.from("case_property_transaction").insert({
-      enquiry_id: enquiryId || null,
-      case_id: caseId || null,
-      ...transactionData
-    })
+      .eq("id", enquiryId)
+  }
+
+  if (caseId) {
+    await adminClient
+      .from("cases")
+      .update({ 
+        property_transaction_data: transactionData,
+        value: transactionData.amount || undefined,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", caseId)
   }
 
   return NextResponse.json({ success: true })

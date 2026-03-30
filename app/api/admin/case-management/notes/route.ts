@@ -19,31 +19,57 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1")
 
   const adminClient = createAdminClient()
-  let query = adminClient.from("case_notes").select("*", { count: "exact" })
 
+  // Try dedicated table first
+  try {
+    let query = adminClient.from("case_notes").select("*", { count: "exact" })
+    if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    if (caseId) query = query.eq("case_id", caseId)
+
+    const { data: notes, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+
+    if (!error) {
+      const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
+      return NextResponse.json({ notes: notes || [], totalPages, currentPage: page })
+    }
+  } catch {
+    // Table doesn't exist
+  }
+
+  // Fallback: get from enquiries/cases notes_data JSON
   if (enquiryId) {
-    query = query.eq("enquiry_id", enquiryId)
+    const { data: enquiry } = await adminClient
+      .from("enquiries")
+      .select("notes_data")
+      .eq("id", enquiryId)
+      .single()
+
+    if (enquiry) {
+      const allNotes = Array.isArray(enquiry.notes_data) ? enquiry.notes_data : []
+      const totalPages = Math.ceil(allNotes.length / PAGE_SIZE)
+      const notes = allNotes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+      return NextResponse.json({ notes, totalPages, currentPage: page })
+    }
   }
+
   if (caseId) {
-    query = query.eq("case_id", caseId)
+    const { data: caseData } = await adminClient
+      .from("cases")
+      .select("notes_data")
+      .eq("id", caseId)
+      .single()
+
+    if (caseData) {
+      const allNotes = Array.isArray(caseData.notes_data) ? caseData.notes_data : []
+      const totalPages = Math.ceil(allNotes.length / PAGE_SIZE)
+      const notes = allNotes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+      return NextResponse.json({ notes, totalPages, currentPage: page })
+    }
   }
 
-  const { data: notes, error, count } = await query
-    .order("created_at", { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
-
-  if (error) {
-    // Table might not exist yet
-    return NextResponse.json({ notes: [], totalPages: 1 })
-  }
-
-  const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
-
-  return NextResponse.json({ 
-    notes: notes || [], 
-    totalPages,
-    currentPage: page
-  })
+  return NextResponse.json({ notes: [], totalPages: 1, currentPage: 1 })
 }
 
 // POST: Add a note
@@ -61,9 +87,7 @@ export async function POST(request: NextRequest) {
     caseId, 
     clientNote, 
     solicitorNote,
-    emailClient,
-    clientName,
-    clientEmail
+    emailClient
   } = body
 
   const adminClient = createAdminClient()
@@ -77,52 +101,98 @@ export async function POST(request: NextRequest) {
 
   const createdByName = profile 
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() 
-    : user.email
+    : user.email || "Admin"
 
-  // Insert client note if provided
+  const notes: Array<{
+    id: string
+    content: string
+    note_type: string
+    email_sent: boolean
+    created_at: string
+    created_by: string
+    created_by_name: string
+  }> = []
+
+  // Create client note if provided
   if (clientNote) {
-    await adminClient.from("case_notes").insert({
-      enquiry_id: enquiryId || null,
-      case_id: caseId || null,
+    notes.push({
+      id: crypto.randomUUID(),
       content: clientNote,
       note_type: "to_client",
       email_sent: emailClient || false,
+      created_at: new Date().toISOString(),
       created_by: user.id,
       created_by_name: createdByName,
-    })
-
-    // Log activity
-    await logActivity({
-      enquiryId: enquiryId || undefined,
-      caseId: caseId || undefined,
-      actorType: "admin",
-      actorId: user.id,
-      action: "note_added",
-      description: `Note added for client`,
-      metadata: { note_type: "to_client", emailed: emailClient }
     })
   }
 
-  // Insert solicitor note if provided
+  // Create solicitor note if provided
   if (solicitorNote) {
-    await adminClient.from("case_notes").insert({
-      enquiry_id: enquiryId || null,
-      case_id: caseId || null,
+    notes.push({
+      id: crypto.randomUUID(),
       content: solicitorNote,
       note_type: "to_solicitor",
       email_sent: false,
+      created_at: new Date().toISOString(),
       created_by: user.id,
       created_by_name: createdByName,
     })
+  }
 
+  // Try to insert into dedicated table
+  try {
+    for (const note of notes) {
+      await adminClient.from("case_notes").insert({
+        enquiry_id: enquiryId || null,
+        case_id: caseId || null,
+        ...note,
+      })
+    }
+  } catch {
+    // Table doesn't exist, use fallback
+  }
+
+  // Fallback: save to JSON array
+  if (enquiryId) {
+    const { data: enquiry } = await adminClient
+      .from("enquiries")
+      .select("notes_data")
+      .eq("id", enquiryId)
+      .single()
+
+    const existingNotes = Array.isArray(enquiry?.notes_data) ? enquiry.notes_data : []
+    const updatedNotes = [...notes, ...existingNotes]
+
+    await adminClient
+      .from("enquiries")
+      .update({ notes_data: updatedNotes, updated_at: new Date().toISOString() })
+      .eq("id", enquiryId)
+  }
+
+  if (caseId) {
+    const { data: caseData } = await adminClient
+      .from("cases")
+      .select("notes_data")
+      .eq("id", caseId)
+      .single()
+
+    const existingNotes = Array.isArray(caseData?.notes_data) ? caseData.notes_data : []
+    const updatedNotes = [...notes, ...existingNotes]
+
+    await adminClient
+      .from("cases")
+      .update({ notes_data: updatedNotes, updated_at: new Date().toISOString() })
+      .eq("id", caseId)
+  }
+
+  // Log activity
+  for (const note of notes) {
     await logActivity({
       enquiryId: enquiryId || undefined,
-      caseId: caseId || undefined,
       actorType: "admin",
       actorId: user.id,
       action: "note_added",
-      description: `Note added for solicitor/EA`,
-      metadata: { note_type: "to_solicitor" }
+      description: `Note added: ${note.note_type}`,
     })
   }
 
