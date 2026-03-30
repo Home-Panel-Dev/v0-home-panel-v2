@@ -32,7 +32,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ documents: documents || [] })
+  // Map documents to include uploaded_by_name for display
+  const documentsWithNames = (documents || []).map(doc => ({
+    ...doc,
+    uploaded_by_name: doc.uploaded_by_type === "admin" ? "Admin" : "Client",
+    description: doc.document_type || "",
+    file_type: doc.mime_type || "",
+  }))
+
+  return NextResponse.json({ documents: documentsWithNames })
 }
 
 // POST: Upload a new document

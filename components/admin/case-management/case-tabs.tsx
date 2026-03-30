@@ -9,6 +9,7 @@ import { CaseLenderDetails } from "./case-lender-details"
 import { CaseOtherParty } from "./case-other-party"
 import { CaseContacts } from "./case-contacts"
 import { CaseUploads } from "./case-uploads"
+import { CaseBranchAssignment } from "./case-branch-assignment"
 
 interface CaseTabsProps {
   enquiryId?: string
@@ -33,58 +34,64 @@ export function CaseTabs({
 }: CaseTabsProps) {
   return (
     <Tabs defaultValue={initialTab} className="w-full">
-      <TabsList className="w-full justify-start overflow-x-auto flex-wrap h-auto gap-1 bg-muted/50 p-1 rounded-lg">
+      <TabsList className="w-full justify-start overflow-x-auto flex-wrap h-auto gap-1 bg-muted/30 p-1 rounded-lg border border-border">
         <TabsTrigger 
           value="history" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           History
         </TabsTrigger>
         <TabsTrigger 
           value="notes" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           Notes
         </TabsTrigger>
         <TabsTrigger 
           value="correspondence" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           Correspondence Details
         </TabsTrigger>
         <TabsTrigger 
           value="property" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           Property Transaction
         </TabsTrigger>
         <TabsTrigger 
           value="lender" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           Lender Details
         </TabsTrigger>
         <TabsTrigger 
           value="other-party" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           Other Party & Solicitor
         </TabsTrigger>
         <TabsTrigger 
           value="contacts" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           Contacts
         </TabsTrigger>
         <TabsTrigger 
           value="uploads" 
-          className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
         >
           Uploads
         </TabsTrigger>
+        <TabsTrigger 
+          value="branch" 
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
+        >
+          Branch Assignment
+        </TabsTrigger>
       </TabsList>
 
-      <div className="mt-6">
+      <div className="mt-5">
         <TabsContent value="history" className="m-0">
           <CaseHistory 
             enquiryId={enquiryId} 
@@ -141,6 +148,13 @@ export function CaseTabs({
 
         <TabsContent value="uploads" className="m-0">
           <CaseUploads 
+            enquiryId={enquiryId} 
+            caseId={caseId}
+          />
+        </TabsContent>
+
+        <TabsContent value="branch" className="m-0">
+          <CaseBranchAssignment 
             enquiryId={enquiryId} 
             caseId={caseId}
           />

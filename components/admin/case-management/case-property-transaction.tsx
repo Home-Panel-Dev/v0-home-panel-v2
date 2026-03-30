@@ -1,19 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronRight, Loader2, Home, Building2 } from "lucide-react"
+import { ChevronDown, ChevronRight, Loader2, Building2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface PropertyData {
   transaction_type: string
-  organisation: string
-  property_name: string
+  property_details: string
   property_number: string
   street_no: string
   street: string
@@ -22,7 +20,7 @@ interface PropertyData {
   county: string
   postcode: string
   amount: string
-  tenure: string
+  holding_type: string
 }
 
 interface CasePropertyTransactionProps {
@@ -34,8 +32,7 @@ interface CasePropertyTransactionProps {
 
 const emptyData: PropertyData = {
   transaction_type: "",
-  organisation: "",
-  property_name: "",
+  property_details: "",
   property_number: "",
   street_no: "",
   street: "",
@@ -44,7 +41,7 @@ const emptyData: PropertyData = {
   county: "",
   postcode: "",
   amount: "",
-  tenure: "",
+  holding_type: "freehold",
 }
 
 export function CasePropertyTransaction({ 
@@ -117,136 +114,63 @@ export function CasePropertyTransaction({
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-xl p-12 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="px-5 py-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border">
             <div className="flex items-center gap-2">
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <Building2 className="h-4 w-4" />
-              <CardTitle className="text-base">Property Transaction</CardTitle>
-              <Badge variant="secondary" className="ml-2">
+              {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-medium text-sm">Property Transaction</h3>
+              <Badge variant="secondary" className="ml-2 text-xs">
                 {transactionLabel}
               </Badge>
             </div>
-          </CardHeader>
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-6">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <h3 className="font-semibold text-sm text-primary">
-                {transactionLabel}
-              </h3>
+          <div className="p-5 space-y-5">
+            <div className="px-3 py-2 bg-muted/50 rounded-lg border border-border">
+              <span className="font-medium text-sm">{transactionLabel}</span>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="organisation">Organisation</Label>
-                <Input
-                  id="organisation"
-                  value={data.organisation}
-                  onChange={(e) => updateField("organisation", e.target.value)}
-                />
-              </div>
+              {[
+                { id: "property_details", label: "Property Details", field: "property_details" as const, placeholder: propertyAddress || "Enter property name" },
+                { id: "property_number", label: "Property Number", field: "property_number" as const },
+                { id: "postcode", label: "Postcode", field: "postcode" as const },
+                { id: "street_no", label: "Street No.", field: "street_no" as const },
+                { id: "street", label: "Street", field: "street" as const },
+                { id: "district", label: "District", field: "district" as const },
+                { id: "town", label: "Town", field: "town" as const },
+                { id: "county", label: "County", field: "county" as const },
+                { id: "amount", label: "Amount", field: "amount" as const, type: "number", placeholder: "0.00" },
+              ].map(({ id, label, field, type, placeholder }) => (
+                <div key={id} className="space-y-1.5">
+                  <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                  <Input
+                    id={id}
+                    type={type || "text"}
+                    step={type === "number" ? "0.01" : undefined}
+                    value={data[field]}
+                    onChange={(e) => updateField(field, e.target.value)}
+                    placeholder={placeholder}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              ))}
               
               <div className="space-y-1.5">
-                <Label htmlFor="property_name">Property Details</Label>
-                <Input
-                  id="property_name"
-                  value={data.property_name}
-                  onChange={(e) => updateField("property_name", e.target.value)}
-                  placeholder={propertyAddress || "Enter property name"}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="property_number">Property Number</Label>
-                <Input
-                  id="property_number"
-                  value={data.property_number}
-                  onChange={(e) => updateField("property_number", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="postcode">Postcode</Label>
-                <Input
-                  id="postcode"
-                  value={data.postcode}
-                  onChange={(e) => updateField("postcode", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="street_no">Street No.</Label>
-                <Input
-                  id="street_no"
-                  value={data.street_no}
-                  onChange={(e) => updateField("street_no", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="street">Street</Label>
-                <Input
-                  id="street"
-                  value={data.street}
-                  onChange={(e) => updateField("street", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="district">District</Label>
-                <Input
-                  id="district"
-                  value={data.district}
-                  onChange={(e) => updateField("district", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="town">Town</Label>
-                <Input
-                  id="town"
-                  value={data.town}
-                  onChange={(e) => updateField("town", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="county">County</Label>
-                <Input
-                  id="county"
-                  value={data.county}
-                  onChange={(e) => updateField("county", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  value={data.amount}
-                  onChange={(e) => updateField("amount", e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor="tenure">Hold type</Label>
-                <Select value={data.tenure} onValueChange={(value) => updateField("tenure", value)}>
-                  <SelectTrigger id="tenure">
+                <Label htmlFor="holding_type" className="text-xs text-muted-foreground">Holding Type</Label>
+                <Select value={data.holding_type} onValueChange={(value) => updateField("holding_type", value)}>
+                  <SelectTrigger id="holding_type" className="h-9 text-sm">
                     <SelectValue placeholder="Select tenure" />
                   </SelectTrigger>
                   <SelectContent>
@@ -258,15 +182,15 @@ export function CasePropertyTransaction({
               </div>
             </div>
 
-            <div className="flex justify-center pt-4">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <div className="flex justify-center pt-2">
+              <Button onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                 Save
               </Button>
             </div>
-          </CardContent>
+          </div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   )
 }

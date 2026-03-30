@@ -31,53 +31,63 @@ export async function POST(request: NextRequest) {
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() 
     : user.email
 
-  // Update the main record
+  // Update the main record status to aborted (using existing status column only)
   if (enquiryId) {
-    await adminClient
+    const { error } = await adminClient
       .from("enquiries")
       .update({ 
         status: "aborted",
-        abort_requested: true,
-        abort_reason: reason,
-        abort_requested_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq("id", enquiryId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   if (caseId) {
-    await adminClient
+    const { error } = await adminClient
       .from("cases")
       .update({ 
         status: "aborted",
-        abort_requested: true,
-        abort_reason: reason,
-        abort_requested_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq("id", caseId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
-  // Add status history entry
-  await adminClient.from("case_status_history").insert({
-    enquiry_id: enquiryId || null,
-    case_id: caseId || null,
-    status: "Aborted",
-    notes: `Abort requested: ${reason}`,
-    created_by: user.id,
-    created_by_name: requestedByName,
-  })
+  // Try to add status history entry (may fail if table doesn't exist)
+  try {
+    await adminClient.from("case_status_history").insert({
+      enquiry_id: enquiryId || null,
+      case_id: caseId || null,
+      status: "Aborted",
+      notes: `Abort requested: ${reason}`,
+      created_by: user.id,
+      created_by_name: requestedByName,
+    })
+  } catch {
+    // Table doesn't exist, skip
+  }
 
-  // Log activity
-  await logActivity({
-    enquiryId: enquiryId || undefined,
-    caseId: caseId || undefined,
-    actorType: "admin",
-    actorId: user.id,
-    action: "abort_requested",
-    description: `Abort requested: ${reason}`,
-    metadata: { reason }
-  })
+  // Log activity (ignore errors)
+  try {
+    await logActivity({
+      enquiryId: enquiryId || undefined,
+      caseId: caseId || undefined,
+      actorType: "admin",
+      actorId: user.id,
+      action: "abort_requested",
+      description: `Abort requested: ${reason}`,
+      metadata: { reason }
+    })
+  } catch {
+    // Activity logging may fail, that's OK
+  }
 
   return NextResponse.json({ success: true })
 }

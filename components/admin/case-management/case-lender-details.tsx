@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -109,203 +108,117 @@ export function CaseLenderDetails({ enquiryId, caseId }: CaseLenderDetailsProps)
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-xl p-12 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="px-5 py-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border">
             <div className="flex items-center gap-2">
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <Landmark className="h-4 w-4" />
-              <CardTitle className="text-base">Lender Details</CardTitle>
+              {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              <Landmark className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-medium text-sm">Lender Details</h3>
             </div>
-          </CardHeader>
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-6">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <h3 className="font-semibold text-sm text-primary">Lender Details</h3>
+          <div className="p-5 space-y-5">
+            <div className="px-3 py-2 bg-muted/50 rounded-lg border border-border">
+              <span className="font-medium text-sm">Lender Details</span>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Left Column - Lender Address */}
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="lender">Lender</Label>
-                  <Input
-                    id="lender"
-                    value={data.lender}
-                    onChange={(e) => updateField("lender", e.target.value)}
-                  />
-                </div>
+              <div className="space-y-3">
+                {[
+                  { id: "lender", label: "Lender", field: "lender" as const },
+                  { id: "building_name", label: "Building Name", field: "building_name" as const },
+                  { id: "property_details", label: "Property Details", field: "property_details" as const },
+                  { id: "street", label: "Street", field: "street" as const },
+                  { id: "locality", label: "Locality", field: "locality" as const },
+                  { id: "town", label: "Town", field: "town" as const },
+                  { id: "county", label: "County", field: "county" as const },
+                  { id: "lender_email", label: "E-Mail", field: "email" as const, type: "email" },
+                  { id: "lender_phone", label: "Phone", field: "phone" as const },
+                  { id: "lender_mobile", label: "Mobile", field: "mobile" as const },
+                ].map(({ id, label, field, type }) => (
+                  <div key={id} className="space-y-1.5">
+                    <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                    <Input
+                      id={id}
+                      type={type || "text"}
+                      value={data[field]}
+                      onChange={(e) => updateField(field, e.target.value)}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                ))}
                 
                 <div className="space-y-1.5">
-                  <Label htmlFor="building_name">Building Name</Label>
-                  <Input
-                    id="building_name"
-                    value={data.building_name}
-                    onChange={(e) => updateField("building_name", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="property_details">Property Details</Label>
-                  <Input
-                    id="property_details"
-                    value={data.property_details}
-                    onChange={(e) => updateField("property_details", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="postcode">Postcode</Label>
+                  <Label htmlFor="postcode" className="text-xs text-muted-foreground">Postcode</Label>
                   <div className="flex gap-2">
                     <Input
                       id="postcode"
                       value={data.postcode}
                       onChange={(e) => updateField("postcode", e.target.value)}
+                      className="h-9 text-sm"
                     />
-                    <Button variant="outline" size="icon">
-                      <Search className="h-4 w-4" />
+                    <Button variant="outline" size="sm" className="h-9 px-3">
+                      <Search className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="street">Street</Label>
-                  <Input
-                    id="street"
-                    value={data.street}
-                    onChange={(e) => updateField("street", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="locality">Locality</Label>
-                  <Input
-                    id="locality"
-                    value={data.locality}
-                    onChange={(e) => updateField("locality", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="town">Town</Label>
-                  <Input
-                    id="town"
-                    value={data.town}
-                    onChange={(e) => updateField("town", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="county">County</Label>
-                  <Input
-                    id="county"
-                    value={data.county}
-                    onChange={(e) => updateField("county", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="lender_email">E-Mail</Label>
-                  <Input
-                    id="lender_email"
-                    type="email"
-                    value={data.email}
-                    onChange={(e) => updateField("email", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="lender_phone">Phone</Label>
-                  <Input
-                    id="lender_phone"
-                    value={data.phone}
-                    onChange={(e) => updateField("phone", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="lender_mobile">Mobile</Label>
-                  <Input
-                    id="lender_mobile"
-                    value={data.mobile}
-                    onChange={(e) => updateField("mobile", e.target.value)}
-                  />
                 </div>
               </div>
 
               {/* Right Column - Account Details */}
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="reference_number">Reference Number</Label>
-                  <Input
-                    id="reference_number"
-                    value={data.reference_number}
-                    onChange={(e) => updateField("reference_number", e.target.value)}
-                  />
-                </div>
+              <div className="space-y-3">
+                {[
+                  { id: "reference_number", label: "Reference Number", field: "reference_number" as const },
+                  { id: "account_number", label: "Account Number", field: "account_number" as const },
+                  { id: "contact_person", label: "Contact Person", field: "contact_person" as const },
+                  { id: "lender_amount", label: "Amount", field: "amount" as const, type: "number", placeholder: "0.00" },
+                ].map(({ id, label, field, type, placeholder }) => (
+                  <div key={id} className="space-y-1.5">
+                    <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                    <Input
+                      id={id}
+                      type={type || "text"}
+                      step={type === "number" ? "0.01" : undefined}
+                      value={data[field]}
+                      onChange={(e) => updateField(field, e.target.value)}
+                      placeholder={placeholder}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                ))}
                 
                 <div className="space-y-1.5">
-                  <Label htmlFor="account_number">Account Number</Label>
-                  <Input
-                    id="account_number"
-                    value={data.account_number}
-                    onChange={(e) => updateField("account_number", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="contact_person">Contact Person</Label>
-                  <Input
-                    id="contact_person"
-                    value={data.contact_person}
-                    onChange={(e) => updateField("contact_person", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="lender_amount">Amount</Label>
-                  <Input
-                    id="lender_amount"
-                    type="number"
-                    step="0.01"
-                    value={data.amount}
-                    onChange={(e) => updateField("amount", e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="additional_info">Additional Info</Label>
+                  <Label htmlFor="additional_info" className="text-xs text-muted-foreground">Additional Info</Label>
                   <Textarea
                     id="additional_info"
                     value={data.additional_info}
                     onChange={(e) => updateField("additional_info", e.target.value)}
                     rows={6}
+                    className="text-sm"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-center pt-4">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <div className="flex justify-center pt-2">
+              <Button onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                 Save
               </Button>
             </div>
-          </CardContent>
+          </div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   )
 }

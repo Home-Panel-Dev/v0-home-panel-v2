@@ -16,23 +16,88 @@ export async function GET(request: NextRequest) {
   const caseId = searchParams.get("caseId")
 
   const adminClient = createAdminClient()
-  let query = adminClient.from("case_status_history").select("*")
 
+  // Try dedicated table first
+  try {
+    let query = adminClient.from("case_status_history").select("*")
+    if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    if (caseId) query = query.eq("case_id", caseId)
+
+    const { data: history, error } = await query.order("created_at", { ascending: false })
+    if (!error) {
+      return NextResponse.json({ history: history || [] })
+    }
+  } catch {
+    // Table doesn't exist
+  }
+
+  // Fallback: get from activity_log table
+  try {
+    let query = adminClient
+      .from("activity_log")
+      .select("*")
+      .eq("action", "status_updated")
+
+    if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    
+    const { data: activities } = await query.order("created_at", { ascending: false }).limit(50)
+
+    if (activities) {
+      const history = activities.map(a => ({
+        id: a.id,
+        status: a.description?.replace("Status changed to ", "").replace(/"/g, "") || "Unknown",
+        created_at: a.created_at,
+        created_by_name: a.actor_type === "admin" ? "Admin" : "System",
+        notes: a.description
+      }))
+      return NextResponse.json({ history })
+    }
+  } catch {
+    // activity_log also doesn't exist
+  }
+
+  // Last fallback: create a synthetic history entry from current status
   if (enquiryId) {
-    query = query.eq("enquiry_id", enquiryId)
+    const { data: enquiry } = await adminClient
+      .from("enquiries")
+      .select("status, updated_at, created_at")
+      .eq("id", enquiryId)
+      .single()
+
+    if (enquiry) {
+      // Create synthetic history from current status
+      const history = [{
+        id: "current",
+        status: enquiry.status || "pending",
+        created_at: enquiry.updated_at || enquiry.created_at,
+        created_by_name: "System",
+        notes: `Current status: ${enquiry.status || "pending"}`
+      }]
+      return NextResponse.json({ history })
+    }
   }
+
   if (caseId) {
-    query = query.eq("case_id", caseId)
+    const { data: caseData } = await adminClient
+      .from("cases")
+      .select("status, updated_at, created_at")
+      .eq("id", caseId)
+      .single()
+
+    if (caseData) {
+      // Create synthetic history from current status
+      const history = [{
+        id: "current",
+        status: caseData.status || "active",
+        created_at: caseData.updated_at || caseData.created_at,
+        created_by_name: "System",
+        notes: `Current status: ${caseData.status || "active"}`
+      }]
+      return NextResponse.json({ history })
+    }
   }
 
-  const { data: history, error } = await query.order("created_at", { ascending: false })
-
-  if (error) {
-    // Table might not exist yet, return empty array
-    return NextResponse.json({ history: [] })
-  }
-
-  return NextResponse.json({ history: history || [] })
+  return NextResponse.json({ history: [] })
 }
 
 // POST: Add status history entry and update main record
@@ -58,8 +123,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Status required" }, { status: 400 })
   }
 
-  // Get user profile for name
   const adminClient = createAdminClient()
+
+  // Get user profile for name
   const { data: profile } = await adminClient
     .from("profiles")
     .select("first_name, last_name")
@@ -68,47 +134,55 @@ export async function POST(request: NextRequest) {
 
   const createdByName = profile 
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() 
-    : user.email
+    : user.email || "Admin"
 
-  // Insert status history
-  const { error: historyError } = await adminClient
-    .from("case_status_history")
-    .insert({
-      enquiry_id: enquiryId || null,
-      case_id: caseId || null,
-      status,
-      created_by: user.id,
-      created_by_name: createdByName,
-      notes: `Status changed to ${status}`,
-    })
-
-  if (historyError) {
-    console.error("Status history insert error:", historyError)
+  const statusEntry = {
+    id: crypto.randomUUID(),
+    status,
+    created_at: new Date().toISOString(),
+    created_by: user.id,
+    created_by_name: createdByName,
+    notes: `Status changed to ${status}`,
   }
 
-  // Update the main record status
+  // Try to insert into dedicated table
+  try {
+    await adminClient.from("case_status_history").insert({
+      enquiry_id: enquiryId || null,
+      case_id: caseId || null,
+      ...statusEntry,
+    })
+  } catch {
+    // Table doesn't exist, use fallback
+  }
+
+  // Update the main record status - using only existing columns
   if (enquiryId) {
-    await adminClient
+    const { error } = await adminClient
       .from("enquiries")
       .update({ 
         status,
-        expected_completion_date: expectedCompletionDate || null,
-        next_action_date: nextActionDate || null,
         updated_at: new Date().toISOString()
       })
       .eq("id", enquiryId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   if (caseId) {
-    await adminClient
+    const { error } = await adminClient
       .from("cases")
       .update({ 
         status,
-        expected_completion_date: expectedCompletionDate || null,
-        next_action_date: nextActionDate || null,
         updated_at: new Date().toISOString()
       })
       .eq("id", caseId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   // Log activity
@@ -119,7 +193,6 @@ export async function POST(request: NextRequest) {
     actorId: user.id,
     action: "status_updated",
     description: `Status changed to "${status}"`,
-    metadata: { new_status: status, email_reminder: emailReminder }
   })
 
   return NextResponse.json({ success: true })

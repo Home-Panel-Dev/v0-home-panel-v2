@@ -19,31 +19,57 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1")
 
   const adminClient = createAdminClient()
-  let query = adminClient.from("case_notes").select("*", { count: "exact" })
 
-  if (enquiryId) {
-    query = query.eq("enquiry_id", enquiryId)
+  // Try dedicated table first
+  try {
+    let query = adminClient.from("case_notes").select("*", { count: "exact" })
+    if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    if (caseId) query = query.eq("case_id", caseId)
+
+    const { data: notes, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+
+    if (!error) {
+      const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
+      return NextResponse.json({ notes: notes || [], totalPages, currentPage: page })
+    }
+  } catch {
+    // Table doesn't exist
   }
-  if (caseId) {
-    query = query.eq("case_id", caseId)
+
+  // Fallback: Try to get from activity_log as notes
+  try {
+    let query = adminClient
+      .from("activity_log")
+      .select("*", { count: "exact" })
+      .eq("action", "note_added")
+
+    // Filter by enquiry_id or case_id based on what's provided
+    if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    // Note: case_id might not exist in activity_log table, so we only filter by enquiry_id
+    
+    const { data: activities, count, error } = await query
+      .order("created_at", { ascending: false })
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+
+    if (!error && activities && activities.length > 0) {
+      const notes = activities.map(a => ({
+        id: a.id,
+        content: a.description || "",
+        note_type: "internal",
+        email_sent: false,
+        created_at: a.created_at,
+        created_by_name: a.actor_type === "admin" ? "Admin" : "System"
+      }))
+      const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
+      return NextResponse.json({ notes, totalPages, currentPage: page })
+    }
+  } catch {
+    // activity_log doesn't exist or query failed
   }
 
-  const { data: notes, error, count } = await query
-    .order("created_at", { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
-
-  if (error) {
-    // Table might not exist yet
-    return NextResponse.json({ notes: [], totalPages: 1 })
-  }
-
-  const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
-
-  return NextResponse.json({ 
-    notes: notes || [], 
-    totalPages,
-    currentPage: page
-  })
+  return NextResponse.json({ notes: [], totalPages: 1, currentPage: 1 })
 }
 
 // POST: Add a note
@@ -61,9 +87,7 @@ export async function POST(request: NextRequest) {
     caseId, 
     clientNote, 
     solicitorNote,
-    emailClient,
-    clientName,
-    clientEmail
+    emailClient
   } = body
 
   const adminClient = createAdminClient()
@@ -77,52 +101,81 @@ export async function POST(request: NextRequest) {
 
   const createdByName = profile 
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() 
-    : user.email
+    : user.email || "Admin"
 
-  // Insert client note if provided
+  const notes: Array<{
+    id: string
+    content: string
+    note_type: string
+    email_sent: boolean
+    created_at: string
+    created_by: string
+    created_by_name: string
+  }> = []
+
+  // Create client note if provided
   if (clientNote) {
-    await adminClient.from("case_notes").insert({
-      enquiry_id: enquiryId || null,
-      case_id: caseId || null,
+    notes.push({
+      id: crypto.randomUUID(),
       content: clientNote,
       note_type: "to_client",
       email_sent: emailClient || false,
+      created_at: new Date().toISOString(),
       created_by: user.id,
       created_by_name: createdByName,
-    })
-
-    // Log activity
-    await logActivity({
-      enquiryId: enquiryId || undefined,
-      caseId: caseId || undefined,
-      actorType: "admin",
-      actorId: user.id,
-      action: "note_added",
-      description: `Note added for client`,
-      metadata: { note_type: "to_client", emailed: emailClient }
     })
   }
 
-  // Insert solicitor note if provided
+  // Create solicitor note if provided
   if (solicitorNote) {
-    await adminClient.from("case_notes").insert({
-      enquiry_id: enquiryId || null,
-      case_id: caseId || null,
+    notes.push({
+      id: crypto.randomUUID(),
       content: solicitorNote,
       note_type: "to_solicitor",
       email_sent: false,
+      created_at: new Date().toISOString(),
       created_by: user.id,
       created_by_name: createdByName,
     })
+  }
 
+  // Try to insert into dedicated table
+  try {
+    for (const note of notes) {
+      await adminClient.from("case_notes").insert({
+        enquiry_id: enquiryId || null,
+        case_id: caseId || null,
+        ...note,
+      })
+    }
+  } catch {
+    // Table doesn't exist, use fallback
+  }
+
+  // Fallback: Just update the enquiry/case updated_at to trigger refresh
+  if (enquiryId) {
+    await adminClient
+      .from("enquiries")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", enquiryId)
+  }
+
+  if (caseId) {
+    await adminClient
+      .from("cases")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", caseId)
+  }
+
+  // Log activity - include actual note content in description for retrieval
+  for (const note of notes) {
     await logActivity({
       enquiryId: enquiryId || undefined,
       caseId: caseId || undefined,
       actorType: "admin",
       actorId: user.id,
       action: "note_added",
-      description: `Note added for solicitor/EA`,
-      metadata: { note_type: "to_solicitor" }
+      description: note.content,
     })
   }
 

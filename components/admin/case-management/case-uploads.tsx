@@ -1,11 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight, Loader2, Upload, FileText, Download, Trash2, Eye } from "lucide-react"
 import { format } from "date-fns"
@@ -73,7 +71,6 @@ export function CaseUploads({ enquiryId, caseId }: CaseUploadsProps) {
       if (response.ok) {
         await fetchDocuments()
         setDescription("")
-        // Reset the file input
         e.target.value = ""
       }
     } catch (error) {
@@ -87,7 +84,7 @@ export function CaseUploads({ enquiryId, caseId }: CaseUploadsProps) {
     if (!confirm("Are you sure you want to delete this document?")) return
 
     try {
-      const response = await fetch(`/api/admin/documents?id=${documentId}`, {
+      const response = await fetch(`/api/admin/documents/${documentId}`, {
         method: "DELETE",
       })
       if (response.ok) {
@@ -104,49 +101,43 @@ export function CaseUploads({ enquiryId, caseId }: CaseUploadsProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  function getFileIcon(fileType: string) {
-    // Simplified icon selection
-    return <FileText className="h-4 w-4" />
-  }
-
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-xl p-12 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="px-5 py-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border">
             <div className="flex items-center gap-2">
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <Upload className="h-4 w-4" />
-              <CardTitle className="text-base">Uploads</CardTitle>
+              {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              <Upload className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-medium text-sm">Uploads</h3>
               {documents.length > 0 && (
                 <span className="ml-2 text-sm text-muted-foreground">
                   ({documents.length} files)
                 </span>
               )}
             </div>
-          </CardHeader>
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-6">
+          <div className="p-5 space-y-5">
             {/* Upload Form */}
-            <div className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg bg-muted/30">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="description">Description (optional)</Label>
+            <div className="flex flex-col sm:flex-row gap-4 p-4 border border-border rounded-lg bg-muted/30">
+              <div className="flex-1 space-y-1.5">
+                <Label htmlFor="description" className="text-xs text-muted-foreground">Description (optional)</Label>
                 <Input
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter a description for the file"
+                  className="h-9 text-sm"
                 />
               </div>
               <div className="flex items-end">
@@ -158,11 +149,11 @@ export function CaseUploads({ enquiryId, caseId }: CaseUploadsProps) {
                     onChange={handleUpload}
                     disabled={uploading}
                   />
-                  <Button disabled={uploading} className="gap-2">
+                  <Button disabled={uploading} size="sm" className="gap-2">
                     {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Upload className="h-4 w-4" />
+                      <Upload className="h-3.5 w-3.5" />
                     )}
                     Upload File
                   </Button>
@@ -172,86 +163,89 @@ export function CaseUploads({ enquiryId, caseId }: CaseUploadsProps) {
 
             {/* Documents Table */}
             {documents.length > 0 ? (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead>File Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead>Uploaded</TableHead>
-                      <TableHead>By</TableHead>
-                      <TableHead className="w-28">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+              <div className="border border-border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground w-12"></th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">File Name</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Description</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Size</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Uploaded</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">By</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground w-28">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
                     {documents.map((doc) => (
-                      <TableRow key={doc.id}>
-                        <TableCell>
-                          {getFileIcon(doc.file_type)}
-                        </TableCell>
-                        <TableCell className="font-medium">
+                      <tr key={doc.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-2.5">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                        </td>
+                        <td className="px-4 py-2.5 font-medium">
                           {doc.file_name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground">
                           {doc.description || "-"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground">
                           {formatFileSize(doc.file_size)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground">
                           {format(new Date(doc.created_at), "dd/MM/yyyy")}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground">
                           {doc.uploaded_by_name || "System"}
-                        </TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="px-4 py-2.5">
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               asChild
                             >
                               <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                                <Eye className="h-4 w-4" />
+                                <Eye className="h-3.5 w-3.5" />
                               </a>
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               asChild
                             >
                               <a href={doc.file_url} download={doc.file_name}>
-                                <Download className="h-4 w-4" />
+                                <Download className="h-3.5 w-3.5" />
                               </a>
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               onClick={() => handleDelete(doc.id)}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="text-center py-12 border rounded-lg bg-muted/20">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No documents uploaded yet</p>
-                <p className="text-sm text-muted-foreground/70 mt-1">
+              <div className="text-center py-12 border border-border rounded-lg bg-muted/20">
+                <FileText className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
                   Upload files using the form above
                 </p>
               </div>
             )}
-          </CardContent>
+          </div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   )
 }

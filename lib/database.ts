@@ -18,9 +18,11 @@ export type ActivityAction =
   | "document_reviewed"
   | "case_created"
   | "case_status_changed"
+  | "status_updated"
   | "firm_assigned"
   | "note_added"
   | "email_sent"
+  | "abort_requested"
 
 // Log activity - simplified to only use columns that exist in the table
 export async function logActivity({
