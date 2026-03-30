@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,7 +10,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronRight, Loader2, Users } from "lucide-react"
 
 interface OtherPartyData {
-  // Other Party
   party_company: string
   party_is_company: boolean
   party_title: string
@@ -27,7 +25,6 @@ interface OtherPartyData {
   party_email: string
   party_phone: string
   party_mobile: string
-  // Their Solicitor
   solicitor_name: string
   solicitor_building_name: string
   solicitor_property_details: string
@@ -144,353 +141,144 @@ export function CaseOtherParty({ enquiryId, caseId }: CaseOtherPartyProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-xl p-12 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="px-5 py-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border">
             <div className="flex items-center gap-2">
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <Users className="h-4 w-4" />
-              <CardTitle className="text-base">Other Party Details & Solicitor</CardTitle>
+              {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-medium text-sm">Other Party Details & Solicitor</h3>
             </div>
-          </CardHeader>
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-6">
+          <div className="p-5 space-y-5">
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Other Party */}
               <div className="space-y-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <h3 className="font-semibold text-sm text-primary">Other Party</h3>
+                <div className="px-3 py-2 bg-muted/50 rounded-lg border border-border">
+                  <span className="font-medium text-sm">Other Party</span>
                 </div>
                 
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_company">Company</Label>
-                  <Input
-                    id="party_company"
-                    value={data.party_company}
-                    onChange={(e) => updateField("party_company", e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="party_is_company"
-                    checked={data.party_is_company}
-                    onCheckedChange={(checked) => updateField("party_is_company", checked as boolean)}
-                  />
-                  <Label htmlFor="party_is_company" className="text-sm font-normal">
-                    Is Company
-                  </Label>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_title">Title</Label>
-                  <Input
-                    id="party_title"
-                    value={data.party_title}
-                    onChange={(e) => updateField("party_title", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_first_name">First Name</Label>
-                  <Input
-                    id="party_first_name"
-                    value={data.party_first_name}
-                    onChange={(e) => updateField("party_first_name", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_last_name">Last Name</Label>
-                  <Input
-                    id="party_last_name"
-                    value={data.party_last_name}
-                    onChange={(e) => updateField("party_last_name", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_building_name">Building Name</Label>
-                  <Input
-                    id="party_building_name"
-                    value={data.party_building_name}
-                    onChange={(e) => updateField("party_building_name", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_property_details">Property Details</Label>
-                  <Input
-                    id="party_property_details"
-                    value={data.party_property_details}
-                    onChange={(e) => updateField("party_property_details", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_postcode">Postcode</Label>
-                  <Input
-                    id="party_postcode"
-                    value={data.party_postcode}
-                    onChange={(e) => updateField("party_postcode", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_street">Street</Label>
-                  <Input
-                    id="party_street"
-                    value={data.party_street}
-                    onChange={(e) => updateField("party_street", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_district">District</Label>
-                  <Input
-                    id="party_district"
-                    value={data.party_district}
-                    onChange={(e) => updateField("party_district", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_town">Town</Label>
-                  <Input
-                    id="party_town"
-                    value={data.party_town}
-                    onChange={(e) => updateField("party_town", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_county">County</Label>
-                  <Input
-                    id="party_county"
-                    value={data.party_county}
-                    onChange={(e) => updateField("party_county", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_email">E-Mail</Label>
-                  <Input
-                    id="party_email"
-                    type="email"
-                    value={data.party_email}
-                    onChange={(e) => updateField("party_email", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_phone">Phone No.</Label>
-                  <Input
-                    id="party_phone"
-                    value={data.party_phone}
-                    onChange={(e) => updateField("party_phone", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="party_mobile">Mobile</Label>
-                  <Input
-                    id="party_mobile"
-                    value={data.party_mobile}
-                    onChange={(e) => updateField("party_mobile", e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex justify-center pt-4">
-                  <Button onClick={handleSave} disabled={saving}>
-                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save
-                  </Button>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="party_company" className="text-xs text-muted-foreground">Company</Label>
+                    <Input
+                      id="party_company"
+                      value={data.party_company}
+                      onChange={(e) => updateField("party_company", e.target.value)}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="party_is_company"
+                      checked={data.party_is_company}
+                      onCheckedChange={(checked) => updateField("party_is_company", checked as boolean)}
+                    />
+                    <Label htmlFor="party_is_company" className="text-sm font-normal cursor-pointer">
+                      Is Company
+                    </Label>
+                  </div>
+                  
+                  {[
+                    { id: "party_title", label: "Title", field: "party_title" as const },
+                    { id: "party_first_name", label: "First Name", field: "party_first_name" as const },
+                    { id: "party_last_name", label: "Last Name", field: "party_last_name" as const },
+                    { id: "party_building_name", label: "Building Name", field: "party_building_name" as const },
+                    { id: "party_property_details", label: "Property Details", field: "party_property_details" as const },
+                    { id: "party_postcode", label: "Postcode", field: "party_postcode" as const },
+                    { id: "party_street", label: "Street", field: "party_street" as const },
+                    { id: "party_district", label: "District", field: "party_district" as const },
+                    { id: "party_town", label: "Town", field: "party_town" as const },
+                    { id: "party_county", label: "County", field: "party_county" as const },
+                    { id: "party_email", label: "E-Mail", field: "party_email" as const, type: "email" },
+                    { id: "party_phone", label: "Phone No.", field: "party_phone" as const },
+                    { id: "party_mobile", label: "Mobile", field: "party_mobile" as const },
+                  ].map(({ id, label, field, type }) => (
+                    <div key={id} className="space-y-1.5">
+                      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                      <Input
+                        id={id}
+                        type={type || "text"}
+                        value={data[field] as string}
+                        onChange={(e) => updateField(field, e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Their Solicitor */}
               <div className="space-y-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <h3 className="font-semibold text-sm text-primary">Their Solicitor</h3>
+                <div className="px-3 py-2 bg-muted/50 rounded-lg border border-border">
+                  <span className="font-medium text-sm">Their Solicitor</span>
                 </div>
                 
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_name">Other Solicitor</Label>
-                  <Input
-                    id="solicitor_name"
-                    value={data.solicitor_name}
-                    onChange={(e) => updateField("solicitor_name", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_building_name">Building Name</Label>
-                  <Input
-                    id="solicitor_building_name"
-                    value={data.solicitor_building_name}
-                    onChange={(e) => updateField("solicitor_building_name", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_property_details">Property Details</Label>
-                  <Input
-                    id="solicitor_property_details"
-                    value={data.solicitor_property_details}
-                    onChange={(e) => updateField("solicitor_property_details", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_postcode">Postcode</Label>
-                  <Input
-                    id="solicitor_postcode"
-                    value={data.solicitor_postcode}
-                    onChange={(e) => updateField("solicitor_postcode", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_street">Street</Label>
-                  <Input
-                    id="solicitor_street"
-                    value={data.solicitor_street}
-                    onChange={(e) => updateField("solicitor_street", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_district">District</Label>
-                  <Input
-                    id="solicitor_district"
-                    value={data.solicitor_district}
-                    onChange={(e) => updateField("solicitor_district", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_town">Town</Label>
-                  <Input
-                    id="solicitor_town"
-                    value={data.solicitor_town}
-                    onChange={(e) => updateField("solicitor_town", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_county">County</Label>
-                  <Input
-                    id="solicitor_county"
-                    value={data.solicitor_county}
-                    onChange={(e) => updateField("solicitor_county", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_email">E-Mail</Label>
-                  <Input
-                    id="solicitor_email"
-                    type="email"
-                    value={data.solicitor_email}
-                    onChange={(e) => updateField("solicitor_email", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_phone">Phone</Label>
-                  <Input
-                    id="solicitor_phone"
-                    value={data.solicitor_phone}
-                    onChange={(e) => updateField("solicitor_phone", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_mobile">Mobile</Label>
-                  <Input
-                    id="solicitor_mobile"
-                    value={data.solicitor_mobile}
-                    onChange={(e) => updateField("solicitor_mobile", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_dx_number">DX Number</Label>
-                  <Input
-                    id="solicitor_dx_number"
-                    value={data.solicitor_dx_number}
-                    onChange={(e) => updateField("solicitor_dx_number", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_reference">Reference Number</Label>
-                  <Input
-                    id="solicitor_reference"
-                    value={data.solicitor_reference}
-                    onChange={(e) => updateField("solicitor_reference", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_account_number">Account Number</Label>
-                  <Input
-                    id="solicitor_account_number"
-                    value={data.solicitor_account_number}
-                    onChange={(e) => updateField("solicitor_account_number", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_contact_person">Contact Person</Label>
-                  <Input
-                    id="solicitor_contact_person"
-                    value={data.solicitor_contact_person}
-                    onChange={(e) => updateField("solicitor_contact_person", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_assistant">Assistant</Label>
-                  <Input
-                    id="solicitor_assistant"
-                    value={data.solicitor_assistant}
-                    onChange={(e) => updateField("solicitor_assistant", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="solicitor_additional_info">Additional Info</Label>
-                  <Textarea
-                    id="solicitor_additional_info"
-                    value={data.solicitor_additional_info}
-                    onChange={(e) => updateField("solicitor_additional_info", e.target.value)}
-                    rows={4}
-                  />
-                </div>
-                
-                <div className="flex justify-center pt-4">
-                  <Button onClick={handleSave} disabled={saving}>
-                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save
-                  </Button>
+                <div className="space-y-3">
+                  {[
+                    { id: "solicitor_name", label: "Other Solicitor", field: "solicitor_name" as const },
+                    { id: "solicitor_building_name", label: "Building Name", field: "solicitor_building_name" as const },
+                    { id: "solicitor_property_details", label: "Property Details", field: "solicitor_property_details" as const },
+                    { id: "solicitor_postcode", label: "Postcode", field: "solicitor_postcode" as const },
+                    { id: "solicitor_street", label: "Street", field: "solicitor_street" as const },
+                    { id: "solicitor_district", label: "District", field: "solicitor_district" as const },
+                    { id: "solicitor_town", label: "Town", field: "solicitor_town" as const },
+                    { id: "solicitor_county", label: "County", field: "solicitor_county" as const },
+                    { id: "solicitor_email", label: "E-Mail", field: "solicitor_email" as const, type: "email" },
+                    { id: "solicitor_phone", label: "Phone", field: "solicitor_phone" as const },
+                    { id: "solicitor_mobile", label: "Mobile", field: "solicitor_mobile" as const },
+                    { id: "solicitor_dx_number", label: "DX Number", field: "solicitor_dx_number" as const },
+                    { id: "solicitor_reference", label: "Reference Number", field: "solicitor_reference" as const },
+                    { id: "solicitor_account_number", label: "Account Number", field: "solicitor_account_number" as const },
+                    { id: "solicitor_contact_person", label: "Contact Person", field: "solicitor_contact_person" as const },
+                    { id: "solicitor_assistant", label: "Assistant", field: "solicitor_assistant" as const },
+                  ].map(({ id, label, field, type }) => (
+                    <div key={id} className="space-y-1.5">
+                      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                      <Input
+                        id={id}
+                        type={type || "text"}
+                        value={data[field]}
+                        onChange={(e) => updateField(field, e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  ))}
+                  
+                  <div className="space-y-1.5">
+                    <Label htmlFor="solicitor_additional_info" className="text-xs text-muted-foreground">Additional Info</Label>
+                    <Textarea
+                      id="solicitor_additional_info"
+                      value={data.solicitor_additional_info}
+                      onChange={(e) => updateField("solicitor_additional_info", e.target.value)}
+                      rows={4}
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </CardContent>
+            
+            <div className="flex justify-center pt-2">
+              <Button onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                Save
+              </Button>
+            </div>
+          </div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   )
 }

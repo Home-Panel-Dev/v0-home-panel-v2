@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +9,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronRight, Loader2, MapPin } from "lucide-react"
 
 interface CorrespondenceData {
-  // Primary Client
   organisation: string
   flat_building_no: string
   building_name: string
@@ -24,7 +22,6 @@ interface CorrespondenceData {
   phone: string
   mobile: string
   sms_opt_in: boolean
-  // Joint Client
   joint_organisation: string
   joint_flat_building_no: string
   joint_building_name: string
@@ -131,152 +128,67 @@ export function CaseCorrespondence({ enquiryId, caseId }: CaseCorrespondenceProp
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-xl p-12 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="px-5 py-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border">
             <div className="flex items-center gap-2">
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <MapPin className="h-4 w-4" />
-              <CardTitle className="text-base">Correspondence Details</CardTitle>
+              {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-medium text-sm">Correspondence Details</h3>
             </div>
-          </CardHeader>
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-6">
+          <div className="p-5 space-y-5">
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Primary Client Correspondence */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-sm text-primary border-b pb-2">
+                <h3 className="font-medium text-sm border-b border-border pb-2">
                   Correspondence Address
                 </h3>
                 
                 <div className="grid gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="organisation">Organisation</Label>
-                    <Input
-                      id="organisation"
-                      value={data.organisation}
-                      onChange={(e) => updateField("organisation", e.target.value)}
-                    />
-                  </div>
+                  {[
+                    { id: "organisation", label: "Organisation", field: "organisation" as const },
+                    { id: "flat_building_no", label: "Flat/Plot/Building No.", field: "flat_building_no" as const },
+                    { id: "building_name", label: "Development/Building Name", field: "building_name" as const },
+                    { id: "street_no", label: "Street No.", field: "street_no" as const },
+                    { id: "street", label: "Street", field: "street" as const },
+                    { id: "locality", label: "Locality", field: "locality" as const },
+                    { id: "post_town", label: "Post Town", field: "post_town" as const },
+                    { id: "postcode", label: "Postcode", field: "postcode" as const },
+                    { id: "county", label: "County", field: "county" as const },
+                    { id: "email", label: "E-Mail", field: "email" as const, type: "email" },
+                    { id: "phone", label: "Phone", field: "phone" as const },
+                    { id: "mobile", label: "Mobile", field: "mobile" as const },
+                  ].map(({ id, label, field, type }) => (
+                    <div key={id} className="space-y-1.5">
+                      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                      <Input
+                        id={id}
+                        type={type || "text"}
+                        value={data[field]}
+                        onChange={(e) => updateField(field, e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  ))}
                   
-                  <div className="space-y-1.5">
-                    <Label htmlFor="flat_building_no">Flat/Plot/Building No.</Label>
-                    <Input
-                      id="flat_building_no"
-                      value={data.flat_building_no}
-                      onChange={(e) => updateField("flat_building_no", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="building_name">Development/Building Name</Label>
-                    <Input
-                      id="building_name"
-                      value={data.building_name}
-                      onChange={(e) => updateField("building_name", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="street_no">Street No.</Label>
-                    <Input
-                      id="street_no"
-                      value={data.street_no}
-                      onChange={(e) => updateField("street_no", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="street">Street</Label>
-                    <Input
-                      id="street"
-                      value={data.street}
-                      onChange={(e) => updateField("street", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="locality">Locality</Label>
-                    <Input
-                      id="locality"
-                      value={data.locality}
-                      onChange={(e) => updateField("locality", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="post_town">Post Town</Label>
-                    <Input
-                      id="post_town"
-                      value={data.post_town}
-                      onChange={(e) => updateField("post_town", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="postcode">Postcode</Label>
-                    <Input
-                      id="postcode"
-                      value={data.postcode}
-                      onChange={(e) => updateField("postcode", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="county">County</Label>
-                    <Input
-                      id="county"
-                      value={data.county}
-                      onChange={(e) => updateField("county", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email">E-Mail</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={data.email}
-                      onChange={(e) => updateField("email", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={data.phone}
-                      onChange={(e) => updateField("phone", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="mobile">Mobile</Label>
-                    <Input
-                      id="mobile"
-                      value={data.mobile}
-                      onChange={(e) => updateField("mobile", e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center gap-2 pt-2">
+                  <div className="flex items-center gap-2 pt-1">
                     <Checkbox
                       id="sms_opt_in"
                       checked={data.sms_opt_in}
                       onCheckedChange={(checked) => updateField("sms_opt_in", checked as boolean)}
                     />
-                    <Label htmlFor="sms_opt_in" className="text-sm font-normal">
+                    <Label htmlFor="sms_opt_in" className="text-sm font-normal cursor-pointer">
                       SMS
                     </Label>
                   </div>
@@ -285,139 +197,45 @@ export function CaseCorrespondence({ enquiryId, caseId }: CaseCorrespondenceProp
 
               {/* Joint Client Details */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-sm text-primary border-b pb-2">
+                <h3 className="font-medium text-sm border-b border-border pb-2">
                   Joint Client Details
                 </h3>
                 
                 <div className="grid gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_organisation">Organisation</Label>
-                    <Input
-                      id="joint_organisation"
-                      value={data.joint_organisation}
-                      onChange={(e) => updateField("joint_organisation", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
+                  {[
+                    { id: "joint_organisation", label: "Organisation", field: "joint_organisation" as const },
+                    { id: "joint_flat_building_no", label: "Flat/Plot/Building No.", field: "joint_flat_building_no" as const },
+                    { id: "joint_building_name", label: "Development/Building Name", field: "joint_building_name" as const },
+                    { id: "joint_street_no", label: "Street No.", field: "joint_street_no" as const },
+                    { id: "joint_street", label: "Street", field: "joint_street" as const },
+                    { id: "joint_locality", label: "Locality", field: "joint_locality" as const },
+                    { id: "joint_post_town", label: "Post Town", field: "joint_post_town" as const },
+                    { id: "joint_postcode", label: "Postcode", field: "joint_postcode" as const },
+                    { id: "joint_county", label: "County", field: "joint_county" as const },
+                    { id: "joint_email", label: "E-Mail", field: "joint_email" as const, type: "email" },
+                    { id: "joint_phone", label: "Phone", field: "joint_phone" as const },
+                    { id: "joint_mobile", label: "Mobile", field: "joint_mobile" as const },
+                  ].map(({ id, label, field, type }) => (
+                    <div key={id} className="space-y-1.5">
+                      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                      <Input
+                        id={id}
+                        type={type || "text"}
+                        value={data[field]}
+                        onChange={(e) => updateField(field, e.target.value)}
+                        disabled={data.joint_same_as_primary}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  ))}
                   
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_flat_building_no">Flat/Plot/Building No.</Label>
-                    <Input
-                      id="joint_flat_building_no"
-                      value={data.joint_flat_building_no}
-                      onChange={(e) => updateField("joint_flat_building_no", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_building_name">Development/Building Name</Label>
-                    <Input
-                      id="joint_building_name"
-                      value={data.joint_building_name}
-                      onChange={(e) => updateField("joint_building_name", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_street_no">Street No.</Label>
-                    <Input
-                      id="joint_street_no"
-                      value={data.joint_street_no}
-                      onChange={(e) => updateField("joint_street_no", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_street">Street</Label>
-                    <Input
-                      id="joint_street"
-                      value={data.joint_street}
-                      onChange={(e) => updateField("joint_street", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_locality">Locality</Label>
-                    <Input
-                      id="joint_locality"
-                      value={data.joint_locality}
-                      onChange={(e) => updateField("joint_locality", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_post_town">Post Town</Label>
-                    <Input
-                      id="joint_post_town"
-                      value={data.joint_post_town}
-                      onChange={(e) => updateField("joint_post_town", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_postcode">Postcode</Label>
-                    <Input
-                      id="joint_postcode"
-                      value={data.joint_postcode}
-                      onChange={(e) => updateField("joint_postcode", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_county">County</Label>
-                    <Input
-                      id="joint_county"
-                      value={data.joint_county}
-                      onChange={(e) => updateField("joint_county", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_email">E-Mail</Label>
-                    <Input
-                      id="joint_email"
-                      type="email"
-                      value={data.joint_email}
-                      onChange={(e) => updateField("joint_email", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_phone">Phone</Label>
-                    <Input
-                      id="joint_phone"
-                      value={data.joint_phone}
-                      onChange={(e) => updateField("joint_phone", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <Label htmlFor="joint_mobile">Mobile</Label>
-                    <Input
-                      id="joint_mobile"
-                      value={data.joint_mobile}
-                      onChange={(e) => updateField("joint_mobile", e.target.value)}
-                      disabled={data.joint_same_as_primary}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center gap-2 pt-2">
+                  <div className="flex items-center gap-2 pt-1">
                     <Checkbox
                       id="joint_same_as_primary"
                       checked={data.joint_same_as_primary}
                       onCheckedChange={(checked) => updateField("joint_same_as_primary", checked as boolean)}
                     />
-                    <Label htmlFor="joint_same_as_primary" className="text-sm font-normal">
+                    <Label htmlFor="joint_same_as_primary" className="text-sm font-normal cursor-pointer">
                       Same as primary
                     </Label>
                   </div>
@@ -425,15 +243,15 @@ export function CaseCorrespondence({ enquiryId, caseId }: CaseCorrespondenceProp
               </div>
             </div>
 
-            <div className="flex justify-center pt-4">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <div className="flex justify-center pt-2">
+              <Button onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                 Save
               </Button>
             </div>
-          </CardContent>
+          </div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   )
 }

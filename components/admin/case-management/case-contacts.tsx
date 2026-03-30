@@ -1,12 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ChevronDown, ChevronRight, Loader2, Building, Plus, Pencil, Trash2 } from "lucide-react"
@@ -149,33 +147,31 @@ export function CaseContacts({ enquiryId, caseId }: CaseContactsProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-xl p-12 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="px-5 py-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border">
             <div className="flex items-center gap-2">
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <Building className="h-4 w-4" />
-              <CardTitle className="text-base">Contacts</CardTitle>
+              {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              <Building className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-medium text-sm">Contacts</h3>
             </div>
-          </CardHeader>
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-4">
+          <div className="p-5 space-y-4">
             <div className="flex justify-end">
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={openAddDialog} size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5" />
                     Add Contact
                   </Button>
                 </DialogTrigger>
@@ -187,12 +183,12 @@ export function CaseContacts({ enquiryId, caseId }: CaseContactsProps) {
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="space-y-1.5">
-                      <Label htmlFor="business_type">Business Type</Label>
+                      <Label htmlFor="business_type" className="text-xs text-muted-foreground">Business Type</Label>
                       <Select
                         value={formData.business_type}
                         onValueChange={(value) => setFormData(prev => ({ ...prev, business_type: value }))}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -206,78 +202,85 @@ export function CaseContacts({ enquiryId, caseId }: CaseContactsProps) {
                     </div>
                     
                     <div className="space-y-1.5">
-                      <Label htmlFor="company">Company</Label>
+                      <Label htmlFor="company" className="text-xs text-muted-foreground">Company</Label>
                       <Input
                         id="company"
                         value={formData.company}
                         onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
+                        className="h-9 text-sm"
                       />
                     </div>
                     
                     <div className="space-y-1.5">
-                      <Label htmlFor="contact_person">Contact Person</Label>
+                      <Label htmlFor="contact_person" className="text-xs text-muted-foreground">Contact Person</Label>
                       <Input
                         id="contact_person"
                         value={formData.contact_person}
                         onChange={(e) => setFormData(prev => ({ ...prev, contact_person: e.target.value }))}
+                        className="h-9 text-sm"
                       />
                     </div>
                     
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <Label htmlFor="phone">Phone</Label>
+                        <Label htmlFor="phone" className="text-xs text-muted-foreground">Phone</Label>
                         <Input
                           id="phone"
                           value={formData.phone}
                           onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="h-9 text-sm"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="mobile">Mobile</Label>
+                        <Label htmlFor="mobile" className="text-xs text-muted-foreground">Mobile</Label>
                         <Input
                           id="mobile"
                           value={formData.mobile}
                           onChange={(e) => setFormData(prev => ({ ...prev, mobile: e.target.value }))}
+                          className="h-9 text-sm"
                         />
                       </div>
                     </div>
                     
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <Label htmlFor="fax">Fax</Label>
+                        <Label htmlFor="fax" className="text-xs text-muted-foreground">Fax</Label>
                         <Input
                           id="fax"
                           value={formData.fax}
                           onChange={(e) => setFormData(prev => ({ ...prev, fax: e.target.value }))}
+                          className="h-9 text-sm"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
                         <Input
                           id="email"
                           type="email"
                           value={formData.email}
                           onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                          className="h-9 text-sm"
                         />
                       </div>
                     </div>
                     
                     <div className="space-y-1.5">
-                      <Label htmlFor="address">Address</Label>
+                      <Label htmlFor="address" className="text-xs text-muted-foreground">Address</Label>
                       <Input
                         id="address"
                         value={formData.address}
                         onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                        className="h-9 text-sm"
                       />
                     </div>
                   </div>
                   
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleSave} disabled={saving}>
-                      {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button onClick={handleSave} disabled={saving} size="sm">
+                      {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                       Save
                     </Button>
                   </div>
@@ -286,59 +289,61 @@ export function CaseContacts({ enquiryId, caseId }: CaseContactsProps) {
             </div>
 
             {contacts.length > 0 ? (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Type</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead className="w-24">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+              <div className="border border-border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Type</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Company</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Contact</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Phone</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Email</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground w-24">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
                     {contacts.map((contact) => (
-                      <TableRow key={contact.id}>
-                        <TableCell className="font-medium">
+                      <tr key={contact.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-2.5 font-medium">
                           {getBusinessTypeLabel(contact.business_type)}
-                        </TableCell>
-                        <TableCell>{contact.company}</TableCell>
-                        <TableCell>{contact.contact_person}</TableCell>
-                        <TableCell>{contact.phone || contact.mobile}</TableCell>
-                        <TableCell>{contact.email}</TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="px-4 py-2.5">{contact.company}</td>
+                        <td className="px-4 py-2.5">{contact.contact_person}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground">{contact.phone || contact.mobile}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground">{contact.email}</td>
+                        <td className="px-4 py-2.5">
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               onClick={() => openEditDialog(contact)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               onClick={() => handleDelete(contact.id)}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
                 No contacts added yet
               </p>
             )}
-          </CardContent>
+          </div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   )
 }

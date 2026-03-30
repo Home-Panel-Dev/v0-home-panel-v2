@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -9,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight, Calendar, AlertTriangle, Loader2 } from "lucide-react"
 import { format } from "date-fns"
@@ -144,33 +142,33 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
     <div className="space-y-4">
       {/* Case Details Section */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <Card>
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
           <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="px-5 py-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border">
               <div className="flex items-center gap-2">
-                {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                <CardTitle className="text-base">Case Details</CardTitle>
+                {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                <h3 className="font-medium text-sm">Case Details</h3>
                 {currentStatus && (
-                  <Badge variant="secondary" className="ml-auto">
+                  <Badge variant="secondary" className="ml-auto text-xs">
                     {currentStatus}
                   </Badge>
                 )}
               </div>
-            </CardHeader>
+            </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="space-y-6">
+            <div className="p-5 space-y-5">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Current Status</Label>
-                  <div className="text-sm font-medium text-foreground">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Current Status</Label>
+                  <div className="text-sm font-medium">
                     {currentStatus || "New Enquiry"}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-status">New Status</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="new-status" className="text-xs text-muted-foreground">New Status</Label>
                   <Select value={newStatus} onValueChange={setNewStatus}>
-                    <SelectTrigger id="new-status">
+                    <SelectTrigger id="new-status" className="h-9 text-sm">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -185,29 +183,25 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="expected-completion">Expected Completion Date</Label>
-                  <div className="relative">
-                    <Input
-                      id="expected-completion"
-                      type="date"
-                      value={expectedCompletion}
-                      onChange={(e) => setExpectedCompletion(e.target.value)}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="expected-completion" className="text-xs text-muted-foreground">Expected Completion Date</Label>
+                  <Input
+                    id="expected-completion"
+                    type="date"
+                    value={expectedCompletion}
+                    onChange={(e) => setExpectedCompletion(e.target.value)}
+                    className="h-9 text-sm"
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="next-action">Next Action Date</Label>
-                  <div className="relative">
-                    <Input
-                      id="next-action"
-                      type="date"
-                      value={nextActionDate}
-                      onChange={(e) => setNextActionDate(e.target.value)}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="next-action" className="text-xs text-muted-foreground">Next Action Date</Label>
+                  <Input
+                    id="next-action"
+                    type="date"
+                    value={nextActionDate}
+                    onChange={(e) => setNextActionDate(e.target.value)}
+                    className="h-9 text-sm"
+                  />
                 </div>
               </div>
 
@@ -218,7 +212,7 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
                     checked={updateCaseStatus}
                     onCheckedChange={(checked) => setUpdateCaseStatus(checked as boolean)}
                   />
-                  <Label htmlFor="update-status" className="text-sm font-normal">
+                  <Label htmlFor="update-status" className="text-sm font-normal cursor-pointer">
                     Update Case Status
                   </Label>
                 </div>
@@ -228,7 +222,7 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
                     checked={emailReminder}
                     onCheckedChange={(checked) => setEmailReminder(checked as boolean)}
                   />
-                  <Label htmlFor="email-reminder" className="text-sm font-normal">
+                  <Label htmlFor="email-reminder" className="text-sm font-normal cursor-pointer">
                     Email Reminder
                   </Label>
                 </div>
@@ -238,8 +232,9 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
                 <Button 
                   onClick={handleUpdateStatus} 
                   disabled={!newStatus || !updateCaseStatus || saving}
+                  size="sm"
                 >
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                   Save
                 </Button>
               </div>
@@ -247,59 +242,59 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
               {/* Status History Table */}
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : statusHistory.length > 0 ? (
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="w-12">#</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Updated</TableHead>
-                        <TableHead>Notes</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted/50 border-b border-border">
+                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground w-12">#</th>
+                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Status</th>
+                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Updated</th>
+                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
                       {statusHistory.map((entry, index) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell>{entry.status}</TableCell>
-                          <TableCell className="text-muted-foreground">
+                        <tr key={entry.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-2.5 font-medium">{index + 1}</td>
+                          <td className="px-4 py-2.5">{entry.status}</td>
+                          <td className="px-4 py-2.5 text-muted-foreground">
                             {format(new Date(entry.created_at), "dd.MM.yyyy")}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          </td>
+                          <td className="px-4 py-2.5 text-muted-foreground">
                             {entry.notes || `Status updated to ${entry.status}`}
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No status history yet
                 </p>
               )}
-            </CardContent>
+            </div>
           </CollapsibleContent>
-        </Card>
+        </div>
       </Collapsible>
 
       {/* Request Abort Section */}
       <Collapsible open={isAbortOpen} onOpenChange={setIsAbortOpen}>
-        <Card className="border-destructive/50">
+        <div className="bg-card border border-destructive/30 rounded-xl overflow-hidden">
           <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-destructive/5 transition-colors">
+            <div className="px-5 py-4 cursor-pointer hover:bg-destructive/5 transition-colors border-b border-destructive/30">
               <div className="flex items-center gap-2">
-                {isAbortOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                {isAbortOpen ? <ChevronDown className="h-4 w-4 text-destructive" /> : <ChevronRight className="h-4 w-4 text-destructive" />}
                 <AlertTriangle className="h-4 w-4 text-destructive" />
-                <CardTitle className="text-base text-destructive">Request Abort</CardTitle>
+                <h3 className="font-medium text-sm text-destructive">Request Abort</h3>
               </div>
-            </CardHeader>
+            </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="space-y-4">
+            <div className="p-5 space-y-4">
               <p className="text-sm text-muted-foreground">
                 Request to abort this case. This action will notify all relevant parties.
               </p>
@@ -310,19 +305,20 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
                   checked={abortConfirmed}
                   onCheckedChange={(checked) => setAbortConfirmed(checked as boolean)}
                 />
-                <Label htmlFor="confirm-abort" className="text-sm font-normal">
+                <Label htmlFor="confirm-abort" className="text-sm font-normal cursor-pointer">
                   Confirm Abort
                 </Label>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="abort-reason">Reason</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="abort-reason" className="text-xs text-muted-foreground">Reason</Label>
                 <Textarea
                   id="abort-reason"
                   placeholder="Enter reason for aborting this case..."
                   value={abortReason}
                   onChange={(e) => setAbortReason(e.target.value)}
                   rows={4}
+                  className="text-sm"
                 />
               </div>
 
@@ -331,14 +327,15 @@ export function CaseHistory({ enquiryId, caseId, currentStatus }: CaseHistoryPro
                   variant="destructive"
                   onClick={handleRequestAbort}
                   disabled={!abortConfirmed || !abortReason || saving}
+                  size="sm"
                 >
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                   Request
                 </Button>
               </div>
-            </CardContent>
+            </div>
           </CollapsibleContent>
-        </Card>
+        </div>
       </Collapsible>
     </div>
   )
