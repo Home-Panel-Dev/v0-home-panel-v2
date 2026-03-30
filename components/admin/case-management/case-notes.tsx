@@ -171,7 +171,21 @@ export function CaseNotes({ enquiryId, caseId, clientName, clientEmail }: CaseNo
               </div>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-3">
+              <Button 
+                onClick={handleAddNote}
+                disabled={(!clientNote && !solicitorNote) || saving}
+                size="sm"
+                variant="outline"
+                className="gap-2"
+              >
+                {saving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <MessageSquare className="h-3.5 w-3.5" />
+                )}
+                Save Note
+              </Button>
               <Button 
                 onClick={handleSendEmail}
                 disabled={!clientNote || saving}

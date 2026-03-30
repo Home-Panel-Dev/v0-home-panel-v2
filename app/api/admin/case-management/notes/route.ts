@@ -45,13 +45,15 @@ export async function GET(request: NextRequest) {
       .select("*", { count: "exact" })
       .eq("action", "note_added")
 
+    // Filter by enquiry_id or case_id based on what's provided
     if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    // Note: case_id might not exist in activity_log table, so we only filter by enquiry_id
     
-    const { data: activities, count } = await query
+    const { data: activities, count, error } = await query
       .order("created_at", { ascending: false })
       .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-    if (activities) {
+    if (!error && activities && activities.length > 0) {
       const notes = activities.map(a => ({
         id: a.id,
         content: a.description || "",
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ notes, totalPages, currentPage: page })
     }
   } catch {
-    // activity_log doesn't exist either
+    // activity_log doesn't exist or query failed
   }
 
   return NextResponse.json({ notes: [], totalPages: 1, currentPage: 1 })
@@ -165,14 +167,15 @@ export async function POST(request: NextRequest) {
       .eq("id", caseId)
   }
 
-  // Log activity
+  // Log activity - include actual note content in description for retrieval
   for (const note of notes) {
     await logActivity({
       enquiryId: enquiryId || undefined,
+      caseId: caseId || undefined,
       actorType: "admin",
       actorId: user.id,
       action: "note_added",
-      description: `Note added: ${note.note_type}`,
+      description: note.content,
     })
   }
 

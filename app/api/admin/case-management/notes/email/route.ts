@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
   // Log activity
   await logActivity({
     enquiryId: enquiryId || undefined,
+    caseId: caseId || undefined,
     actorType: "admin",
     actorId: user.id,
     action: "email_sent",

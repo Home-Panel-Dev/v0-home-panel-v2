@@ -9,6 +9,7 @@ import { CaseLenderDetails } from "./case-lender-details"
 import { CaseOtherParty } from "./case-other-party"
 import { CaseContacts } from "./case-contacts"
 import { CaseUploads } from "./case-uploads"
+import { CaseBranchAssignment } from "./case-branch-assignment"
 
 interface CaseTabsProps {
   enquiryId?: string
@@ -82,6 +83,12 @@ export function CaseTabs({
         >
           Uploads
         </TabsTrigger>
+        <TabsTrigger 
+          value="branch" 
+          className="data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm text-sm px-3 py-1.5"
+        >
+          Branch Assignment
+        </TabsTrigger>
       </TabsList>
 
       <div className="mt-5">
@@ -141,6 +148,13 @@ export function CaseTabs({
 
         <TabsContent value="uploads" className="m-0">
           <CaseUploads 
+            enquiryId={enquiryId} 
+            caseId={caseId}
+          />
+        </TabsContent>
+
+        <TabsContent value="branch" className="m-0">
+          <CaseBranchAssignment 
             enquiryId={enquiryId} 
             caseId={caseId}
           />
