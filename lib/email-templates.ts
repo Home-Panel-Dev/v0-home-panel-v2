@@ -61,8 +61,8 @@ function calculateFees(data: EnquiryFormData) {
 
 // Agent data
 const agents = [
-  { name: "Sarah Mitchell", role: "Senior Conveyancer" },
-  { name: "James Thompson", role: "Property Solicitor" },
+  { name: "Sarah Mitchell", role: "Senior Conveyancer", photo: "https://v0-home-panel-v2.vercel.app/images/agents/sarah-mitchell.jpg" },
+  { name: "James Thompson", role: "Property Solicitor", photo: "https://v0-home-panel-v2.vercel.app/images/agents/james-thompson.jpg" },
 ]
 
 export function getCustomerConfirmationEmail(data: EnquiryFormData) {
@@ -154,9 +154,7 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
           ${agents.map((agent, i) => `
             ${i > 0 ? '<td style="padding: 0 16px; color: #999; font-size: 14px;">or</td>' : ''}
             <td style="text-align: center; padding: 0 8px;">
-              <div style="width: 64px; height: 64px; border-radius: 50%; background-color: #e5e5e5; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 20px; color: #666;">${agent.name.split(" ").map(n => n[0]).join("")}</span>
-              </div>
+              <img src="${agent.photo}" alt="${agent.name}" width="64" height="64" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 0 auto 8px; display: block;" />
               <p style="margin: 0; font-weight: 500; font-size: 14px;">${agent.name}</p>
               <p style="margin: 4px 0 0; color: #666; font-size: 12px;">${agent.role}</p>
             </td>
