@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(documents)
+  return NextResponse.json({ documents: documents || [] })
 }
 
 // POST: Upload a new document

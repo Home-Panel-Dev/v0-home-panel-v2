@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { getStatusLabel, getStatusStyle, CASE_STATUSES } from "@/lib/database"
 import { formatCurrency, formatDateTime, getTransactionLabel } from "@/lib/utils/format"
+import { CaseDetailTabs } from "@/components/admin/case-detail-tabs"
 
 interface CaseData {
   id: string
@@ -191,6 +192,14 @@ export default function CaseDetailPage() {
         </div>
       </div>
 
+      <CaseDetailTabs
+        caseId={caseData.id}
+        clientName={caseData.client_name}
+        clientEmail={caseData.client_email}
+        transactionType={caseData.transaction_type || "sale"}
+        propertyAddress={caseData.property_address || undefined}
+        currentStatus={caseData.status}
+      >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -455,6 +464,7 @@ export default function CaseDetailPage() {
           </div>
         </div>
       </div>
+      </CaseDetailTabs>
     </div>
   )
 }

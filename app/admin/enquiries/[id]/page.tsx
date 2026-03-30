@@ -24,6 +24,7 @@ import { InviteClientButton } from "@/components/admin/invite-client-button"
 import { ConvertToCaseButton } from "@/components/admin/convert-to-case-button"
 import { EnquiryComplianceSection } from "@/components/admin/enquiry-compliance-section"
 import { AssignFirmButton } from "@/components/admin/assign-firm-button"
+import { EnquiryDetailTabs } from "@/components/admin/enquiry-detail-tabs"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
 import { formatCurrency, formatDateTime, formatDate, getTransactionLabel } from "@/lib/utils/format"
 
@@ -150,6 +151,15 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
         </div>
       </div>
 
+      {/* Tabs for Overview and Case Management */}
+      <EnquiryDetailTabs
+        enquiryId={enquiry.id}
+        clientName={`${enquiry.first_name} ${enquiry.last_name}`}
+        clientEmail={enquiry.email}
+        transactionType={enquiry.transaction_type}
+        propertyAddress={enquiry.property_address}
+        currentStatus={enquiry.status}
+      >
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Details */}
@@ -512,6 +522,7 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
           </div>
         </div>
       </div>
+      </EnquiryDetailTabs>
     </div>
   )
 }
