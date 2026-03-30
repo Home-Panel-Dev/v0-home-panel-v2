@@ -11,8 +11,7 @@ import { Badge } from "@/components/ui/badge"
 
 interface PropertyData {
   transaction_type: string
-  organisation: string
-  property_name: string
+  property_details: string
   property_number: string
   street_no: string
   street: string
@@ -21,7 +20,7 @@ interface PropertyData {
   county: string
   postcode: string
   amount: string
-  tenure: string
+  holding_type: string
 }
 
 interface CasePropertyTransactionProps {
@@ -33,8 +32,7 @@ interface CasePropertyTransactionProps {
 
 const emptyData: PropertyData = {
   transaction_type: "",
-  organisation: "",
-  property_name: "",
+  property_details: "",
   property_number: "",
   street_no: "",
   street: "",
@@ -43,7 +41,7 @@ const emptyData: PropertyData = {
   county: "",
   postcode: "",
   amount: "",
-  tenure: "",
+  holding_type: "freehold",
 }
 
 export function CasePropertyTransaction({ 
@@ -145,7 +143,7 @@ export function CasePropertyTransaction({
 
             <div className="grid gap-4 md:grid-cols-2">
               {[
-                { id: "property_name", label: "Property Details", field: "property_name" as const, placeholder: propertyAddress || "Enter property name" },
+                { id: "property_details", label: "Property Details", field: "property_details" as const, placeholder: propertyAddress || "Enter property name" },
                 { id: "property_number", label: "Property Number", field: "property_number" as const },
                 { id: "postcode", label: "Postcode", field: "postcode" as const },
                 { id: "street_no", label: "Street No.", field: "street_no" as const },
@@ -170,9 +168,9 @@ export function CasePropertyTransaction({
               ))}
               
               <div className="space-y-1.5">
-                <Label htmlFor="tenure" className="text-xs text-muted-foreground">Holding Type</Label>
-                <Select value={data.tenure} onValueChange={(value) => updateField("tenure", value)}>
-                  <SelectTrigger id="tenure" className="h-9 text-sm">
+                <Label htmlFor="holding_type" className="text-xs text-muted-foreground">Holding Type</Label>
+                <Select value={data.holding_type} onValueChange={(value) => updateField("holding_type", value)}>
+                  <SelectTrigger id="holding_type" className="h-9 text-sm">
                     <SelectValue placeholder="Select tenure" />
                   </SelectTrigger>
                   <SelectContent>

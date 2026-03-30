@@ -84,7 +84,7 @@ export function CaseUploads({ enquiryId, caseId }: CaseUploadsProps) {
     if (!confirm("Are you sure you want to delete this document?")) return
 
     try {
-      const response = await fetch(`/api/admin/documents?id=${documentId}`, {
+      const response = await fetch(`/api/admin/documents/${documentId}`, {
         method: "DELETE",
       })
       if (response.ok) {

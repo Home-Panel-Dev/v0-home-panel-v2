@@ -9,21 +9,21 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronRight, Loader2, MapPin } from "lucide-react"
 
 interface CorrespondenceData {
-  organisation: string
-  flat_building_no: string
-  building_name: string
-  street_no: string
-  street: string
-  locality: string
-  post_town: string
-  postcode: string
-  county: string
-  email: string
-  phone: string
-  mobile: string
-  sms_opt_in: boolean
+  primary_organisation: string
+  primary_flat_plot: string
+  primary_building_name: string
+  primary_street_no: string
+  primary_street: string
+  primary_locality: string
+  primary_post_town: string
+  primary_postcode: string
+  primary_county: string
+  primary_email: string
+  primary_phone: string
+  primary_mobile: string
+  primary_sms_enabled: boolean
   joint_organisation: string
-  joint_flat_building_no: string
+  joint_flat_plot: string
   joint_building_name: string
   joint_street_no: string
   joint_street: string
@@ -43,21 +43,21 @@ interface CaseCorrespondenceProps {
 }
 
 const emptyData: CorrespondenceData = {
-  organisation: "",
-  flat_building_no: "",
-  building_name: "",
-  street_no: "",
-  street: "",
-  locality: "",
-  post_town: "",
-  postcode: "",
-  county: "",
-  email: "",
-  phone: "",
-  mobile: "",
-  sms_opt_in: false,
+  primary_organisation: "",
+  primary_flat_plot: "",
+  primary_building_name: "",
+  primary_street_no: "",
+  primary_street: "",
+  primary_locality: "",
+  primary_post_town: "",
+  primary_postcode: "",
+  primary_county: "",
+  primary_email: "",
+  primary_phone: "",
+  primary_mobile: "",
+  primary_sms_enabled: false,
   joint_organisation: "",
-  joint_flat_building_no: "",
+  joint_flat_plot: "",
   joint_building_name: "",
   joint_street_no: "",
   joint_street: "",
@@ -157,18 +157,18 @@ export function CaseCorrespondence({ enquiryId, caseId }: CaseCorrespondenceProp
                 
                 <div className="grid gap-3">
                   {[
-                    { id: "organisation", label: "Organisation", field: "organisation" as const },
-                    { id: "flat_building_no", label: "Flat/Plot/Building No.", field: "flat_building_no" as const },
-                    { id: "building_name", label: "Development/Building Name", field: "building_name" as const },
-                    { id: "street_no", label: "Street No.", field: "street_no" as const },
-                    { id: "street", label: "Street", field: "street" as const },
-                    { id: "locality", label: "Locality", field: "locality" as const },
-                    { id: "post_town", label: "Post Town", field: "post_town" as const },
-                    { id: "postcode", label: "Postcode", field: "postcode" as const },
-                    { id: "county", label: "County", field: "county" as const },
-                    { id: "email", label: "E-Mail", field: "email" as const, type: "email" },
-                    { id: "phone", label: "Phone", field: "phone" as const },
-                    { id: "mobile", label: "Mobile", field: "mobile" as const },
+                    { id: "primary_organisation", label: "Organisation", field: "primary_organisation" as const },
+                    { id: "primary_flat_plot", label: "Flat/Plot/Building No.", field: "primary_flat_plot" as const },
+                    { id: "primary_building_name", label: "Development/Building Name", field: "primary_building_name" as const },
+                    { id: "primary_street_no", label: "Street No.", field: "primary_street_no" as const },
+                    { id: "primary_street", label: "Street", field: "primary_street" as const },
+                    { id: "primary_locality", label: "Locality", field: "primary_locality" as const },
+                    { id: "primary_post_town", label: "Post Town", field: "primary_post_town" as const },
+                    { id: "primary_postcode", label: "Postcode", field: "primary_postcode" as const },
+                    { id: "primary_county", label: "County", field: "primary_county" as const },
+                    { id: "primary_email", label: "E-Mail", field: "primary_email" as const, type: "email" },
+                    { id: "primary_phone", label: "Phone", field: "primary_phone" as const },
+                    { id: "primary_mobile", label: "Mobile", field: "primary_mobile" as const },
                   ].map(({ id, label, field, type }) => (
                     <div key={id} className="space-y-1.5">
                       <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
@@ -184,11 +184,11 @@ export function CaseCorrespondence({ enquiryId, caseId }: CaseCorrespondenceProp
                   
                   <div className="flex items-center gap-2 pt-1">
                     <Checkbox
-                      id="sms_opt_in"
-                      checked={data.sms_opt_in}
-                      onCheckedChange={(checked) => updateField("sms_opt_in", checked as boolean)}
+                      id="primary_sms_enabled"
+                      checked={data.primary_sms_enabled}
+                      onCheckedChange={(checked) => updateField("primary_sms_enabled", checked as boolean)}
                     />
-                    <Label htmlFor="sms_opt_in" className="text-sm font-normal cursor-pointer">
+                    <Label htmlFor="primary_sms_enabled" className="text-sm font-normal cursor-pointer">
                       SMS
                     </Label>
                   </div>
@@ -204,7 +204,7 @@ export function CaseCorrespondence({ enquiryId, caseId }: CaseCorrespondenceProp
                 <div className="grid gap-3">
                   {[
                     { id: "joint_organisation", label: "Organisation", field: "joint_organisation" as const },
-                    { id: "joint_flat_building_no", label: "Flat/Plot/Building No.", field: "joint_flat_building_no" as const },
+                    { id: "joint_flat_plot", label: "Flat/Plot/Building No.", field: "joint_flat_plot" as const },
                     { id: "joint_building_name", label: "Development/Building Name", field: "joint_building_name" as const },
                     { id: "joint_street_no", label: "Street No.", field: "joint_street_no" as const },
                     { id: "joint_street", label: "Street", field: "joint_street" as const },
