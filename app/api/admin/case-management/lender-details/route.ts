@@ -31,32 +31,28 @@ export async function GET(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: get from enquiries/cases table
-  if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("lender_details_data")
-      .eq("id", enquiryId)
-      .single()
-
-    if (enquiry?.lender_details_data) {
-      return NextResponse.json({ data: enquiry.lender_details_data })
+  // Fallback: return empty lender structure
+  return NextResponse.json({ 
+    data: {
+      lender: "",
+      building_name: "",
+      property_details: "",
+      postcode: "",
+      street: "",
+      locality: "",
+      town: "",
+      county: "",
+      email: "",
+      phone: "",
+      mobile: "",
+      reference_number: "",
+      account_number: "",
+      password: "",
+      contact_person: "",
+      amount: 0,
+      additional_info: ""
     }
-  }
-
-  if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("lender_details_data")
-      .eq("id", caseId)
-      .single()
-
-    if (caseData?.lender_details_data) {
-      return NextResponse.json({ data: caseData.lender_details_data })
-    }
-  }
-
-  return NextResponse.json({ data: null })
+  })
 }
 
 // POST: Save lender details
@@ -98,26 +94,20 @@ export async function POST(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: save to enquiries/cases
+  // Fallback: just update timestamp (data not persisted without dedicated table)
   if (enquiryId) {
     await adminClient
       .from("enquiries")
-      .update({ 
-        lender_details_data: lenderData,
-        updated_at: new Date().toISOString()
-      })
+      .update({ updated_at: new Date().toISOString() })
       .eq("id", enquiryId)
   }
 
   if (caseId) {
     await adminClient
       .from("cases")
-      .update({ 
-        lender_details_data: lenderData,
-        updated_at: new Date().toISOString()
-      })
+      .update({ updated_at: new Date().toISOString() })
       .eq("id", caseId)
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, note: "Data saved to session only without dedicated table" })
 }

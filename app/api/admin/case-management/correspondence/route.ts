@@ -31,66 +31,94 @@ export async function GET(request: NextRequest) {
     // Table doesn't exist, fall through to fallback
   }
 
-  // Fallback: get from enquiries/cases table
+  // Fallback: get from enquiries/cases table using existing columns only
   if (enquiryId) {
-    const { data: enquiry } = await adminClient
+    const { data: enquiry, error } = await adminClient
       .from("enquiries")
-      .select("property_address, first_name, last_name, email, phone, correspondence_data")
+      .select("property_address, property_postcode, first_name, last_name, email, phone, mobile")
       .eq("id", enquiryId)
       .single()
 
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
     if (enquiry) {
-      const correspondenceData = enquiry.correspondence_data as Record<string, unknown> || {}
       return NextResponse.json({
         data: {
-          // Primary client
-          primary_organisation: correspondenceData.primary_organisation || "",
-          primary_flat_plot: correspondenceData.primary_flat_plot || "",
+          // Primary client - using existing enquiry fields
+          primary_organisation: "",
+          primary_flat_plot: "",
           primary_building_name: enquiry.property_address || "",
-          primary_street_no: correspondenceData.primary_street_no || "",
-          primary_street: correspondenceData.primary_street || "",
-          primary_locality: correspondenceData.primary_locality || "",
-          primary_post_town: correspondenceData.primary_post_town || "",
-          primary_postcode: correspondenceData.primary_postcode || "",
-          primary_county: correspondenceData.primary_county || "",
+          primary_street_no: "",
+          primary_street: "",
+          primary_locality: "",
+          primary_post_town: "",
+          primary_postcode: enquiry.property_postcode || "",
+          primary_county: "",
           primary_email: enquiry.email || "",
           primary_phone: enquiry.phone || "",
-          primary_mobile: correspondenceData.primary_mobile || "",
-          primary_sms_enabled: correspondenceData.primary_sms_enabled || false,
-          // Joint client
-          joint_organisation: correspondenceData.joint_organisation || "",
-          joint_flat_plot: correspondenceData.joint_flat_plot || "",
-          joint_building_name: correspondenceData.joint_building_name || "",
-          joint_street_no: correspondenceData.joint_street_no || "",
-          joint_street: correspondenceData.joint_street || "",
-          joint_locality: correspondenceData.joint_locality || "",
-          joint_post_town: correspondenceData.joint_post_town || "",
-          joint_postcode: correspondenceData.joint_postcode || "",
-          joint_county: correspondenceData.joint_county || "",
-          joint_email: correspondenceData.joint_email || "",
-          joint_phone: correspondenceData.joint_phone || "",
-          joint_mobile: correspondenceData.joint_mobile || "",
-          joint_same_as_primary: correspondenceData.joint_same_as_primary || false,
+          primary_mobile: enquiry.mobile || "",
+          primary_sms_enabled: false,
+          // Joint client - empty by default
+          joint_organisation: "",
+          joint_flat_plot: "",
+          joint_building_name: "",
+          joint_street_no: "",
+          joint_street: "",
+          joint_locality: "",
+          joint_post_town: "",
+          joint_postcode: "",
+          joint_county: "",
+          joint_email: "",
+          joint_phone: "",
+          joint_mobile: "",
+          joint_same_as_primary: false,
         }
       })
     }
   }
 
   if (caseId) {
-    const { data: caseData } = await adminClient
+    const { data: caseData, error } = await adminClient
       .from("cases")
-      .select("property_address, client_name, client_email, client_phone, correspondence_data")
+      .select("property_address, client_name, client_email, client_phone")
       .eq("id", caseId)
       .single()
 
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
     if (caseData) {
-      const correspondenceData = caseData.correspondence_data as Record<string, unknown> || {}
       return NextResponse.json({
         data: {
           primary_building_name: caseData.property_address || "",
           primary_email: caseData.client_email || "",
           primary_phone: caseData.client_phone || "",
-          ...correspondenceData
+          primary_organisation: "",
+          primary_flat_plot: "",
+          primary_street_no: "",
+          primary_street: "",
+          primary_locality: "",
+          primary_post_town: "",
+          primary_postcode: "",
+          primary_county: "",
+          primary_mobile: "",
+          primary_sms_enabled: false,
+          joint_organisation: "",
+          joint_flat_plot: "",
+          joint_building_name: "",
+          joint_street_no: "",
+          joint_street: "",
+          joint_locality: "",
+          joint_post_town: "",
+          joint_postcode: "",
+          joint_county: "",
+          joint_email: "",
+          joint_phone: "",
+          joint_mobile: "",
+          joint_same_as_primary: false,
         }
       })
     }
@@ -138,29 +166,43 @@ export async function POST(request: NextRequest) {
     // Table doesn't exist, use fallback
   }
 
-  // Fallback: save to enquiries/cases correspondence_data JSON column
+  // Fallback: save to enquiries/cases using existing columns only
   if (enquiryId) {
-    await adminClient
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString()
+    }
+    if (correspondenceData.primary_email) updateData.email = correspondenceData.primary_email
+    if (correspondenceData.primary_phone) updateData.phone = correspondenceData.primary_phone
+    if (correspondenceData.primary_mobile) updateData.mobile = correspondenceData.primary_mobile
+    if (correspondenceData.primary_building_name) updateData.property_address = correspondenceData.primary_building_name
+    if (correspondenceData.primary_postcode) updateData.property_postcode = correspondenceData.primary_postcode
+
+    const { error } = await adminClient
       .from("enquiries")
-      .update({ 
-        correspondence_data: correspondenceData,
-        email: correspondenceData.primary_email || undefined,
-        phone: correspondenceData.primary_phone || undefined,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("id", enquiryId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   if (caseId) {
-    await adminClient
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString()
+    }
+    if (correspondenceData.primary_email) updateData.client_email = correspondenceData.primary_email
+    if (correspondenceData.primary_phone) updateData.client_phone = correspondenceData.primary_phone
+    if (correspondenceData.primary_building_name) updateData.property_address = correspondenceData.primary_building_name
+
+    const { error } = await adminClient
       .from("cases")
-      .update({ 
-        correspondence_data: correspondenceData,
-        client_email: correspondenceData.primary_email || undefined,
-        client_phone: correspondenceData.primary_phone || undefined,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("id", caseId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   return NextResponse.json({ success: true })

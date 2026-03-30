@@ -31,33 +31,7 @@ export async function GET(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: get from enquiries/cases contacts_data JSON
-  if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("contacts_data")
-      .eq("id", enquiryId)
-      .single()
-
-    if (enquiry?.contacts_data) {
-      const contacts = Array.isArray(enquiry.contacts_data) ? enquiry.contacts_data : []
-      return NextResponse.json({ contacts })
-    }
-  }
-
-  if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("contacts_data")
-      .eq("id", caseId)
-      .single()
-
-    if (caseData?.contacts_data) {
-      const contacts = Array.isArray(caseData.contacts_data) ? caseData.contacts_data : []
-      return NextResponse.json({ contacts })
-    }
-  }
-
+  // Fallback: return empty contacts array
   return NextResponse.json({ contacts: [] })
 }
 
@@ -106,46 +80,8 @@ export async function POST(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: save to JSON array
-  const newContact = {
-    id: generateId(),
-    ...contactData,
-    created_at: new Date().toISOString()
-  }
-
-  if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("contacts_data")
-      .eq("id", enquiryId)
-      .single()
-
-    const contacts = Array.isArray(enquiry?.contacts_data) ? enquiry.contacts_data : []
-    contacts.unshift(newContact)
-
-    await adminClient
-      .from("enquiries")
-      .update({ contacts_data: contacts, updated_at: new Date().toISOString() })
-      .eq("id", enquiryId)
-  }
-
-  if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("contacts_data")
-      .eq("id", caseId)
-      .single()
-
-    const contacts = Array.isArray(caseData?.contacts_data) ? caseData.contacts_data : []
-    contacts.unshift(newContact)
-
-    await adminClient
-      .from("cases")
-      .update({ contacts_data: contacts, updated_at: new Date().toISOString() })
-      .eq("id", caseId)
-  }
-
-  return NextResponse.json(newContact, { status: 201 })
+  // Fallback: return error - contacts table required
+  return NextResponse.json({ error: "Contacts table not available" }, { status: 503 })
 }
 
 // PUT: Update a contact
@@ -182,46 +118,8 @@ export async function PUT(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: update in JSON array
-  if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("contacts_data")
-      .eq("id", enquiryId)
-      .single()
-
-    const contacts = Array.isArray(enquiry?.contacts_data) ? enquiry.contacts_data : []
-    const index = contacts.findIndex((c: { id: string }) => c.id === id)
-    if (index >= 0) {
-      contacts[index] = { ...contacts[index], ...contactData, updated_at: new Date().toISOString() }
-      await adminClient
-        .from("enquiries")
-        .update({ contacts_data: contacts, updated_at: new Date().toISOString() })
-        .eq("id", enquiryId)
-      return NextResponse.json(contacts[index])
-    }
-  }
-
-  if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("contacts_data")
-      .eq("id", caseId)
-      .single()
-
-    const contacts = Array.isArray(caseData?.contacts_data) ? caseData.contacts_data : []
-    const index = contacts.findIndex((c: { id: string }) => c.id === id)
-    if (index >= 0) {
-      contacts[index] = { ...contacts[index], ...contactData, updated_at: new Date().toISOString() }
-      await adminClient
-        .from("cases")
-        .update({ contacts_data: contacts, updated_at: new Date().toISOString() })
-        .eq("id", caseId)
-      return NextResponse.json(contacts[index])
-    }
-  }
-
-  return NextResponse.json({ error: "Contact not found" }, { status: 404 })
+  // Fallback: return error
+  return NextResponse.json({ error: "Contacts table not available" }, { status: 503 })
 }
 
 // DELETE: Delete a contact
@@ -258,36 +156,6 @@ export async function DELETE(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: remove from JSON array
-  if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("contacts_data")
-      .eq("id", enquiryId)
-      .single()
-
-    const contacts = Array.isArray(enquiry?.contacts_data) ? enquiry.contacts_data : []
-    const filtered = contacts.filter((c: { id: string }) => c.id !== id)
-    await adminClient
-      .from("enquiries")
-      .update({ contacts_data: filtered, updated_at: new Date().toISOString() })
-      .eq("id", enquiryId)
-  }
-
-  if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("contacts_data")
-      .eq("id", caseId)
-      .single()
-
-    const contacts = Array.isArray(caseData?.contacts_data) ? caseData.contacts_data : []
-    const filtered = contacts.filter((c: { id: string }) => c.id !== id)
-    await adminClient
-      .from("cases")
-      .update({ contacts_data: filtered, updated_at: new Date().toISOString() })
-      .eq("id", caseId)
-  }
-
-  return NextResponse.json({ success: true })
+  // Fallback: return error
+  return NextResponse.json({ error: "Contacts table not available" }, { status: 503 })
 }

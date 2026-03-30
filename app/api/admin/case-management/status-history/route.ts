@@ -56,16 +56,23 @@ export async function GET(request: NextRequest) {
     // activity_log also doesn't exist
   }
 
-  // Last fallback: get from enquiries/cases status_history_data JSON
+  // Last fallback: create a synthetic history entry from current status
   if (enquiryId) {
     const { data: enquiry } = await adminClient
       .from("enquiries")
-      .select("status_history_data, status, updated_at")
+      .select("status, updated_at, created_at")
       .eq("id", enquiryId)
       .single()
 
     if (enquiry) {
-      const history = Array.isArray(enquiry.status_history_data) ? enquiry.status_history_data : []
+      // Create synthetic history from current status
+      const history = [{
+        id: "current",
+        status: enquiry.status || "pending",
+        created_at: enquiry.updated_at || enquiry.created_at,
+        created_by_name: "System",
+        notes: `Current status: ${enquiry.status || "pending"}`
+      }]
       return NextResponse.json({ history })
     }
   }
@@ -73,12 +80,19 @@ export async function GET(request: NextRequest) {
   if (caseId) {
     const { data: caseData } = await adminClient
       .from("cases")
-      .select("status_history_data, status, updated_at")
+      .select("status, updated_at, created_at")
       .eq("id", caseId)
       .single()
 
     if (caseData) {
-      const history = Array.isArray(caseData.status_history_data) ? caseData.status_history_data : []
+      // Create synthetic history from current status
+      const history = [{
+        id: "current",
+        status: caseData.status || "active",
+        created_at: caseData.updated_at || caseData.created_at,
+        created_by_name: "System",
+        notes: `Current status: ${caseData.status || "active"}`
+      }]
       return NextResponse.json({ history })
     }
   }
@@ -142,49 +156,33 @@ export async function POST(request: NextRequest) {
     // Table doesn't exist, use fallback
   }
 
-  // Update the main record status and add to history
+  // Update the main record status - using only existing columns
   if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("status_history_data")
-      .eq("id", enquiryId)
-      .single()
-
-    const history = Array.isArray(enquiry?.status_history_data) ? enquiry.status_history_data : []
-    history.unshift(statusEntry)
-
-    await adminClient
+    const { error } = await adminClient
       .from("enquiries")
       .update({ 
         status,
-        status_history_data: history,
-        expected_completion_date: expectedCompletionDate || null,
-        next_action_date: nextActionDate || null,
         updated_at: new Date().toISOString()
       })
       .eq("id", enquiryId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("status_history_data")
-      .eq("id", caseId)
-      .single()
-
-    const history = Array.isArray(caseData?.status_history_data) ? caseData.status_history_data : []
-    history.unshift(statusEntry)
-
-    await adminClient
+    const { error } = await adminClient
       .from("cases")
       .update({ 
         status,
-        status_history_data: history,
-        expected_completion_date: expectedCompletionDate || null,
-        next_action_date: nextActionDate || null,
         updated_at: new Date().toISOString()
       })
       .eq("id", caseId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   // Log activity

@@ -31,50 +31,62 @@ export async function GET(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: get from enquiries/cases table
+  // Fallback: get from enquiries/cases table using existing columns only
   if (enquiryId) {
-    const { data: enquiry } = await adminClient
+    const { data: enquiry, error } = await adminClient
       .from("enquiries")
-      .select("property_address, transaction_type, property_value, property_transaction_data")
+      .select("property_address, property_postcode, transaction_type, property_value")
       .eq("id", enquiryId)
       .single()
 
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
     if (enquiry) {
-      const txData = enquiry.property_transaction_data as Record<string, unknown> || {}
       return NextResponse.json({
         data: {
           transaction_type: enquiry.transaction_type || "sale",
           property_details: enquiry.property_address || "",
           amount: enquiry.property_value || 0,
-          holding_type: txData.holding_type || "freehold",
-          property_number: txData.property_number || "",
-          postcode: txData.postcode || "",
-          street_no: txData.street_no || "",
-          street: txData.street || "",
-          district: txData.district || "",
-          town: txData.town || "",
-          county: txData.county || "",
-          ...txData
+          holding_type: "freehold",
+          property_number: "",
+          postcode: enquiry.property_postcode || "",
+          street_no: "",
+          street: "",
+          district: "",
+          town: "",
+          county: ""
         }
       })
     }
   }
 
   if (caseId) {
-    const { data: caseData } = await adminClient
+    const { data: caseData, error } = await adminClient
       .from("cases")
-      .select("property_address, transaction_type, value, property_transaction_data")
+      .select("property_address, transaction_type, value")
       .eq("id", caseId)
       .single()
 
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
     if (caseData) {
-      const txData = caseData.property_transaction_data as Record<string, unknown> || {}
       return NextResponse.json({
         data: {
           transaction_type: caseData.transaction_type || "sale",
           property_details: caseData.property_address || "",
           amount: caseData.value || 0,
-          ...txData
+          holding_type: "freehold",
+          property_number: "",
+          postcode: "",
+          street_no: "",
+          street: "",
+          district: "",
+          town: "",
+          county: ""
         }
       })
     }
@@ -122,27 +134,42 @@ export async function POST(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: save to enquiries/cases
+  // Fallback: save to enquiries/cases using existing columns only
   if (enquiryId) {
-    await adminClient
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString()
+    }
+    if (transactionData.amount !== undefined) updateData.property_value = transactionData.amount
+    if (transactionData.property_details) updateData.property_address = transactionData.property_details
+    if (transactionData.postcode) updateData.property_postcode = transactionData.postcode
+    if (transactionData.transaction_type) updateData.transaction_type = transactionData.transaction_type
+
+    const { error } = await adminClient
       .from("enquiries")
-      .update({ 
-        property_transaction_data: transactionData,
-        property_value: transactionData.amount || undefined,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("id", enquiryId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   if (caseId) {
-    await adminClient
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString()
+    }
+    if (transactionData.amount !== undefined) updateData.value = transactionData.amount
+    if (transactionData.property_details) updateData.property_address = transactionData.property_details
+    if (transactionData.transaction_type) updateData.transaction_type = transactionData.transaction_type
+
+    const { error } = await adminClient
       .from("cases")
-      .update({ 
-        property_transaction_data: transactionData,
-        value: transactionData.amount || undefined,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("id", caseId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   return NextResponse.json({ success: true })

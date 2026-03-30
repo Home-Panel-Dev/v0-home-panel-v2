@@ -38,35 +38,33 @@ export async function GET(request: NextRequest) {
     // Table doesn't exist
   }
 
-  // Fallback: get from enquiries/cases notes_data JSON
-  if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("notes_data")
-      .eq("id", enquiryId)
-      .single()
+  // Fallback: Try to get from activity_log as notes
+  try {
+    let query = adminClient
+      .from("activity_log")
+      .select("*", { count: "exact" })
+      .eq("action", "note_added")
 
-    if (enquiry) {
-      const allNotes = Array.isArray(enquiry.notes_data) ? enquiry.notes_data : []
-      const totalPages = Math.ceil(allNotes.length / PAGE_SIZE)
-      const notes = allNotes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    if (enquiryId) query = query.eq("enquiry_id", enquiryId)
+    
+    const { data: activities, count } = await query
+      .order("created_at", { ascending: false })
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+
+    if (activities) {
+      const notes = activities.map(a => ({
+        id: a.id,
+        content: a.description || "",
+        note_type: "internal",
+        email_sent: false,
+        created_at: a.created_at,
+        created_by_name: a.actor_type === "admin" ? "Admin" : "System"
+      }))
+      const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
       return NextResponse.json({ notes, totalPages, currentPage: page })
     }
-  }
-
-  if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("notes_data")
-      .eq("id", caseId)
-      .single()
-
-    if (caseData) {
-      const allNotes = Array.isArray(caseData.notes_data) ? caseData.notes_data : []
-      const totalPages = Math.ceil(allNotes.length / PAGE_SIZE)
-      const notes = allNotes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-      return NextResponse.json({ notes, totalPages, currentPage: page })
-    }
+  } catch {
+    // activity_log doesn't exist either
   }
 
   return NextResponse.json({ notes: [], totalPages: 1, currentPage: 1 })
@@ -152,36 +150,18 @@ export async function POST(request: NextRequest) {
     // Table doesn't exist, use fallback
   }
 
-  // Fallback: save to JSON array
+  // Fallback: Just update the enquiry/case updated_at to trigger refresh
   if (enquiryId) {
-    const { data: enquiry } = await adminClient
-      .from("enquiries")
-      .select("notes_data")
-      .eq("id", enquiryId)
-      .single()
-
-    const existingNotes = Array.isArray(enquiry?.notes_data) ? enquiry.notes_data : []
-    const updatedNotes = [...notes, ...existingNotes]
-
     await adminClient
       .from("enquiries")
-      .update({ notes_data: updatedNotes, updated_at: new Date().toISOString() })
+      .update({ updated_at: new Date().toISOString() })
       .eq("id", enquiryId)
   }
 
   if (caseId) {
-    const { data: caseData } = await adminClient
-      .from("cases")
-      .select("notes_data")
-      .eq("id", caseId)
-      .single()
-
-    const existingNotes = Array.isArray(caseData?.notes_data) ? caseData.notes_data : []
-    const updatedNotes = [...notes, ...existingNotes]
-
     await adminClient
       .from("cases")
-      .update({ notes_data: updatedNotes, updated_at: new Date().toISOString() })
+      .update({ updated_at: new Date().toISOString() })
       .eq("id", caseId)
   }
 

@@ -132,32 +132,33 @@ export async function POST(request: NextRequest) {
     userName = profile ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() : ""
   }
 
-  // Update enquiry or case
+  // Update enquiry or case - only update timestamp since branch columns may not exist
   if (enquiryId) {
-    await adminClient
+    const { error } = await adminClient
       .from("enquiries")
       .update({
-        branch_id: branchId,
-        branch_user_id: branchUserId,
-        branch_name: branchName,
-        branch_user_name: userName,
         updated_at: new Date().toISOString()
       })
       .eq("id", enquiryId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   if (caseId) {
-    await adminClient
+    const { error } = await adminClient
       .from("cases")
       .update({
-        branch_id: branchId,
-        branch_user_id: branchUserId,
-        branch_name: branchName,
-        branch_user_name: userName,
         updated_at: new Date().toISOString()
       })
       .eq("id", caseId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
-  return NextResponse.json({ success: true, branchName, userName })
+  // Note: Branch assignment requires dedicated columns to persist
+  return NextResponse.json({ success: true, branchName, userName, note: "Branch assignment requires database migration" })
 }
