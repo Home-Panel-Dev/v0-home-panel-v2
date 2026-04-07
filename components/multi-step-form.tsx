@@ -168,6 +168,9 @@ export function MultiStepForm() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isDeclined, setIsDeclined] = useState(false)
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false)
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const form = useForm<EnquiryFormData>({
@@ -296,6 +299,52 @@ const nextStep = async () => {
     setValue(field, value)
   }
 
+  // Handle decline - user doesn't want to proceed
+  const handleDecline = async () => {
+    setIsDeclined(true)
+    setShowFeedbackForm(true)
+    
+    // Send initial decline email (no feedback yet)
+    try {
+      await fetch("/api/enquiry/decline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: watchedValues.firstName,
+          lastName: watchedValues.lastName,
+          email: watchedValues.email,
+        }),
+      })
+    } catch {
+      // Silent fail for email - we'll still show feedback form
+    }
+  }
+
+  // Handle feedback submission
+  const handleFeedbackSubmit = async (reasons: string[], otherReason?: string) => {
+    setIsSubmitting(true)
+    try {
+      await fetch("/api/enquiry/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: watchedValues.firstName,
+          lastName: watchedValues.lastName,
+          email: watchedValues.email,
+          reasons,
+          otherReason,
+          quoteAmount: calculateFees(watchedValues).total,
+        }),
+      })
+      setFeedbackSubmitted(true)
+    } catch {
+      // Still mark as submitted to show thank you
+      setFeedbackSubmitted(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (isSuccess) {
     return (
       <motion.div
@@ -311,6 +360,18 @@ const nextStep = async () => {
           Thank you for your enquiry. A member of the HomePanel team will be in touch shortly to guide you through the next steps.
         </p>
       </motion.div>
+    )
+  }
+
+  // Feedback form after declining
+  if (showFeedbackForm) {
+    return (
+      <FeedbackForm
+        firstName={watchedValues.firstName}
+        isSubmitting={isSubmitting}
+        feedbackSubmitted={feedbackSubmitted}
+        onSubmit={handleFeedbackSubmit}
+      />
     )
   }
 
@@ -488,21 +549,32 @@ const nextStep = async () => {
           {/* Navigation */}
           <div className="flex justify-end mt-8">
             {currentStep === "quote" ? (
-              <Button
-                type="button"
-                disabled={isSubmitting}
-                onClick={handleSubmit(onSubmit)}
-                className="rounded-lg bg-foreground hover:bg-foreground/90 text-background px-8 h-11"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Proceed with HomePanel"
-                )}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={handleDecline}
+                  className="rounded-lg border-border h-11 order-2 sm:order-1"
+                >
+                  No thanks
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleSubmit(onSubmit)}
+                  className="rounded-lg bg-foreground hover:bg-foreground/90 text-background px-8 h-11 order-1 sm:order-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Proceed with HomePanel"
+                  )}
+                </Button>
+              </div>
             ) : currentStep === "personal-details" ? (
               <Button
                 type="button"
@@ -1318,5 +1390,160 @@ function QuoteStep({
         Experts in their field.
       </p>
     </div>
+  )
+}
+
+// Feedback reasons for declining
+const feedbackReasons = [
+  { id: "price", label: "Price too high" },
+  { id: "timing", label: "Not ready to proceed yet" },
+  { id: "comparison", label: "Comparing other law firms" },
+  { id: "service", label: "Prefer a different service" },
+  { id: "location", label: "Want a local solicitor" },
+  { id: "recommendation", label: "Going with a recommendation" },
+  { id: "other", label: "Other reason" },
+]
+
+// Feedback Form Component
+function FeedbackForm({
+  firstName,
+  isSubmitting,
+  feedbackSubmitted,
+  onSubmit,
+}: {
+  firstName: string
+  isSubmitting: boolean
+  feedbackSubmitted: boolean
+  onSubmit: (reasons: string[], otherReason?: string) => void
+}) {
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
+  const [otherReason, setOtherReason] = useState("")
+
+  const toggleReason = (reasonId: string) => {
+    setSelectedReasons(prev => 
+      prev.includes(reasonId) 
+        ? prev.filter(r => r !== reasonId)
+        : [...prev, reasonId]
+    )
+  }
+
+  const handleSubmit = () => {
+    onSubmit(selectedReasons, selectedReasons.includes("other") ? otherReason : undefined)
+  }
+
+  if (feedbackSubmitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-xl mx-auto"
+      >
+        <div className="bg-card rounded-2xl border border-border p-8 text-center">
+          <div className="h-16 w-16 rounded-full bg-foreground text-background flex items-center justify-center mx-auto mb-6">
+            <Check className="h-8 w-8" />
+          </div>
+          <h2 className="text-2xl font-semibold mb-3">Thank you for your feedback</h2>
+          <p className="text-muted-foreground max-w-md mx-auto leading-relaxed mb-6">
+            We appreciate you taking the time to share your thoughts. Your feedback helps us improve our services.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            If you change your mind, feel free to come back anytime. We&apos;d be happy to help with your conveyancing needs.
+          </p>
+        </div>
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-full max-w-xl mx-auto"
+    >
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div className="p-6">
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-semibold mb-2">
+              We&apos;re sorry to see you go, {firstName}
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Thank you for considering HomePanel. To help us improve, could you share why you decided not to proceed?
+            </p>
+          </div>
+
+          <div className="space-y-3 mb-6">
+            {feedbackReasons.map((reason) => (
+              <div
+                key={reason.id}
+                className={cn(
+                  "p-4 rounded-xl border cursor-pointer transition-all",
+                  selectedReasons.includes(reason.id)
+                    ? "border-foreground bg-foreground/5"
+                    : "border-border hover:border-foreground/40"
+                )}
+                onClick={() => toggleReason(reason.id)}
+              >
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id={reason.id}
+                    checked={selectedReasons.includes(reason.id)}
+                    onCheckedChange={() => toggleReason(reason.id)}
+                  />
+                  <label
+                    htmlFor={reason.id}
+                    className="text-sm font-medium cursor-pointer flex-1"
+                  >
+                    {reason.label}
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Other reason text field */}
+          {selectedReasons.includes("other") && (
+            <div className="mb-6">
+              <Label htmlFor="otherReason" className="text-sm font-medium">
+                Please tell us more
+              </Label>
+              <textarea
+                id="otherReason"
+                value={otherReason}
+                onChange={(e) => setOtherReason(e.target.value)}
+                placeholder="Your feedback helps us improve..."
+                className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 min-h-[100px] resize-none"
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-lg flex-1"
+              onClick={() => onSubmit([], undefined)}
+              disabled={isSubmitting}
+            >
+              Skip feedback
+            </Button>
+            <Button
+              type="button"
+              className="rounded-lg bg-foreground hover:bg-foreground/90 text-background flex-1"
+              onClick={handleSubmit}
+              disabled={isSubmitting || selectedReasons.length === 0}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit feedback"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   )
 }
