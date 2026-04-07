@@ -28,6 +28,16 @@ export const propertyCountOptions = [
 ] as const
 
 export const enquiryFormSchema = z.object({
+  // Terms and Conditions (required)
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions to continue",
+  }),
+  marketingConsent: z.boolean().optional(),
+  
+  // Product Interests (optional)
+  interestSolar: z.boolean().optional(),
+  interestBoiler: z.boolean().optional(),
+
   // Step 1: Transaction Type
   transactionType: z.string().min(1, "Please select a transaction type"),
 

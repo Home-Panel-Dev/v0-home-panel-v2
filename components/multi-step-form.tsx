@@ -20,6 +20,8 @@ import {
 import { cn } from "@/lib/utils"
 
 type StepType = 
+  | "terms-conditions"
+  | "product-interests"
   | "transaction-type"
   | "property-address"
   | "tenure"
@@ -99,11 +101,12 @@ function calculateFees(data: Partial<EnquiryFormData>) {
 }
 
 function getStepsForTransaction(transactionType: string): StepType[] {
-  const baseSteps: StepType[] = ["transaction-type"]
+  // Always start with terms and product interests before transaction type
+  const preSteps: StepType[] = ["terms-conditions", "product-interests", "transaction-type"]
   
   if (transactionType === "buying" || transactionType === "buying-selling") {
     return [
-      ...baseSteps,
+      ...preSteps,
       "property-address",
       "tenure",
       "property-value",
@@ -122,7 +125,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
   
   if (transactionType === "selling") {
     return [
-      ...baseSteps,
+      ...preSteps,
       "property-address",
       "tenure",
       "property-value",
@@ -135,7 +138,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
   
   if (transactionType === "remortgage") {
     return [
-      ...baseSteps,
+      ...preSteps,
       "property-address",
       "tenure",
       "property-value",
@@ -147,7 +150,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
   
   if (transactionType === "transfer-equity") {
     return [
-      ...baseSteps,
+      ...preSteps,
       "property-address",
       "tenure",
       "property-value",
@@ -158,7 +161,7 @@ function getStepsForTransaction(transactionType: string): StepType[] {
     ]
   }
   
-  return baseSteps
+  return preSteps
 }
 
 export function MultiStepForm() {
@@ -170,6 +173,10 @@ export function MultiStepForm() {
   const form = useForm<EnquiryFormData>({
     resolver: zodResolver(enquiryFormSchema),
     defaultValues: {
+      termsAccepted: false,
+      marketingConsent: false,
+      interestSolar: false,
+      interestBoiler: false,
       transactionType: "",
       propertyAddressLine1: "",
       propertyAddressLine2: "",
@@ -209,6 +216,10 @@ export function MultiStepForm() {
 
   const validateCurrentStep = async (): Promise<boolean> => {
     switch (currentStep) {
+      case "terms-conditions":
+        return watchedValues.termsAccepted === true
+      case "product-interests":
+        return true // Optional step, always valid
       case "transaction-type":
         return !!watchedValues.transactionType
       case "property-address":
@@ -345,6 +356,24 @@ const nextStep = async () => {
               transition={{ duration: 0.2 }}
               className="min-h-[320px]"
             >
+              {currentStep === "terms-conditions" && (
+                <TermsConditionsStep
+                  termsAccepted={watchedValues.termsAccepted || false}
+                  marketingConsent={watchedValues.marketingConsent || false}
+                  onTermsChange={(checked) => setValue("termsAccepted", checked)}
+                  onMarketingChange={(checked) => setValue("marketingConsent", checked)}
+                />
+              )}
+
+              {currentStep === "product-interests" && (
+                <ProductInterestsStep
+                  interestSolar={watchedValues.interestSolar || false}
+                  interestBoiler={watchedValues.interestBoiler || false}
+                  onSolarChange={(checked) => setValue("interestSolar", checked)}
+                  onBoilerChange={(checked) => setValue("interestBoiler", checked)}
+                />
+              )}
+
               {currentStep === "transaction-type" && (
                 <TransactionTypeStep
                   value={watchedValues.transactionType}
@@ -540,6 +569,162 @@ function InfoBox({ children }: { children: React.ReactNode }) {
   return (
     <div className="p-4 rounded-xl bg-muted text-sm text-muted-foreground leading-relaxed">
       {children}
+    </div>
+  )
+}
+
+// Step: Terms & Conditions
+function TermsConditionsStep({
+  termsAccepted,
+  marketingConsent,
+  onTermsChange,
+  onMarketingChange,
+}: {
+  termsAccepted: boolean
+  marketingConsent: boolean
+  onTermsChange: (checked: boolean) => void
+  onMarketingChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-lg font-semibold mb-2">Before we begin</h2>
+        <p className="text-muted-foreground text-sm">
+          Please review and accept our terms to continue with your enquiry.
+        </p>
+      </div>
+
+      {/* Required Terms Checkbox */}
+      <div className="p-4 rounded-xl border border-border bg-muted/30">
+        <div className="flex items-start space-x-3">
+          <Checkbox
+            id="termsAccepted"
+            checked={termsAccepted}
+            onCheckedChange={(checked) => onTermsChange(checked as boolean)}
+            className="mt-1"
+          />
+          <div className="flex-1">
+            <label htmlFor="termsAccepted" className="text-sm font-medium cursor-pointer leading-relaxed">
+              I agree to Emerald Green Energy&apos;s Terms and Conditions <span className="text-destructive">*</span>
+            </label>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              By checking this box, I acknowledge and consent to Emerald Green Energy Limited collecting, processing, and sharing my personal information with authorised third-party partners for the purpose of providing quotations, services, and related communications regarding home energy products and conveyancing services. I understand that my data will be handled in accordance with applicable data protection laws, including the UK GDPR, and that I may withdraw my consent at any time by contacting Emerald Green Energy Limited directly.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Optional Marketing Consent */}
+      <div className="p-4 rounded-xl border border-border">
+        <div className="flex items-start space-x-3">
+          <Checkbox
+            id="marketingConsent"
+            checked={marketingConsent}
+            onCheckedChange={(checked) => onMarketingChange(checked as boolean)}
+            className="mt-1"
+          />
+          <div className="flex-1">
+            <label htmlFor="marketingConsent" className="text-sm font-medium cursor-pointer leading-relaxed">
+              I would like to receive marketing communications (optional)
+            </label>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Tick this box if you would like to receive promotional offers, product updates, and marketing materials from Emerald Green Energy and our trusted partners via email, phone, or SMS. You can unsubscribe at any time.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {!termsAccepted && (
+        <p className="text-sm text-muted-foreground text-center">
+          You must accept the terms and conditions to continue.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Step: Product Interests
+function ProductInterestsStep({
+  interestSolar,
+  interestBoiler,
+  onSolarChange,
+  onBoilerChange,
+}: {
+  interestSolar: boolean
+  interestBoiler: boolean
+  onSolarChange: (checked: boolean) => void
+  onBoilerChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-lg font-semibold mb-2">Are you interested in any of these services?</h2>
+        <p className="text-muted-foreground text-sm">
+          Select any that apply. This helps us provide relevant information about additional services that may benefit your home.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {/* Solar Products Interest */}
+        <div 
+          className={cn(
+            "p-4 rounded-xl border cursor-pointer transition-all",
+            interestSolar 
+              ? "border-foreground bg-foreground/5" 
+              : "border-border hover:border-foreground/40"
+          )}
+          onClick={() => onSolarChange(!interestSolar)}
+        >
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="interestSolar"
+              checked={interestSolar}
+              onCheckedChange={(checked) => onSolarChange(checked as boolean)}
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <label htmlFor="interestSolar" className="text-sm font-medium cursor-pointer">
+                Solar Products for the Home
+              </label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Solar panels, battery storage systems, and renewable energy solutions to reduce your energy bills and carbon footprint.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Boiler Products Interest */}
+        <div 
+          className={cn(
+            "p-4 rounded-xl border cursor-pointer transition-all",
+            interestBoiler 
+              ? "border-foreground bg-foreground/5" 
+              : "border-border hover:border-foreground/40"
+          )}
+          onClick={() => onBoilerChange(!interestBoiler)}
+        >
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="interestBoiler"
+              checked={interestBoiler}
+              onCheckedChange={(checked) => onBoilerChange(checked as boolean)}
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <label htmlFor="interestBoiler" className="text-sm font-medium cursor-pointer">
+                Boiler Products and Services
+              </label>
+              <p className="text-xs text-muted-foreground mt-1">
+                New boiler installations, heating system upgrades, and maintenance services for improved home comfort and efficiency.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <InfoBox>
+        These selections are optional and will not affect your conveyancing quote. We may contact you with relevant offers based on your interests.
+      </InfoBox>
     </div>
   )
 }
