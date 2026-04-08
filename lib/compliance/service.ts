@@ -219,7 +219,7 @@ export async function requestSourceOfFunds(
 export async function requestIdVerification(
   request: IdVerificationRequest
 ): Promise<ComplianceProviderResponse> {
-  const provider = request.provider || PROVIDERS.YOTI
+  const provider = request.provider || PROVIDERS.ARMALYTIX
 
   // Update review status to pending
   await updateAmlReviewStatus(request.reviewId, {

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/database"
 import { getOnboardingInviteEmail } from "@/lib/email-templates"
+import { randomUUID } from "crypto"
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <onboarding@resend.dev>"
 
@@ -21,8 +23,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enquiry ID required" }, { status: 400 })
     }
 
+    const adminClient = createAdminClient()
+
     // Get enquiry details
-    const { data: enquiry, error: enquiryError } = await supabase
+    const { data: enquiry, error: enquiryError } = await adminClient
       .from("enquiries")
       .select("*")
       .eq("id", enquiryId)
@@ -32,45 +36,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enquiry not found" }, { status: 404 })
     }
 
-    // Generate case reference
-    const caseReference = `HP-${Date.now().toString(36).toUpperCase()}`
+    // Generate case reference and onboarding token
+    const caseReference = enquiry.case_reference || `HP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(5, "0")}`
+    const onboardingToken = randomUUID()
 
-    // Generate magic link for client
-    const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
-      type: "magiclink",
-      email: enquiry.email,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://v0-home-panel-v2.vercel.app"}/dashboard/onboarding`,
-      },
-    })
+    // Build onboarding URL - this is the actual onboarding journey page
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
+      || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || "https://v0-home-panel-v2.vercel.app"
+    const onboardingUrl = `${baseUrl}/onboarding/${onboardingToken}`
 
-    if (magicLinkError) {
-      console.error("[v0] Magic link error:", magicLinkError)
-      
-      // Fallback: create invite link manually
-      const { data: inviteLinkData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(enquiry.email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://v0-home-panel-v2.vercel.app"}/dashboard/onboarding`,
-        data: {
-          first_name: enquiry.first_name,
-          last_name: enquiry.last_name,
-          role: "client",
-          enquiry_id: enquiryId,
-          case_reference: caseReference,
-        },
-      })
-
-      if (inviteError) {
-        return NextResponse.json({ error: "Failed to create invite" }, { status: 500 })
-      }
-    }
-
-    // Update enquiry status
-    await supabase
+    // Update enquiry with token and status
+    const { error: updateError } = await adminClient
       .from("enquiries")
       .update({ 
-        status: "onboarding",
+        status: "onboarding_invited",
+        case_reference: caseReference,
+        onboarding_token: onboardingToken,
+        onboarding_status: "pending",
+        updated_at: new Date().toISOString(),
       })
       .eq("id", enquiryId)
+
+    if (updateError) {
+      console.error("[invite-client] Update error:", updateError)
+      return NextResponse.json({ error: "Failed to update enquiry" }, { status: 500 })
+    }
 
     // Send onboarding email via Resend
     const apiKey = process.env.RESEND_API_KEY
@@ -83,8 +75,7 @@ export async function POST(request: Request) {
         lastName: enquiry.last_name,
         email: enquiry.email,
         caseReference,
-        magicLink: magicLinkData?.properties?.action_link || 
-          `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://v0-home-panel-v2.vercel.app"}/auth/login?email=${encodeURIComponent(enquiry.email)}`,
+        magicLink: onboardingUrl, // Use the token-based onboarding URL
       })
 
       await resend.emails.send({
@@ -96,13 +87,27 @@ export async function POST(request: Request) {
       })
     }
 
+    // Log activity
+    try {
+      await adminClient.from("activity_log").insert({
+        enquiry_id: enquiryId,
+        action: "onboarding_invited",
+        description: `Onboarding invite sent to ${enquiry.email}`,
+        actor_type: "admin",
+        actor_id: user.id,
+      })
+    } catch {
+      // Activity logging is non-critical
+    }
+
     return NextResponse.json({ 
       success: true,
       caseReference,
+      onboardingUrl,
       message: "Invite sent successfully" 
     })
   } catch (error) {
-    console.error("[v0] Invite error:", error)
+    console.error("[invite-client] Error:", error)
     return NextResponse.json({ error: "Failed to send invite" }, { status: 500 })
   }
 }

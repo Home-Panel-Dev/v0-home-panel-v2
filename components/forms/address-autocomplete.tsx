@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { Search, MapPin, Loader2, X } from "lucide-react"
 
-// Custom debounce hook to avoid external dependency
+// Custom debounce hook - avoids need for external use-debounce package
 function useDebouncedCallback<T extends (...args: Parameters<T>) => void>(
   callback: T,
   delay: number
