@@ -70,6 +70,7 @@ export interface ActivityMetadata {
 /**
  * Log activity with structured metadata support
  * SOC2 Ready: All significant actions are logged with context
+ * Falls back to basic columns if new columns don't exist yet
  */
 export async function logActivity({
   enquiryId,
@@ -91,19 +92,34 @@ export async function logActivity({
   try {
     const adminClient = createAdminClient()
     
-    const { error } = await adminClient.from("activity_log").insert({
+    // Base insert data (columns that definitely exist)
+    const baseData: Record<string, unknown> = {
       enquiry_id: enquiryId,
-      case_id: caseId,
       actor_type: actorType,
       actor_id: actorId,
       action,
       description,
+    }
+    
+    // Try full insert with all columns first
+    const fullData = {
+      ...baseData,
+      case_id: caseId,
       metadata: metadata || {},
-    })
+    }
+    
+    const { error } = await adminClient.from("activity_log").insert(fullData)
 
     if (error) {
-      // Log but don't throw - activity logging should never break the main flow
-      console.error("[logActivity] Insert failed:", error.message)
+      // If error is about missing columns, fall back to base insert
+      if (error.message?.includes("column") || error.message?.includes("schema")) {
+        const { error: baseError } = await adminClient.from("activity_log").insert(baseData)
+        if (baseError) {
+          console.error("[logActivity] Base insert failed:", baseError.message)
+        }
+      } else {
+        console.error("[logActivity] Insert failed:", error.message)
+      }
     }
   } catch (err) {
     // Catch any unexpected errors
