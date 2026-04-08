@@ -9,6 +9,10 @@ const INTERNAL_EMAIL = process.env.INTERNAL_EMAIL || "joshua@madebymclean.com"
 const FROM_EMAIL = process.env.FROM_EMAIL || "HomePanel <onboarding@resend.dev>"
 
 const submitSchema = z.object({
+  termsAccepted: z.boolean(),
+  marketingConsent: z.boolean().optional(),
+  interestSolar: z.boolean().optional(),
+  interestBoiler: z.boolean().optional(),
   transactionType: z.string().min(1),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
@@ -73,7 +77,8 @@ export async function POST(request: Request) {
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
       
-      // Insert only basic columns - run setup_homepanel.sql for full functionality
+      // Insert with terms consent and product interests
+      const now = new Date().toISOString()
       const { data: newEnquiry, error: dbError } = await supabase.from("enquiries").insert({
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
@@ -84,7 +89,15 @@ export async function POST(request: Request) {
         transaction_type: validatedData.transactionType,
         property_value: propertyValue || null,
         quote_amount: fees.total,
-        status: "new"
+        status: "new",
+        // Terms and consent fields
+        terms_accepted: validatedData.termsAccepted || false,
+        terms_accepted_at: validatedData.termsAccepted ? now : null,
+        marketing_consent: validatedData.marketingConsent || false,
+        marketing_consent_at: validatedData.marketingConsent ? now : null,
+        // Product interests
+        interest_solar: validatedData.interestSolar || false,
+        interest_boiler: validatedData.interestBoiler || false,
       }).select("id").single()
       
       if (dbError) {
