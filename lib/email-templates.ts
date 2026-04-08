@@ -280,10 +280,12 @@ export function getOnboardingInviteEmail(data: {
     </ul>
 
     <div style="text-align: center; margin: 32px 0;">
-      <a href="${data.magicLink}" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Start Onboarding</a>
+      <a href="${data.magicLink}" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Start Your Onboarding Journey</a>
     </div>
 
-    <p style="color: #666; font-size: 14px; margin-bottom: 24px;">This link will expire in 24 hours. If you need a new link, please contact us.</p>
+    <p style="color: #666; font-size: 14px; margin-bottom: 24px;">This link will expire in 7 days. If you need a new link, please contact us.</p>
+    
+    <p style="color: #999; font-size: 12px; margin-bottom: 24px;">If the button above doesn&apos;t work, copy and paste this link into your browser:<br><a href="${data.magicLink}" style="color: #059669; word-break: break-all;">${data.magicLink}</a></p>
 
     <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 12px;">Need help?</h3>
