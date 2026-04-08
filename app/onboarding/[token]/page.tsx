@@ -208,9 +208,33 @@ export default function OnboardingPage() {
   }
 
   const handleStartIdVerification = async () => {
-    await saveProgress("id_verification", { started: true, started_at: new Date().toISOString() })
-    // In production, this would redirect to Yoti
-    window.open("https://www.yoti.com/identity-verification/", "_blank")
+    setSaving(true)
+    setError(null)
+    try {
+      // Call Armalytix API to get identity check URL
+      const res = await fetch("/api/onboarding/armalytix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, checkType: "identity" }),
+      })
+      
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || "Failed to start identity verification")
+      }
+      
+      const data = await res.json()
+      await saveProgress("id_verification", { started: true, started_at: new Date().toISOString(), provider: "armalytix" })
+      
+      // Open Armalytix identity verification in new window
+      if (data.url) {
+        window.open(data.url, "_blank")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start verification")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleIdVerificationComplete = async () => {
@@ -218,7 +242,7 @@ export default function OnboardingPage() {
       started: true,
       completed: true, 
       completed_at: new Date().toISOString(),
-      provider: "yoti"
+      provider: "armalytix"
     })
     if (success) {
       setSuccessMessage("Identity verification marked as complete")
@@ -228,9 +252,33 @@ export default function OnboardingPage() {
   }
 
   const handleStartSourceOfFunds = async () => {
-    await saveProgress("source_of_funds", { started: true, started_at: new Date().toISOString() })
-    // In production, this would redirect to Armalytix
-    window.open("https://www.armalytix.com/", "_blank")
+    setSaving(true)
+    setError(null)
+    try {
+      // Call Armalytix API to get source of funds check URL
+      const res = await fetch("/api/onboarding/armalytix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, checkType: "source_of_funds" }),
+      })
+      
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || "Failed to start source of funds check")
+      }
+      
+      const data = await res.json()
+      await saveProgress("source_of_funds", { started: true, started_at: new Date().toISOString(), provider: "armalytix" })
+      
+      // Open Armalytix source of funds in new window
+      if (data.url) {
+        window.open(data.url, "_blank")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start verification")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleSourceOfFundsComplete = async () => {
@@ -585,23 +633,23 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ID Verification - Yoti */}
+        {/* ID Verification - Armalytix */}
         {currentStep === "id-verification" && (
           <div className="space-y-8">
             <div>
               <h1 className="text-xl font-semibold tracking-tight mb-2">Identity Verification</h1>
-              <p className="text-muted-foreground text-sm">Verify your identity securely with Yoti</p>
+              <p className="text-muted-foreground text-sm">Verify your identity securely with Armalytix</p>
             </div>
 
             <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
               <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-xl bg-[#00A3E0]/10 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="h-7 w-7 text-[#00A3E0]" />
+                <div className="w-14 h-14 rounded-xl bg-[#6366F1]/10 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="h-7 w-7 text-[#6366F1]" />
                 </div>
                 <div>
-                  <p className="font-semibold mb-1">Yoti Identity Check</p>
+                  <p className="font-semibold mb-1">Armalytix Identity Service</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Yoti is our trusted partner for secure identity verification. You'll verify using your passport or driving licence.
+                    Armalytix is our trusted partner for secure identity verification. You&apos;ll verify using your passport or driving licence.
                   </p>
                 </div>
               </div>
@@ -611,15 +659,15 @@ export default function OnboardingPage() {
                 <ol className="text-sm text-muted-foreground space-y-1.5">
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-foreground text-background text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
-                    Click the button below to open Yoti in a new window
+                    Click the button below to open Armalytix in a new window
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-foreground text-background text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
-                    Follow Yoti's instructions to verify your ID
+                    Follow the instructions to verify your ID document
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-foreground text-background text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
-                    Return here and click "I've completed verification"
+                    Return here and click &quot;I&apos;ve completed verification&quot;
                   </li>
                 </ol>
               </div>
@@ -628,8 +676,10 @@ export default function OnboardingPage() {
                 variant="outline"
                 className="w-full h-12 rounded-xl font-medium"
                 onClick={handleStartIdVerification}
+                disabled={saving}
               >
-                Open Yoti Verification
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Open Armalytix Identity Verification
                 <ExternalLink className="h-4 w-4 ml-2" />
               </Button>
             </div>
@@ -692,8 +742,10 @@ export default function OnboardingPage() {
                 variant="outline"
                 className="w-full h-12 rounded-xl font-medium"
                 onClick={handleStartSourceOfFunds}
+                disabled={saving}
               >
-                Open Armalytix
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Open Armalytix Source of Funds Check
                 <ExternalLink className="h-4 w-4 ml-2" />
               </Button>
             </div>
@@ -845,7 +897,7 @@ export default function OnboardingPage() {
                       <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                         <ShieldCheck className="h-4 w-4 text-accent" />
                       </div>
-                      <span className="text-sm">Identity Verification (Yoti)</span>
+                      <span className="text-sm">Identity Verification (Armalytix)</span>
                     </div>
                     <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded-full">
                       Completed
@@ -856,7 +908,7 @@ export default function OnboardingPage() {
                       <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                         <Building2 className="h-4 w-4 text-accent" />
                       </div>
-                      <span className="text-sm">Source of Funds (Armalytix)</span>
+                      <span className="text-sm">Source of Funds Check (Armalytix)</span>
                     </div>
                     <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded-full">
                       Completed
