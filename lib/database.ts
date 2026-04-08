@@ -11,11 +11,13 @@ export function createAdminClient() {
 // Activity action types
 export type ActivityAction =
   | "enquiry_submitted"
+  | "enquiry_updated"
   | "onboarding_invited"
   | "onboarding_step_completed"
   | "onboarding_completed"
   | "document_uploaded"
   | "document_reviewed"
+  | "document_rejected"
   | "case_created"
   | "case_status_changed"
   | "status_updated"
@@ -23,43 +25,147 @@ export type ActivityAction =
   | "note_added"
   | "email_sent"
   | "abort_requested"
+  | "aml_check_initiated"
+  | "aml_check_completed"
+  | "aml_review_submitted"
+  | "compliance_approved"
+  | "compliance_flagged"
+  | "user_login"
+  | "user_logout"
+  | "permission_changed"
 
-// Log activity - simplified to only use columns that exist in the table
+// Activity log metadata types for type safety
+export interface ActivityMetadata {
+  // Common fields
+  previousValue?: unknown
+  newValue?: unknown
+  reason?: string
+  
+  // Document related
+  documentId?: string
+  documentType?: string
+  documentName?: string
+  
+  // Status related
+  previousStatus?: string
+  newStatus?: string
+  
+  // Firm related
+  firmId?: string
+  firmName?: string
+  
+  // AML related
+  provider?: string
+  riskLevel?: string
+  checkType?: string
+  
+  // Email related
+  emailType?: string
+  recipientEmail?: string
+  
+  // Generic
+  [key: string]: unknown
+}
+
+/**
+ * Log activity with structured metadata support
+ * SOC2 Ready: All significant actions are logged with context
+ */
 export async function logActivity({
   enquiryId,
+  caseId,
   actorType,
   actorId,
   action,
   description,
+  metadata,
 }: {
   enquiryId?: string
-  caseId?: string // kept for API compatibility but not used
-  actorType: "system" | "admin" | "client"
+  caseId?: string
+  actorType: "system" | "admin" | "client" | "webhook"
   actorId?: string
   action: ActivityAction
   description?: string
-  metadata?: Record<string, unknown> // kept for API compatibility but not used
+  metadata?: ActivityMetadata
 }) {
   try {
     const adminClient = createAdminClient()
     
-    // Only insert columns that exist in the activity_log table
-    // Based on errors, the table only has: enquiry_id, actor_type, actor_id, action, description
     const { error } = await adminClient.from("activity_log").insert({
       enquiry_id: enquiryId,
+      case_id: caseId,
       actor_type: actorType,
       actor_id: actorId,
       action,
       description,
+      metadata: metadata || {},
     })
 
     if (error) {
       // Log but don't throw - activity logging should never break the main flow
-      console.error("[v0] Activity log insert failed:", error.message)
+      console.error("[logActivity] Insert failed:", error.message)
     }
   } catch (err) {
     // Catch any unexpected errors
-    console.error("[v0] Activity logging error:", err)
+    console.error("[logActivity] Error:", err)
+  }
+}
+
+/**
+ * Log audit entry for SOC2 compliance
+ * Immutable record of all sensitive operations
+ */
+export async function logAudit({
+  actorId,
+  actorType,
+  action,
+  resourceType,
+  resourceId,
+  previousState,
+  newState,
+  metadata,
+}: {
+  actorId?: string
+  actorType: "user" | "system" | "api" | "webhook"
+  action: string
+  resourceType: string
+  resourceId?: string
+  previousState?: Record<string, unknown>
+  newState?: Record<string, unknown>
+  metadata?: Record<string, unknown>
+}) {
+  try {
+    const adminClient = createAdminClient()
+    
+    // Calculate changes if both states provided
+    let changes: Record<string, unknown> | undefined
+    if (previousState && newState) {
+      changes = {}
+      const allKeys = new Set([...Object.keys(previousState), ...Object.keys(newState)])
+      for (const key of allKeys) {
+        if (JSON.stringify(previousState[key]) !== JSON.stringify(newState[key])) {
+          changes[key] = { from: previousState[key], to: newState[key] }
+        }
+      }
+    }
+    
+    const { error } = await adminClient.from("audit_log").insert({
+      actor_id: actorId,
+      actor_type: actorType,
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      previous_state: previousState,
+      new_state: newState,
+      changes,
+      metadata: metadata || {},
+    })
+
+    if (error) {
+      console.error("[logAudit] Insert failed:", error.message)
+    }
+  } catch (err) {
+    console.error("[logAudit] Error:", err)
   }
 }
 

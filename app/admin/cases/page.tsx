@@ -9,9 +9,10 @@ import {
   ArrowRight,
   Building2,
   Briefcase,
-  Loader2,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from "lucide-react"
+import { CasesTableSkeleton } from "@/components/admin/skeletons"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
 import { formatCurrency, formatDate } from "@/lib/utils/format"
 
@@ -35,6 +36,7 @@ interface Case {
 export default function AdminCasesPage() {
   const [cases, setCases] = useState<Case[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
@@ -43,13 +45,13 @@ export default function AdminCasesPage() {
 
   const fetchCases = async () => {
     try {
+      setError(null)
       const res = await fetch("/api/admin/cases")
-      if (res.ok) {
-        const data = await res.json()
-        setCases(data)
-      }
-    } catch (error) {
-      console.error("Failed to fetch cases:", error)
+      if (!res.ok) throw new Error("Failed to fetch cases")
+      const data = await res.json()
+      setCases(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
       setLoading(false)
     }
@@ -71,6 +73,43 @@ export default function AdminCasesPage() {
     if (c.id_verification_status === "completed" || c.id_verification_status === "approved") completed++
     if (c.source_of_funds_status === "completed" || c.source_of_funds_status === "approved") completed++
     return completed
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Cases</h1>
+          <p className="text-muted-foreground mt-1">Loading cases...</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search cases..." className="pl-10 h-10" disabled />
+          </div>
+        </div>
+        <CasesTableSkeleton rows={8} />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Cases</h1>
+          <p className="text-muted-foreground mt-1">Unable to load cases</p>
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 bg-card border border-border rounded-xl">
+          <AlertCircle className="h-10 w-10 text-muted-foreground/50" />
+          <p className="text-muted-foreground">{error}</p>
+          <Button variant="outline" onClick={fetchCases}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try again
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -98,11 +137,7 @@ export default function AdminCasesPage() {
 
       {/* Cases list */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-muted-foreground">
-            Loading cases...
-          </div>
-        ) : filteredCases.length === 0 ? (
+        {filteredCases.length === 0 ? (
           <div className="p-12 text-center">
             <Briefcase className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-muted-foreground">
