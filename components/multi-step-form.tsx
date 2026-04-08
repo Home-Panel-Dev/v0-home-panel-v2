@@ -1,13 +1,11 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   enquiryFormSchema,
@@ -18,6 +16,21 @@ import {
   type EnquiryFormData,
 } from "@/lib/form-schema"
 import { cn } from "@/lib/utils"
+import {
+  FormField,
+  TextInput,
+  RadioCardGroup,
+  CheckboxField,
+  StepHeader,
+  InfoBox,
+  ProgressIndicator,
+  AddressAutocomplete,
+  type AddressData,
+} from "@/components/forms"
+
+// ============================================================================
+// TYPES & CONSTANTS
+// ============================================================================
 
 type StepType = 
   | "terms-conditions"
@@ -37,7 +50,6 @@ type StepType =
   | "personal-details"
   | "quote"
 
-// Agent data for the quote step
 const agents = [
   {
     name: "Sarah Mitchell",
@@ -51,18 +63,19 @@ const agents = [
   },
 ]
 
-// Fee calculation logic
+// ============================================================================
+// FEE CALCULATION
+// ============================================================================
+
 function calculateFees(data: Partial<EnquiryFormData>) {
   const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
   const transactionType = data.transactionType || "buying"
   
-  // Base legal fee
   let legalFee = 595
   if (propertyValue > 250000) legalFee = 695
   if (propertyValue > 500000) legalFee = 895
   if (propertyValue > 1000000) legalFee = 1295
   
-  // Additional fees based on transaction type
   const isLeasehold = data.tenure === "leasehold"
   const hasMortgage = data.hasMortgage === "yes"
   const isNewBuild = data.isNewBuild === "yes"
@@ -100,8 +113,11 @@ function calculateFees(data: Partial<EnquiryFormData>) {
   }
 }
 
+// ============================================================================
+// STEP FLOW LOGIC
+// ============================================================================
+
 function getStepsForTransaction(transactionType: string): StepType[] {
-  // Always start with terms and product interests before transaction type
   const preSteps: StepType[] = ["terms-conditions", "product-interests", "transaction-type"]
   
   if (transactionType === "buying" || transactionType === "buying-selling") {
@@ -164,14 +180,18 @@ function getStepsForTransaction(transactionType: string): StepType[] {
   return preSteps
 }
 
+// ============================================================================
+// MAIN FORM COMPONENT
+// ============================================================================
+
 export function MultiStepForm() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
-  const [isDeclined, setIsDeclined] = useState(false)
   const [showFeedbackForm, setShowFeedbackForm] = useState(false)
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [addressData, setAddressData] = useState<AddressData | null>(null)
 
   const form = useForm<EnquiryFormData>({
     resolver: zodResolver(enquiryFormSchema),
@@ -204,7 +224,7 @@ export function MultiStepForm() {
     mode: "onChange",
   })
 
-  const { register, handleSubmit, watch, setValue, formState: { errors }, trigger } = form
+  const { handleSubmit, watch, setValue, formState: { errors }, trigger } = form
   const watchedValues = watch()
   
   const steps = useMemo(() => 
@@ -212,17 +232,19 @@ export function MultiStepForm() {
     [watchedValues.transactionType]
   )
   
-  const currentStep = steps[currentStepIndex] || "transaction-type"
+  const currentStep = steps[currentStepIndex] || "terms-conditions"
   const totalSteps = steps.length || 1
-  const progressValue = totalSteps > 1 ? (currentStepIndex / (totalSteps - 1)) * 100 : 0
-  const progress = Number.isNaN(progressValue) ? 0 : Math.round(progressValue)
 
-  const validateCurrentStep = async (): Promise<boolean> => {
+  // ============================================================================
+  // VALIDATION
+  // ============================================================================
+
+  const validateCurrentStep = useCallback(async (): Promise<boolean> => {
     switch (currentStep) {
       case "terms-conditions":
         return watchedValues.termsAccepted === true
       case "product-interests":
-        return true // Optional step, always valid
+        return true
       case "transaction-type":
         return !!watchedValues.transactionType
       case "property-address":
@@ -248,27 +270,34 @@ export function MultiStepForm() {
       case "bank-funds-only":
         return !!watchedValues.bankFundsOnly
       case "personal-details":
-        const result = await trigger(["firstName", "lastName", "email", "phone"])
-        return result
+        return await trigger(["firstName", "lastName", "email", "phone"])
       case "quote":
         return true
       default:
         return true
     }
-  }
+  }, [currentStep, watchedValues, trigger])
 
-const nextStep = async () => {
+  // ============================================================================
+  // NAVIGATION
+  // ============================================================================
+
+  const nextStep = useCallback(async () => {
     const isValid = await validateCurrentStep()
     if (isValid && currentStepIndex < steps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1)
     }
-  }
+  }, [validateCurrentStep, currentStepIndex, steps.length])
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex((prev) => prev - 1)
     }
-  }
+  }, [currentStepIndex])
+
+  // ============================================================================
+  // SUBMISSION
+  // ============================================================================
 
   const onSubmit = async (data: EnquiryFormData) => {
     setIsSubmitting(true)
@@ -294,17 +323,13 @@ const nextStep = async () => {
     }
   }
 
-// Handle radio selection without auto-advance
-  const handleRadioSelect = (field: keyof EnquiryFormData, value: string) => {
-    setValue(field, value)
-  }
+  // ============================================================================
+  // DECLINE & FEEDBACK
+  // ============================================================================
 
-  // Handle decline - user doesn't want to proceed
   const handleDecline = async () => {
-    setIsDeclined(true)
     setShowFeedbackForm(true)
     
-    // Send initial decline email (no feedback yet)
     try {
       await fetch("/api/enquiry/decline", {
         method: "POST",
@@ -316,11 +341,10 @@ const nextStep = async () => {
         }),
       })
     } catch {
-      // Silent fail for email - we'll still show feedback form
+      // Silent fail - still show feedback form
     }
   }
 
-  // Handle feedback submission
   const handleFeedbackSubmit = async (reasons: string[], otherReason?: string) => {
     setIsSubmitting(true)
     try {
@@ -338,12 +362,33 @@ const nextStep = async () => {
       })
       setFeedbackSubmitted(true)
     } catch {
-      // Still mark as submitted to show thank you
       setFeedbackSubmitted(true)
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  // ============================================================================
+  // ADDRESS HANDLING
+  // ============================================================================
+
+  const handleAddressChange = (address: AddressData | null) => {
+    setAddressData(address)
+    if (address) {
+      setValue("propertyAddressLine1", address.addressLine1)
+      setValue("propertyAddressLine2", address.addressLine2)
+      setValue("propertyCity", address.city)
+      setValue("propertyPostcode", address.postcode)
+    }
+  }
+
+  const handlePostcodeChange = (postcode: string) => {
+    setValue("propertyPostcode", postcode)
+  }
+
+  // ============================================================================
+  // RENDER: SUCCESS STATE
+  // ============================================================================
 
   if (isSuccess) {
     return (
@@ -363,7 +408,10 @@ const nextStep = async () => {
     )
   }
 
-  // Feedback form after declining
+  // ============================================================================
+  // RENDER: FEEDBACK FORM
+  // ============================================================================
+
   if (showFeedbackForm) {
     return (
       <FeedbackForm
@@ -375,38 +423,37 @@ const nextStep = async () => {
     )
   }
 
+  // ============================================================================
+  // RENDER: MAIN FORM
+  // ============================================================================
+
   return (
     <div className="w-full max-w-xl mx-auto">
-      {/* Form card */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        {/* Back button and progress */}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+        {/* Back button */}
         <div className="p-4 pb-0">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={prevStep}
             disabled={currentStepIndex === 0}
-            className="rounded-lg border-border"
+            className="rounded-lg text-muted-foreground hover:text-foreground -ml-2"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
         </div>
         
-        {/* Progress bar */}
+        {/* Progress */}
         <div className="px-6 pt-4">
-          <div className="h-1 bg-border rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-foreground"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
+          <ProgressIndicator
+            currentStep={currentStepIndex}
+            totalSteps={totalSteps}
+          />
         </div>
 
-        {/* Form content - NO form element until quote step to prevent accidental submission */}
+        {/* Form content */}
         <div className="p-6 pt-8">
           <AnimatePresence mode="wait">
             <motion.div
@@ -417,6 +464,7 @@ const nextStep = async () => {
               transition={{ duration: 0.2 }}
               className="min-h-[320px]"
             >
+              {/* STEP: Terms & Conditions */}
               {currentStep === "terms-conditions" && (
                 <TermsConditionsStep
                   termsAccepted={watchedValues.termsAccepted || false}
@@ -426,6 +474,7 @@ const nextStep = async () => {
                 />
               )}
 
+              {/* STEP: Product Interests */}
               {currentStep === "product-interests" && (
                 <ProductInterestsStep
                   interestSolar={watchedValues.interestSolar || false}
@@ -435,118 +484,132 @@ const nextStep = async () => {
                 />
               )}
 
+              {/* STEP: Transaction Type */}
               {currentStep === "transaction-type" && (
                 <TransactionTypeStep
                   value={watchedValues.transactionType}
-                  onChange={(value) => handleRadioSelect("transactionType", value)}
+                  onChange={(value) => setValue("transactionType", value)}
                 />
               )}
 
+              {/* STEP: Property Address */}
               {currentStep === "property-address" && (
                 <PropertyAddressStep
                   transactionType={watchedValues.transactionType}
-                  values={watchedValues}
-                  register={register}
-                  setValue={setValue}
-                  onNext={nextStep}
+                  postcode={watchedValues.propertyPostcode || ""}
+                  addressUnknown={watchedValues.propertyAddressUnknown || false}
+                  addressData={addressData}
+                  onAddressChange={handleAddressChange}
+                  onPostcodeChange={handlePostcodeChange}
+                  onAddressUnknownChange={(checked) => setValue("propertyAddressUnknown", checked)}
                 />
               )}
 
+              {/* STEP: Tenure */}
               {currentStep === "tenure" && (
                 <TenureStep
                   value={watchedValues.tenure || ""}
-                  onChange={(value) => handleRadioSelect("tenure", value)}
+                  onChange={(value) => setValue("tenure", value)}
                 />
               )}
 
+              {/* STEP: Property Value */}
               {currentStep === "property-value" && (
                 <PropertyValueStep
                   value={watchedValues.propertyValue || ""}
                   onChange={(value) => setValue("propertyValue", value)}
-                  onNext={nextStep}
                 />
               )}
 
+              {/* STEP: Owner Count */}
               {currentStep === "owner-count" && (
                 <OwnerCountStep
                   value={watchedValues.ownerCount || ""}
-                  onChange={(value) => handleRadioSelect("ownerCount", value)}
+                  onChange={(value) => setValue("ownerCount", value)}
                 />
               )}
 
+              {/* STEP: First Time Buyer */}
               {currentStep === "first-time-buyer" && (
                 <FirstTimeBuyerStep
                   value={watchedValues.firstTimeBuyer || ""}
-                  onChange={(value) => handleRadioSelect("firstTimeBuyer", value)}
+                  onChange={(value) => setValue("firstTimeBuyer", value)}
                 />
               )}
 
+              {/* STEP: Property Count */}
               {currentStep === "property-count" && (
                 <PropertyCountStep
                   value={watchedValues.propertyCount || ""}
-                  onChange={(value) => handleRadioSelect("propertyCount", value)}
+                  onChange={(value) => setValue("propertyCount", value)}
                 />
               )}
 
+              {/* STEP: New Build */}
               {currentStep === "new-build" && (
                 <NewBuildStep
                   value={watchedValues.isNewBuild || ""}
-                  onChange={(value) => handleRadioSelect("isNewBuild", value)}
+                  onChange={(value) => setValue("isNewBuild", value)}
                 />
               )}
 
+              {/* STEP: Mortgage */}
               {currentStep === "mortgage" && (
                 <MortgageStep
                   value={watchedValues.hasMortgage || ""}
-                  onChange={(value) => handleRadioSelect("hasMortgage", value)}
+                  onChange={(value) => setValue("hasMortgage", value)}
                 />
               )}
 
+              {/* STEP: Company Purchase */}
               {currentStep === "company-purchase" && (
                 <CompanyPurchaseStep
                   value={watchedValues.isCompanyPurchase || ""}
-                  onChange={(value) => handleRadioSelect("isCompanyPurchase", value)}
+                  onChange={(value) => setValue("isCompanyPurchase", value)}
                 />
               )}
 
+              {/* STEP: Gift Funds */}
               {currentStep === "gift-funds" && (
                 <GiftFundsStep
                   value={watchedValues.hasGiftFunds || ""}
-                  onChange={(value) => handleRadioSelect("hasGiftFunds", value)}
+                  onChange={(value) => setValue("hasGiftFunds", value)}
                 />
               )}
 
+              {/* STEP: Bank Funds Only */}
               {currentStep === "bank-funds-only" && (
                 <BankFundsOnlyStep
                   value={watchedValues.bankFundsOnly || ""}
-                  onChange={(value) => handleRadioSelect("bankFundsOnly", value)}
+                  onChange={(value) => setValue("bankFundsOnly", value)}
                 />
               )}
 
+              {/* STEP: Personal Details */}
               {currentStep === "personal-details" && (
                 <PersonalDetailsStep
-                  register={register}
+                  values={watchedValues}
                   errors={errors}
                   isSubmitting={isSubmitting}
+                  onFieldChange={(field, value) => setValue(field, value)}
                 />
               )}
 
+              {/* STEP: Quote */}
               {currentStep === "quote" && (
-                <QuoteStep
-                  values={watchedValues}
-                  isSubmitting={isSubmitting}
-                />
+                <QuoteStep values={watchedValues} />
               )}
             </motion.div>
           </AnimatePresence>
 
+          {/* Error message */}
           {error && (
             <div className="mt-4 p-4 rounded-xl bg-destructive/10 text-destructive text-sm">
               {error}
             </div>
           )}
 
-          {/* Navigation */}
+          {/* Navigation buttons */}
           <div className="flex justify-end mt-8">
             {currentStep === "quote" ? (
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -555,7 +618,7 @@ const nextStep = async () => {
                   variant="outline"
                   disabled={isSubmitting}
                   onClick={handleDecline}
-                  className="rounded-lg border-border h-11 order-2 sm:order-1"
+                  className="rounded-xl border-border h-12 order-2 sm:order-1"
                 >
                   No thanks
                 </Button>
@@ -563,7 +626,7 @@ const nextStep = async () => {
                   type="button"
                   disabled={isSubmitting}
                   onClick={handleSubmit(onSubmit)}
-                  className="rounded-lg bg-foreground hover:bg-foreground/90 text-background px-8 h-11 order-1 sm:order-2"
+                  className="rounded-xl bg-foreground hover:bg-foreground/90 text-background px-8 h-12 order-1 sm:order-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -579,7 +642,7 @@ const nextStep = async () => {
               <Button
                 type="button"
                 onClick={nextStep}
-                className="rounded-lg bg-foreground hover:bg-foreground/90 text-background h-11"
+                className="rounded-xl bg-foreground hover:bg-foreground/90 text-background h-12 px-6"
               >
                 Get My Quote
                 <ChevronRight className="ml-1 h-4 w-4" />
@@ -588,7 +651,7 @@ const nextStep = async () => {
               <Button
                 type="button"
                 onClick={nextStep}
-                className="rounded-lg bg-foreground hover:bg-foreground/90 text-background h-11"
+                className="rounded-xl bg-foreground hover:bg-foreground/90 text-background h-12 px-6"
               >
                 Continue
                 <ChevronRight className="ml-1 h-4 w-4" />
@@ -601,51 +664,10 @@ const nextStep = async () => {
   )
 }
 
-// Pill button component for radio options
-function PillButton({
-  selected,
-  onClick,
-  children,
-  className,
-}: {
-  selected: boolean
-  onClick: () => void
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center px-5 py-2.5 rounded-full border text-sm font-medium transition-all",
-        selected
-          ? "border-foreground bg-foreground text-background"
-          : "border-border bg-background text-foreground hover:border-foreground/40",
-        className
-      )}
-    >
-      <span className={cn(
-        "w-4 h-4 rounded-full border-2 mr-2.5 flex items-center justify-center",
-        selected ? "border-background" : "border-muted-foreground/50"
-      )}>
-        {selected && <span className="w-2 h-2 rounded-full bg-background" />}
-      </span>
-      {children}
-    </button>
-  )
-}
+// ============================================================================
+// STEP COMPONENTS
+// ============================================================================
 
-// Info box component
-function InfoBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="p-4 rounded-xl bg-muted text-sm text-muted-foreground leading-relaxed">
-      {children}
-    </div>
-  )
-}
-
-// Step: Terms & Conditions
 function TermsConditionsStep({
   termsAccepted,
   marketingConsent,
@@ -659,49 +681,48 @@ function TermsConditionsStep({
 }) {
   return (
     <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-lg font-semibold mb-2">Before we begin</h2>
-        <p className="text-muted-foreground text-sm">
-          Please review and accept our terms to continue with your enquiry.
-        </p>
-      </div>
+      <StepHeader
+        title="Before we begin"
+        description="Please review and accept our terms to continue with your enquiry."
+        align="center"
+      />
 
-      {/* Required Terms Checkbox */}
-      <div className="p-4 rounded-xl border border-border bg-muted/30">
-        <div className="flex items-start space-x-3">
-          <Checkbox
-            id="termsAccepted"
-            checked={termsAccepted}
-            onCheckedChange={(checked) => onTermsChange(checked as boolean)}
-            className="mt-1"
-          />
-          <div className="flex-1">
-            <label htmlFor="termsAccepted" className="text-sm font-medium cursor-pointer leading-relaxed">
-              I agree to Emerald Green Energy&apos;s Terms and Conditions <span className="text-destructive">*</span>
-            </label>
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-              By checking this box, I acknowledge and consent to Emerald Green Energy Limited collecting, processing, and sharing my personal information with authorised third-party partners for the purpose of providing quotations, services, and related communications regarding home energy products and conveyancing services. I understand that my data will be handled in accordance with applicable data protection laws, including the UK GDPR, and that I may withdraw my consent at any time by contacting Emerald Green Energy Limited directly.
-            </p>
+      <div className="space-y-4">
+        <div className="p-4 rounded-xl border border-border bg-muted/30">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="termsAccepted"
+              checked={termsAccepted}
+              onCheckedChange={(checked) => onTermsChange(checked as boolean)}
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <label htmlFor="termsAccepted" className="text-sm font-medium cursor-pointer block">
+                I agree to Emerald Green Energy&apos;s Terms and Conditions <span className="text-destructive">*</span>
+              </label>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                By checking this box, I acknowledge and consent to Emerald Green Energy Limited collecting, processing, and sharing my personal information with authorised third-party partners for the purpose of providing quotations, services, and related communications regarding home energy products and conveyancing services. I understand that my data will be handled in accordance with applicable data protection laws, including the UK GDPR, and that I may withdraw my consent at any time by contacting Emerald Green Energy Limited directly.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Optional Marketing Consent */}
-      <div className="p-4 rounded-xl border border-border">
-        <div className="flex items-start space-x-3">
-          <Checkbox
-            id="marketingConsent"
-            checked={marketingConsent}
-            onCheckedChange={(checked) => onMarketingChange(checked as boolean)}
-            className="mt-1"
-          />
-          <div className="flex-1">
-            <label htmlFor="marketingConsent" className="text-sm font-medium cursor-pointer leading-relaxed">
-              I would like to receive marketing communications (optional)
-            </label>
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-              Tick this box if you would like to receive promotional offers, product updates, and marketing materials from Emerald Green Energy and our trusted partners via email, phone, or SMS. You can unsubscribe at any time.
-            </p>
+        <div className="p-4 rounded-xl border border-border">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="marketingConsent"
+              checked={marketingConsent}
+              onCheckedChange={(checked) => onMarketingChange(checked as boolean)}
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <label htmlFor="marketingConsent" className="text-sm font-medium cursor-pointer block">
+                I would like to receive marketing communications (optional)
+              </label>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                Tick this box if you would like to receive promotional offers, product updates, and marketing materials from Emerald Green Energy and our trusted partners via email, phone, or SMS. You can unsubscribe at any time.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -715,7 +736,6 @@ function TermsConditionsStep({
   )
 }
 
-// Step: Product Interests
 function ProductInterestsStep({
   interestSolar,
   interestBoiler,
@@ -729,69 +749,30 @@ function ProductInterestsStep({
 }) {
   return (
     <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-lg font-semibold mb-2">Are you interested in any of these services?</h2>
-        <p className="text-muted-foreground text-sm">
-          Select any that apply. This helps us provide relevant information about additional services that may benefit your home.
-        </p>
-      </div>
+      <StepHeader
+        title="Are you interested in any of these services?"
+        description="Select any that apply. This helps us provide relevant information about additional services that may benefit your home."
+        align="center"
+      />
 
       <div className="space-y-3">
-        {/* Solar Products Interest */}
-        <div 
-          className={cn(
-            "p-4 rounded-xl border cursor-pointer transition-all",
-            interestSolar 
-              ? "border-foreground bg-foreground/5" 
-              : "border-border hover:border-foreground/40"
-          )}
-          onClick={() => onSolarChange(!interestSolar)}
-        >
-          <div className="flex items-start space-x-3">
-            <Checkbox
-              id="interestSolar"
-              checked={interestSolar}
-              onCheckedChange={(checked) => onSolarChange(checked as boolean)}
-              className="mt-0.5"
-            />
-            <div className="flex-1">
-              <label htmlFor="interestSolar" className="text-sm font-medium cursor-pointer">
-                Solar Products for the Home
-              </label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Solar panels, battery storage systems, and renewable energy solutions to reduce your energy bills and carbon footprint.
-              </p>
-            </div>
-          </div>
-        </div>
+        <CheckboxField
+          id="interestSolar"
+          label="Solar Products for the Home"
+          description="Solar panels, battery storage systems, and renewable energy solutions to reduce your energy bills and carbon footprint."
+          checked={interestSolar}
+          onCheckedChange={onSolarChange}
+          variant="card"
+        />
 
-        {/* Boiler Products Interest */}
-        <div 
-          className={cn(
-            "p-4 rounded-xl border cursor-pointer transition-all",
-            interestBoiler 
-              ? "border-foreground bg-foreground/5" 
-              : "border-border hover:border-foreground/40"
-          )}
-          onClick={() => onBoilerChange(!interestBoiler)}
-        >
-          <div className="flex items-start space-x-3">
-            <Checkbox
-              id="interestBoiler"
-              checked={interestBoiler}
-              onCheckedChange={(checked) => onBoilerChange(checked as boolean)}
-              className="mt-0.5"
-            />
-            <div className="flex-1">
-              <label htmlFor="interestBoiler" className="text-sm font-medium cursor-pointer">
-                Boiler Products and Services
-              </label>
-              <p className="text-xs text-muted-foreground mt-1">
-                New boiler installations, heating system upgrades, and maintenance services for improved home comfort and efficiency.
-              </p>
-            </div>
-          </div>
-        </div>
+        <CheckboxField
+          id="interestBoiler"
+          label="Boiler Products and Services"
+          description="New boiler installations, heating system upgrades, and maintenance services for improved home comfort and efficiency."
+          checked={interestBoiler}
+          onCheckedChange={onBoilerChange}
+          variant="card"
+        />
       </div>
 
       <InfoBox>
@@ -801,7 +782,6 @@ function ProductInterestsStep({
   )
 }
 
-// Step: Transaction Type
 function TransactionTypeStep({
   value,
   onChange,
@@ -811,73 +791,78 @@ function TransactionTypeStep({
 }) {
   return (
     <div className="text-center">
-      <p className="text-muted-foreground mb-2">
-        Buying or selling a home can be both a <strong className="text-foreground">stressful</strong> and <strong className="text-foreground">exciting</strong> experience.
-      </p>
-      <p className="text-muted-foreground mb-2">
-        Let us handle this <strong className="text-foreground">important moment</strong> for you.
-      </p>
-      <p className="text-muted-foreground mb-6">
-        We are <strong className="text-foreground">HomePanel</strong>, a team which:
-      </p>
-      <ul className="text-sm text-muted-foreground mb-8 space-y-1">
-        <li className="underline">is 2x faster than the national average,</li>
-        <li className="underline">has learnt from 30,000+ transactions,</li>
-        <li className="underline">offers the easiest client experience</li>
-        <li className="underline">in the industry.</li>
-      </ul>
-      
-      <Label className="text-base block mb-4">What would you like a quote for?</Label>
-      <div className="flex flex-wrap justify-center gap-2">
-        {transactionTypes.map((type) => (
-          <PillButton
-            key={type.value}
-            selected={value === type.value}
-            onClick={() => onChange(type.value)}
-          >
-            {type.label}
-          </PillButton>
-        ))}
+      <div className="mb-8">
+        <p className="text-muted-foreground mb-2">
+          Buying or selling a home can be both a <strong className="text-foreground">stressful</strong> and <strong className="text-foreground">exciting</strong> experience.
+        </p>
+        <p className="text-muted-foreground mb-2">
+          Let us handle this <strong className="text-foreground">important moment</strong> for you.
+        </p>
+        <p className="text-muted-foreground mb-6">
+          We are <strong className="text-foreground">HomePanel</strong>, a team which:
+        </p>
+        <ul className="text-sm text-muted-foreground space-y-1">
+          <li className="underline decoration-dotted underline-offset-4">is 2x faster than the national average,</li>
+          <li className="underline decoration-dotted underline-offset-4">has learnt from 30,000+ transactions,</li>
+          <li className="underline decoration-dotted underline-offset-4">offers the easiest client experience</li>
+          <li className="underline decoration-dotted underline-offset-4">in the industry.</li>
+        </ul>
       </div>
+      
+      <FormField label="What would you like a quote for?" className="text-center">
+        <RadioCardGroup
+          options={transactionTypes.map(t => ({ value: t.value, label: t.label }))}
+          value={value}
+          onChange={onChange}
+          variant="pill"
+          layout="horizontal"
+          className="justify-center"
+        />
+      </FormField>
     </div>
   )
 }
 
-// Step: Property Address
 function PropertyAddressStep({
   transactionType,
-  values,
-  register,
-  setValue,
-  onNext,
+  postcode,
+  addressUnknown,
+  addressData,
+  onAddressChange,
+  onPostcodeChange,
+  onAddressUnknownChange,
 }: {
   transactionType: string
-  values: EnquiryFormData
-  register: ReturnType<typeof useForm<EnquiryFormData>>["register"]
-  setValue: ReturnType<typeof useForm<EnquiryFormData>>["setValue"]
-  onNext: () => void
+  postcode: string
+  addressUnknown: boolean
+  addressData: AddressData | null
+  onAddressChange: (address: AddressData | null) => void
+  onPostcodeChange: (postcode: string) => void
+  onAddressUnknownChange: (checked: boolean) => void
 }) {
   const action = transactionType === "selling" ? "selling" : "buying"
   
   return (
-    <div className="space-y-4">
-      <Label className="text-base">
-        What is the address of the property you are <strong>{action}</strong>?
-      </Label>
+    <div className="space-y-6">
+      <StepHeader
+        title={`What is the address of the property you are ${action}?`}
+      />
       
-      <div className="space-y-3">
-        <Input
-          placeholder="No. or Name / Postcode"
-          {...register("propertyPostcode")}
-          className="h-12 rounded-xl"
+      <FormField>
+        <AddressAutocomplete
+          value={addressData}
+          onChange={onAddressChange}
+          onPostcodeChange={onPostcodeChange}
+          placeholder="Start typing postcode..."
+          disabled={addressUnknown}
         />
-      </div>
+      </FormField>
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-3">
         <Checkbox
           id="addressUnknown"
-          checked={values.propertyAddressUnknown}
-          onCheckedChange={(checked) => setValue("propertyAddressUnknown", checked as boolean)}
+          checked={addressUnknown}
+          onCheckedChange={(checked) => onAddressUnknownChange(checked as boolean)}
         />
         <label htmlFor="addressUnknown" className="text-sm text-muted-foreground cursor-pointer">
           I don&apos;t know it yet
@@ -887,7 +872,6 @@ function PropertyAddressStep({
   )
 }
 
-// Step: Tenure
 function TenureStep({
   value,
   onChange,
@@ -896,57 +880,49 @@ function TenureStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Is it a Freehold or Leasehold property?</Label>
+    <div className="space-y-6">
+      <StepHeader title="Is it a Freehold or Leasehold property?" />
       
       <InfoBox>
         Most houses are <strong className="text-foreground">Freehold</strong> and most flats are <strong className="text-foreground">Leasehold</strong>. If you are buying through an Estate Agent they should be able to make you aware.
       </InfoBox>
       
-      <div className="flex flex-wrap gap-2">
-        {tenureTypes.map((type) => (
-          <PillButton
-            key={type.value}
-            selected={value === type.value}
-            onClick={() => onChange(type.value)}
-          >
-            {type.label}
-          </PillButton>
-        ))}
-      </div>
+      <RadioCardGroup
+        options={tenureTypes.map(t => ({ value: t.value, label: t.label }))}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="horizontal"
+      />
     </div>
   )
 }
 
-// Step: Property Value
 function PropertyValueStep({
   value,
   onChange,
-  onNext,
 }: {
   value: string
   onChange: (value: string) => void
-  onNext: () => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">How much will you be paying (approximately)?</Label>
+    <div className="space-y-6">
+      <StepHeader title="How much will you be paying (approximately)?" />
       
-      <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">£</span>
-        <Input
+      <FormField>
+        <TextInput
+          prefix="£"
           type="text"
-          placeholder=""
+          inputMode="numeric"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-12 rounded-xl pl-8"
+          placeholder="Enter amount"
         />
-      </div>
+      </FormField>
     </div>
   )
 }
 
-// Step: Owner Count
 function OwnerCountStep({
   value,
   onChange,
@@ -955,25 +931,20 @@ function OwnerCountStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Including you, how many people will own this property?</Label>
+    <div className="space-y-6">
+      <StepHeader title="Including you, how many people will own this property?" />
       
-      <div className="flex flex-wrap gap-2">
-        {ownerCountOptions.map((option) => (
-          <PillButton
-            key={option.value}
-            selected={value === option.value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </PillButton>
-        ))}
-      </div>
+      <RadioCardGroup
+        options={ownerCountOptions.map(o => ({ value: o.value, label: o.label }))}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="horizontal"
+      />
     </div>
   )
 }
 
-// Step: First Time Buyer
 function FirstTimeBuyerStep({
   value,
   onChange,
@@ -982,34 +953,27 @@ function FirstTimeBuyerStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">
-        Will this be the first property you have <strong>all</strong> ever owned?
-      </Label>
+    <div className="space-y-6">
+      <StepHeader title="Will this be the first property you have all ever owned?" />
       
       <InfoBox>
         You could be considered a first time buyer if you have never owned or part owned a property anywhere in the world. <strong className="text-foreground">If any of the new owners have then you should answer &quot;No&quot;.</strong>
       </InfoBox>
       
-      <div className="flex flex-col gap-2">
-        <PillButton
-          selected={value === "yes"}
-          onClick={() => onChange("yes")}
-        >
-          Yes, we are all first time buyers
-        </PillButton>
-        <PillButton
-          selected={value === "no"}
-          onClick={() => onChange("no")}
-        >
-          No
-        </PillButton>
-      </div>
+      <RadioCardGroup
+        options={[
+          { value: "yes", label: "Yes, we are all first time buyers" },
+          { value: "no", label: "No" },
+        ]}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="vertical"
+      />
     </div>
   )
 }
 
-// Step: Property Count
 function PropertyCountStep({
   value,
   onChange,
@@ -1018,25 +982,20 @@ function PropertyCountStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">When your purchase completes how many properties will you all own?</Label>
+    <div className="space-y-6">
+      <StepHeader title="When your purchase completes how many properties will you all own?" />
       
-      <div className="flex flex-col gap-2">
-        {propertyCountOptions.map((option) => (
-          <PillButton
-            key={option.value}
-            selected={value === option.value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </PillButton>
-        ))}
-      </div>
+      <RadioCardGroup
+        options={propertyCountOptions.map(o => ({ value: o.value, label: o.label }))}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="vertical"
+      />
     </div>
   )
 }
 
-// Step: New Build
 function NewBuildStep({
   value,
   onChange,
@@ -1045,28 +1004,23 @@ function NewBuildStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Is this a new build property?</Label>
+    <div className="space-y-6">
+      <StepHeader title="Is this a new build property?" />
       
-      <div className="flex gap-2">
-        <PillButton
-          selected={value === "yes"}
-          onClick={() => onChange("yes")}
-        >
-          Yes
-        </PillButton>
-        <PillButton
-          selected={value === "no"}
-          onClick={() => onChange("no")}
-        >
-          No
-        </PillButton>
-      </div>
+      <RadioCardGroup
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+        ]}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="horizontal"
+      />
     </div>
   )
 }
 
-// Step: Mortgage
 function MortgageStep({
   value,
   onChange,
@@ -1075,28 +1029,23 @@ function MortgageStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Will you be getting a mortgage?</Label>
+    <div className="space-y-6">
+      <StepHeader title="Will you be getting a mortgage?" />
       
-      <div className="flex gap-2">
-        <PillButton
-          selected={value === "yes"}
-          onClick={() => onChange("yes")}
-        >
-          Yes
-        </PillButton>
-        <PillButton
-          selected={value === "no"}
-          onClick={() => onChange("no")}
-        >
-          No
-        </PillButton>
-      </div>
+      <RadioCardGroup
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+        ]}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="horizontal"
+      />
     </div>
   )
 }
 
-// Step: Company Purchase
 function CompanyPurchaseStep({
   value,
   onChange,
@@ -1105,32 +1054,27 @@ function CompanyPurchaseStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Are you buying under a company name?</Label>
+    <div className="space-y-6">
+      <StepHeader title="Are you buying under a company name?" />
       
       <InfoBox>
         This could be a limited company (LTD), partnership or any other company.
       </InfoBox>
       
-      <div className="flex flex-col gap-2">
-        <PillButton
-          selected={value === "yes"}
-          onClick={() => onChange("yes")}
-        >
-          Yes
-        </PillButton>
-        <PillButton
-          selected={value === "no"}
-          onClick={() => onChange("no")}
-        >
-          No / I don&apos;t know
-        </PillButton>
-      </div>
+      <RadioCardGroup
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No / I don't know" },
+        ]}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="vertical"
+      />
     </div>
   )
 }
 
-// Step: Gift Funds
 function GiftFundsStep({
   value,
   onChange,
@@ -1139,32 +1083,27 @@ function GiftFundsStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Will someone be giving you money to help with the purchase?</Label>
+    <div className="space-y-6">
+      <StepHeader title="Will someone be giving you money to help with the purchase?" />
       
       <InfoBox>
         This could be a friend or relative who is helping with the deposit or the price of the property. But this does not include anyone who will also be an owner of the property.
       </InfoBox>
       
-      <div className="flex flex-col gap-2">
-        <PillButton
-          selected={value === "yes"}
-          onClick={() => onChange("yes")}
-        >
-          Yes
-        </PillButton>
-        <PillButton
-          selected={value === "no"}
-          onClick={() => onChange("no")}
-        >
-          No / I&apos;m not sure
-        </PillButton>
-      </div>
+      <RadioCardGroup
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No / I'm not sure" },
+        ]}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="vertical"
+      />
     </div>
   )
 }
 
-// Step: Bank Funds Only
 function BankFundsOnlyStep({
   value,
   onChange,
@@ -1173,8 +1112,8 @@ function BankFundsOnlyStep({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Will you be paying for the property using only funds in your bank account?</Label>
+    <div className="space-y-6">
+      <StepHeader title="Will you be paying for the property using only funds in your bank account?" />
       
       <InfoBox>
         You only need to answer &quot;Yes&quot; if 100% of the funds for this property are coming from cash that someone already has.
@@ -1186,106 +1125,91 @@ function BankFundsOnlyStep({
         </ul>
       </InfoBox>
       
-      <div className="flex flex-col gap-2">
-        <PillButton
-          selected={value === "yes"}
-          onClick={() => onChange("yes")}
-        >
-          Yes
-        </PillButton>
-        <PillButton
-          selected={value === "no"}
-          onClick={() => onChange("no")}
-        >
-          No / I&apos;m not sure
-        </PillButton>
-      </div>
+      <RadioCardGroup
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No / I'm not sure" },
+        ]}
+        value={value}
+        onChange={onChange}
+        variant="pill"
+        layout="vertical"
+      />
     </div>
   )
 }
 
-// Step: Personal Details
 function PersonalDetailsStep({
-  register,
+  values,
   errors,
   isSubmitting,
+  onFieldChange,
 }: {
-  register: ReturnType<typeof useForm<EnquiryFormData>>["register"]
-  errors: ReturnType<typeof useForm<EnquiryFormData>>["formState"]["errors"]
+  values: EnquiryFormData
+  errors: Record<string, { message?: string }>
   isSubmitting: boolean
+  onFieldChange: (field: keyof EnquiryFormData, value: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Tell us about yourself.</Label>
+    <div className="space-y-6">
+      <StepHeader title="Tell us about yourself" />
       
-      <div className="space-y-3">
-        <div>
-          <Input
-            placeholder="First name"
-            {...register("firstName")}
-            className="h-12 rounded-xl"
+      <div className="space-y-4">
+        <FormField label="First name" required error={errors.firstName?.message}>
+          <TextInput
+            value={values.firstName}
+            onChange={(e) => onFieldChange("firstName", e.target.value)}
+            placeholder="Enter your first name"
             disabled={isSubmitting}
+            error={!!errors.firstName}
           />
-          {errors.firstName && (
-            <p className="text-sm text-destructive mt-1">{errors.firstName.message}</p>
-          )}
-        </div>
+        </FormField>
         
-        <div>
-          <Input
-            placeholder="Last name"
-            {...register("lastName")}
-            className="h-12 rounded-xl"
+        <FormField label="Last name" required error={errors.lastName?.message}>
+          <TextInput
+            value={values.lastName}
+            onChange={(e) => onFieldChange("lastName", e.target.value)}
+            placeholder="Enter your last name"
             disabled={isSubmitting}
+            error={!!errors.lastName}
           />
-          {errors.lastName && (
-            <p className="text-sm text-destructive mt-1">{errors.lastName.message}</p>
-          )}
-        </div>
+        </FormField>
         
-        <div>
-          <Input
+        <FormField label="Email address" required error={errors.email?.message}>
+          <TextInput
             type="email"
-            placeholder="Email"
-            {...register("email")}
-            className="h-12 rounded-xl"
+            value={values.email}
+            onChange={(e) => onFieldChange("email", e.target.value)}
+            placeholder="Enter your email"
             disabled={isSubmitting}
+            error={!!errors.email}
           />
-          {errors.email && (
-            <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
-          )}
-        </div>
+        </FormField>
         
-        <div>
-          <Input
+        <FormField label="Phone number" required error={errors.phone?.message}>
+          <TextInput
             type="tel"
-            placeholder="Phone number"
-            {...register("phone")}
-            className="h-12 rounded-xl"
+            value={values.phone}
+            onChange={(e) => onFieldChange("phone", e.target.value)}
+            placeholder="Enter your phone number"
             disabled={isSubmitting}
+            error={!!errors.phone}
           />
-          {errors.phone && (
-            <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
-          )}
-        </div>
+        </FormField>
       </div>
     </div>
   )
 }
 
-// Step: Quote
 function QuoteStep({
   values,
-  isSubmitting,
 }: {
   values: EnquiryFormData
-  isSubmitting: boolean
 }) {
   const fees = calculateFees(values)
   
   return (
     <div className="text-center">
-      {/* Logo/Brand mark */}
       <img src="/logo.svg" alt="HomePanel" className="w-12 h-12 mx-auto mb-4" />
       
       <h2 className="text-xl font-semibold mb-1">
@@ -1295,7 +1219,6 @@ function QuoteStep({
         journey for you
       </p>
       
-      {/* Main fee display */}
       <p className="text-muted-foreground mb-2">
         Our fee for your {fees.transactionLabel} would be:
       </p>
@@ -1304,75 +1227,75 @@ function QuoteStep({
       </p>
       
       {/* Fee breakdown */}
-      <div className="text-left bg-slate-50 rounded-xl p-4 mb-8">
-        <h3 className="font-medium mb-3 text-sm">Fee breakdown</h3>
-        <div className="space-y-2 text-sm">
+      <div className="text-left bg-muted/50 rounded-xl p-5 mb-8">
+        <h3 className="font-medium mb-4 text-sm">Fee breakdown</h3>
+        <div className="space-y-2.5 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Legal fee</span>
-            <span>£{fees.legalFee}</span>
+            <span className="font-medium">£{fees.legalFee}</span>
           </div>
           {fees.leaseholdSupplement > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Leasehold supplement</span>
-              <span>£{fees.leaseholdSupplement}</span>
+              <span className="font-medium">£{fees.leaseholdSupplement}</span>
             </div>
           )}
           {fees.mortgageFee > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Mortgage work</span>
-              <span>£{fees.mortgageFee}</span>
+              <span className="font-medium">£{fees.mortgageFee}</span>
             </div>
           )}
           {fees.newBuildFee > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">New build supplement</span>
-              <span>£{fees.newBuildFee}</span>
+              <span className="font-medium">£{fees.newBuildFee}</span>
             </div>
           )}
           {fees.companyFee > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Company purchase</span>
-              <span>£{fees.companyFee}</span>
+              <span className="font-medium">£{fees.companyFee}</span>
             </div>
           )}
           {fees.giftFundsFee > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Gift funds verification</span>
-              <span>£{fees.giftFundsFee}</span>
+              <span className="font-medium">£{fees.giftFundsFee}</span>
             </div>
           )}
-          <div className="flex justify-between pt-2 border-t">
+          <div className="flex justify-between pt-2.5 border-t border-border">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>£{fees.subtotal}</span>
+            <span className="font-medium">£{fees.subtotal}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">VAT (20%)</span>
-            <span>£{fees.vat}</span>
+            <span className="font-medium">£{fees.vat}</span>
           </div>
-          <div className="flex justify-between pt-2 border-t">
+          <div className="flex justify-between pt-2.5 border-t border-border">
             <span className="text-muted-foreground">Disbursements (searches, Land Registry, etc.)</span>
-            <span>£{fees.disbursements}</span>
+            <span className="font-medium">£{fees.disbursements}</span>
           </div>
-          <div className="flex justify-between pt-2 border-t font-medium">
-            <span>Total</span>
-            <span>£{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <div className="flex justify-between pt-2.5 border-t border-border text-foreground">
+            <span className="font-semibold">Total</span>
+            <span className="font-semibold">£{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </div>
       
-      {/* Agents section */}
+      {/* Agents */}
       <p className="text-muted-foreground mb-4">
         Your case would directly be handled by
       </p>
       
-      <div className="flex items-center justify-center gap-4 mb-4">
+      <div className="flex items-center justify-center gap-6 mb-4">
         {agents.map((agent, index) => (
           <div key={agent.name} className="flex items-center gap-4">
             {index > 0 && (
               <span className="text-sm text-muted-foreground">or</span>
             )}
             <div className="text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-200 mx-auto mb-2 overflow-hidden">
+              <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-2 overflow-hidden">
                 <img 
                   src={agent.image} 
                   alt={agent.name}
@@ -1393,7 +1316,10 @@ function QuoteStep({
   )
 }
 
-// Feedback reasons for declining
+// ============================================================================
+// FEEDBACK FORM
+// ============================================================================
+
 const feedbackReasons = [
   { id: "price", label: "Price too high" },
   { id: "timing", label: "Not ready to proceed yet" },
@@ -1404,7 +1330,6 @@ const feedbackReasons = [
   { id: "other", label: "Other reason" },
 ]
 
-// Feedback Form Component
 function FeedbackForm({
   firstName,
   isSubmitting,
@@ -1462,65 +1387,41 @@ function FeedbackForm({
     >
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6">
-          <div className="text-center mb-8">
-            <h2 className="text-xl font-semibold mb-2">
-              We&apos;re sorry to see you go, {firstName}
-            </h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Thank you for considering HomePanel. To help us improve, could you share why you decided not to proceed?
-            </p>
-          </div>
+          <StepHeader
+            title={`We're sorry to see you go, ${firstName}`}
+            description="Thank you for considering HomePanel. To help us improve, could you share why you decided not to proceed?"
+            align="center"
+          />
 
           <div className="space-y-3 mb-6">
             {feedbackReasons.map((reason) => (
-              <div
+              <CheckboxField
                 key={reason.id}
-                className={cn(
-                  "p-4 rounded-xl border cursor-pointer transition-all",
-                  selectedReasons.includes(reason.id)
-                    ? "border-foreground bg-foreground/5"
-                    : "border-border hover:border-foreground/40"
-                )}
-                onClick={() => toggleReason(reason.id)}
-              >
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id={reason.id}
-                    checked={selectedReasons.includes(reason.id)}
-                    onCheckedChange={() => toggleReason(reason.id)}
-                  />
-                  <label
-                    htmlFor={reason.id}
-                    className="text-sm font-medium cursor-pointer flex-1"
-                  >
-                    {reason.label}
-                  </label>
-                </div>
-              </div>
+                id={reason.id}
+                label={reason.label}
+                checked={selectedReasons.includes(reason.id)}
+                onCheckedChange={() => toggleReason(reason.id)}
+                variant="card"
+              />
             ))}
           </div>
 
-          {/* Other reason text field */}
           {selectedReasons.includes("other") && (
-            <div className="mb-6">
-              <Label htmlFor="otherReason" className="text-sm font-medium">
-                Please tell us more
-              </Label>
+            <FormField label="Please tell us more" className="mb-6">
               <textarea
-                id="otherReason"
                 value={otherReason}
                 onChange={(e) => setOtherReason(e.target.value)}
                 placeholder="Your feedback helps us improve..."
-                className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 min-h-[100px] resize-none"
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground min-h-[100px] resize-none transition-all duration-200"
               />
-            </div>
+            </FormField>
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               type="button"
               variant="outline"
-              className="rounded-lg flex-1"
+              className="rounded-xl flex-1 h-12"
               onClick={() => onSubmit([], undefined)}
               disabled={isSubmitting}
             >
@@ -1528,7 +1429,7 @@ function FeedbackForm({
             </Button>
             <Button
               type="button"
-              className="rounded-lg bg-foreground hover:bg-foreground/90 text-background flex-1"
+              className="rounded-xl bg-foreground hover:bg-foreground/90 text-background flex-1 h-12"
               onClick={handleSubmit}
               disabled={isSubmitting || selectedReasons.length === 0}
             >
