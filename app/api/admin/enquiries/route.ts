@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/database"
+import { AppError, ErrorCodes, handleError, successResponse } from "@/lib/errors"
+
+// Allowed admin roles for enquiries access
+const ALLOWED_ROLES = ["super_admin", "admin", "operations", "compliance"]
 
 export async function GET() {
   try {
@@ -9,20 +13,24 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      throw new AppError(ErrorCodes.UNAUTHORIZED)
     }
 
     const adminClient = createAdminClient()
     
-    // Verify user is admin
+    // Verify user has appropriate role
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("role")
+      .select("role, is_active")
       .eq("id", user.id)
       .single()
     
-    if (!profile || profile.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    if (!profile || !profile.is_active) {
+      throw new AppError(ErrorCodes.FORBIDDEN, "Account is inactive")
+    }
+    
+    if (!ALLOWED_ROLES.includes(profile.role)) {
+      throw new AppError(ErrorCodes.FORBIDDEN)
     }
 
     // Fetch all enquiries
@@ -32,13 +40,14 @@ export async function GET() {
       .order("created_at", { ascending: false })
 
     if (error) {
-      console.error("Failed to fetch enquiries:", error)
-      return NextResponse.json({ error: "Failed to fetch enquiries" }, { status: 500 })
+      console.error("[admin/enquiries] Database error:", error)
+      throw new AppError(ErrorCodes.DATABASE_ERROR, error.message)
     }
 
     return NextResponse.json(enquiries || [])
   } catch (error) {
-    console.error("Enquiries API error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    const { response, statusCode, logData } = handleError(error)
+    console.error("[admin/enquiries] Error:", logData)
+    return NextResponse.json(response, { status: statusCode })
   }
 }

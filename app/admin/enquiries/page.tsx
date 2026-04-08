@@ -6,13 +6,14 @@ import {
   ArrowRight,
   Search,
   FileText,
-  Loader2,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { getStatusLabel, getStatusStyle } from "@/lib/database"
 import { formatCurrency, formatDate, getTransactionLabel, getInitials } from "@/lib/utils/format"
+import { EnquiriesTableSkeleton } from "@/components/admin/skeletons"
 
 interface Enquiry {
   id: string
@@ -65,20 +66,48 @@ export default function EnquiriesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Enquiries</h1>
+            <p className="text-muted-foreground mt-1">Loading enquiries...</p>
+          </div>
+        </div>
+
+        {/* Search placeholder */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search by name, email, or property..." 
+              className="pl-9 h-10 bg-background border-border"
+              disabled
+            />
+          </div>
+        </div>
+
+        {/* Skeleton table */}
+        <EnquiriesTableSkeleton rows={8} />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <p className="text-muted-foreground">{error}</p>
-        <Button variant="outline" onClick={fetchEnquiries}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try again
-        </Button>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Enquiries</h1>
+          <p className="text-muted-foreground mt-1">Unable to load enquiries</p>
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 bg-card border border-border rounded-xl">
+          <AlertCircle className="h-10 w-10 text-muted-foreground/50" />
+          <p className="text-muted-foreground">{error}</p>
+          <Button variant="outline" onClick={fetchEnquiries}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try again
+          </Button>
+        </div>
       </div>
     )
   }
