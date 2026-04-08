@@ -77,9 +77,8 @@ export async function POST(request: Request) {
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
       
-      // Insert with terms consent and product interests
-      const now = new Date().toISOString()
-      const { data: newEnquiry, error: dbError } = await supabase.from("enquiries").insert({
+      // Base enquiry data (required columns only)
+      const baseEnquiryData: Record<string, unknown> = {
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
         email: validatedData.email,
@@ -90,18 +89,39 @@ export async function POST(request: Request) {
         property_value: propertyValue || null,
         quote_amount: fees.total,
         status: "new",
-        // Terms and consent fields
+      }
+      
+      // Try insert with all fields first, fall back to base if columns don't exist
+      const now = new Date().toISOString()
+      const fullEnquiryData = {
+        ...baseEnquiryData,
         terms_accepted: validatedData.termsAccepted || false,
         terms_accepted_at: validatedData.termsAccepted ? now : null,
         marketing_consent: validatedData.marketingConsent || false,
         marketing_consent_at: validatedData.marketingConsent ? now : null,
-        // Product interests
         interest_solar: validatedData.interestSolar || false,
         interest_boiler: validatedData.interestBoiler || false,
-      }).select("id").single()
+      }
+      
+      let newEnquiry = null
+      let dbError = null
+      
+      // Try full insert first
+      const fullResult = await supabase.from("enquiries").insert(fullEnquiryData).select("id").single()
+      
+      if (fullResult.error?.message?.includes("column") || fullResult.error?.message?.includes("schema")) {
+        // Fallback to base insert if new columns don't exist yet
+        console.log("[enquiry] New columns not available, using base insert")
+        const baseResult = await supabase.from("enquiries").insert(baseEnquiryData).select("id").single()
+        newEnquiry = baseResult.data
+        dbError = baseResult.error
+      } else {
+        newEnquiry = fullResult.data
+        dbError = fullResult.error
+      }
       
       if (dbError) {
-        console.error("[v0] DB insert error:", dbError.message)
+        console.error("[enquiry] DB insert error:", dbError.message)
       }
 
       // Log activity
