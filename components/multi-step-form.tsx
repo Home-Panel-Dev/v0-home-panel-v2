@@ -64,50 +64,110 @@ const agents = [
 ]
 
 // ============================================================================
-// FEE CALCULATION
+// FEE CALCULATION — HomePanel Pricing (effective April 2025)
 // ============================================================================
+
+function calcLegalFee(propertyValue: number, transactionType: string): number {
+  if (transactionType === "remortgage") {
+    // Remortgage fee bands
+    if (propertyValue <= 250000) return 499
+    if (propertyValue <= 500000) return 599
+    if (propertyValue <= 750000) return 699
+    if (propertyValue <= 1000000) return 799
+    return 999
+  }
+  // Sale & Purchase (freehold base) fee bands
+  if (propertyValue <= 150000) return 695
+  if (propertyValue <= 250000) return 795
+  if (propertyValue <= 350000) return 895
+  if (propertyValue <= 500000) return 995
+  if (propertyValue <= 650000) return 1095
+  if (propertyValue <= 800000) return 1195
+  if (propertyValue <= 1000000) return 1395
+  return 1595
+}
+
+function calcSDLT(price: number, isFTB: boolean, isAdditional: boolean): number {
+  if (price <= 0) return 0
+  if (isFTB && !isAdditional) {
+    if (price <= 425000) return 0
+    if (price <= 625000) return Math.round((price - 425000) * 0.05)
+    // No FTB relief above £625k — standard rates apply
+  }
+  const additional = isAdditional ? 0.03 : 0
+  const bands: [number, number][] = [[250000, 0], [925000, 0.05], [1500000, 0.10], [Infinity, 0.12]]
+  let sdlt = 0
+  let prev = 0
+  for (const [limit, rate] of bands) {
+    if (price <= limit) { sdlt += (price - prev) * (rate + additional); break }
+    sdlt += (limit - prev) * (rate + additional)
+    prev = limit
+  }
+  return Math.round(sdlt)
+}
+
+function calcLandRegistryFee(propertyValue: number): number {
+  if (propertyValue <= 80000) return 20
+  if (propertyValue <= 100000) return 40
+  if (propertyValue <= 200000) return 100
+  if (propertyValue <= 500000) return 270
+  if (propertyValue <= 1000000) return 540
+  return 1105
+}
 
 function calculateFees(data: Partial<EnquiryFormData>) {
   const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
   const transactionType = data.transactionType || "buying"
-  
-  let legalFee = 595
-  if (propertyValue > 250000) legalFee = 695
-  if (propertyValue > 500000) legalFee = 895
-  if (propertyValue > 1000000) legalFee = 1295
-  
+
   const isLeasehold = data.tenure === "leasehold"
-  const hasMortgage = data.hasMortgage === "yes"
   const isNewBuild = data.isNewBuild === "yes"
   const isCompanyPurchase = data.isCompanyPurchase === "yes"
   const hasGiftFunds = data.hasGiftFunds === "yes"
-  
-  const fees = {
-    legalFee,
-    leaseholdSupplement: isLeasehold ? 195 : 0,
-    mortgageFee: hasMortgage ? 95 : 0,
-    newBuildFee: isNewBuild ? 195 : 0,
-    companyFee: isCompanyPurchase ? 295 : 0,
-    giftFundsFee: hasGiftFunds ? 50 : 0,
-    searchFees: 300,
-    landRegistryFee: propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100,
-    bankTransferFee: 35,
-  }
-  
-  const subtotal = fees.legalFee + fees.leaseholdSupplement + fees.mortgageFee + 
-    fees.newBuildFee + fees.companyFee + fees.giftFundsFee
+  const isFTB = data.firstTimeBuyer === "yes"
+  const isAdditional = data.propertyCount === "more-than-one"
+
+  const legalFee = calcLegalFee(propertyValue, transactionType)
+  const leaseholdSupplement = isLeasehold ? 250 : 0
+  const newBuildFee = isNewBuild ? 300 : 0
+  const companyFee = isCompanyPurchase ? 295 : 0
+  const giftFundsFee = hasGiftFunds ? 50 : 0
+
+  // Disbursements
+  const isPurchase = transactionType === "buying" || transactionType === "buying-selling"
+  const isSale = transactionType === "selling"
+  const searchFees = isPurchase ? 350 : 0
+  const landRegistryFee = isSale ? 0 : calcLandRegistryFee(propertyValue)
+  const bankTransferFee = 36 // inc VAT per transfer
+
+  // SDLT (purchase only)
+  const sdlt = isPurchase ? calcSDLT(propertyValue, isFTB, isAdditional) : 0
+
+  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee + giftFundsFee
   const vat = Math.round(subtotal * 0.2)
-  const disbursements = fees.searchFees + fees.landRegistryFee + fees.bankTransferFee
-  const total = subtotal + vat + disbursements
-  
+  const disbursements = searchFees + landRegistryFee + bankTransferFee
+  const totalExSDLT = subtotal + vat + disbursements
+  const total = totalExSDLT + sdlt
+
   return {
-    ...fees,
+    legalFee,
+    leaseholdSupplement,
+    newBuildFee,
+    companyFee,
+    giftFundsFee,
+    searchFees,
+    landRegistryFee,
+    bankTransferFee,
+    sdlt,
     subtotal,
     vat,
     disbursements,
+    totalExSDLT,
     total,
-    transactionLabel: transactionType === "buying" ? "purchase" : 
-      transactionType === "selling" ? "sale" : 
+    isFTB,
+    isAdditional,
+    transactionLabel:
+      transactionType === "buying" ? "purchase" :
+      transactionType === "selling" ? "sale" :
       transactionType === "buying-selling" ? "purchase & sale" :
       transactionType === "remortgage" ? "remortgage" : "transfer of equity"
   }
@@ -1240,12 +1300,6 @@ function QuoteStep({
               <span className="font-medium">£{fees.leaseholdSupplement}</span>
             </div>
           )}
-          {fees.mortgageFee > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Mortgage work</span>
-              <span className="font-medium">£{fees.mortgageFee}</span>
-            </div>
-          )}
           {fees.newBuildFee > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">New build supplement</span>
@@ -1265,7 +1319,7 @@ function QuoteStep({
             </div>
           )}
           <div className="flex justify-between pt-2.5 border-t border-border">
-            <span className="text-muted-foreground">Subtotal</span>
+            <span className="text-muted-foreground">Subtotal (ex VAT)</span>
             <span className="font-medium">£{fees.subtotal}</span>
           </div>
           <div className="flex justify-between">
@@ -1273,13 +1327,36 @@ function QuoteStep({
             <span className="font-medium">£{fees.vat}</span>
           </div>
           <div className="flex justify-between pt-2.5 border-t border-border">
-            <span className="text-muted-foreground">Disbursements (searches, Land Registry, etc.)</span>
+            <span className="text-muted-foreground">Disbursements</span>
             <span className="font-medium">£{fees.disbursements}</span>
           </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-xs">Searches {fees.searchFees > 0 ? `(£${fees.searchFees})` : "(n/a)"}, Land Registry {fees.landRegistryFee > 0 ? `(£${fees.landRegistryFee})` : "(n/a)"}, Bank transfer (£{fees.bankTransferFee})</span>
+          </div>
+          {fees.sdlt > 0 && (
+            <div className="flex justify-between pt-2.5 border-t border-border">
+              <span className="text-muted-foreground">
+                SDLT{fees.isFTB ? " (First Time Buyer)" : fees.isAdditional ? " (+3% Additional)" : ""}
+              </span>
+              <span className="font-medium">£{fees.sdlt.toLocaleString("en-GB")}</span>
+            </div>
+          )}
+          {fees.sdlt === 0 && fees.isFTB && (
+            <div className="flex justify-between pt-2.5 border-t border-border">
+              <span className="text-muted-foreground">SDLT (First Time Buyer relief)</span>
+              <span className="font-medium text-green-600">£0</span>
+            </div>
+          )}
           <div className="flex justify-between pt-2.5 border-t border-border text-foreground">
-            <span className="font-semibold">Total</span>
+            <span className="font-semibold">Total estimate</span>
             <span className="font-semibold">£{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
+          {fees.sdlt > 0 && (
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Excl. SDLT</span>
+              <span>£{fees.totalExSDLT.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
         </div>
       </div>
       
