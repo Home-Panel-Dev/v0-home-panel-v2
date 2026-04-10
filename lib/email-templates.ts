@@ -14,47 +14,84 @@ const tenureLabels: Record<string, string> = {
   unsure: "Unsure",
 }
 
-// Fee calculation - mirrors the logic in multi-step-form.tsx
+// Fee calculation — NPS pricing structure (effective April 2025)
+function calcLegalFeeEmail(propertyValue: number, transactionType: string): number {
+  if (transactionType === "remortgage") {
+    if (propertyValue <= 250000) return 499
+    if (propertyValue <= 500000) return 599
+    if (propertyValue <= 750000) return 699
+    if (propertyValue <= 1000000) return 799
+    return 999
+  }
+  if (propertyValue <= 150000) return 695
+  if (propertyValue <= 250000) return 795
+  if (propertyValue <= 350000) return 895
+  if (propertyValue <= 500000) return 995
+  if (propertyValue <= 650000) return 1095
+  if (propertyValue <= 800000) return 1195
+  if (propertyValue <= 1000000) return 1395
+  return 1595
+}
+
+function calcSDLTEmail(price: number, isFTB: boolean, isAdditional: boolean): number {
+  if (price <= 0) return 0
+  if (isFTB && !isAdditional) {
+    if (price <= 425000) return 0
+    if (price <= 625000) return Math.round((price - 425000) * 0.05)
+  }
+  const additional = isAdditional ? 0.03 : 0
+  const bands: [number, number][] = [[250000, 0], [925000, 0.05], [1500000, 0.10], [Infinity, 0.12]]
+  let sdlt = 0, prev = 0
+  for (const [limit, rate] of bands) {
+    if (price <= limit) { sdlt += (price - prev) * (rate + additional); break }
+    sdlt += (limit - prev) * (rate + additional)
+    prev = limit
+  }
+  return Math.round(sdlt)
+}
+
+function calcLandRegEmail(propertyValue: number): number {
+  if (propertyValue <= 80000) return 20
+  if (propertyValue <= 100000) return 40
+  if (propertyValue <= 200000) return 100
+  if (propertyValue <= 500000) return 270
+  if (propertyValue <= 1000000) return 540
+  return 1105
+}
+
 function calculateFees(data: EnquiryFormData) {
   const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
-  
-  // Base legal fee
-  let legalFee = 595
-  if (propertyValue > 250000) legalFee = 695
-  if (propertyValue > 500000) legalFee = 895
-  if (propertyValue > 1000000) legalFee = 1295
-  
-  // Additional fees based on options
+  const transactionType = data.transactionType || "buying"
   const isLeasehold = data.tenure === "leasehold"
-  const hasMortgage = data.hasMortgage === "yes"
   const isNewBuild = data.isNewBuild === "yes"
   const isCompanyPurchase = data.isCompanyPurchase === "yes"
   const hasGiftFunds = data.hasGiftFunds === "yes"
-  
-  const fees = {
-    legalFee,
-    leaseholdSupplement: isLeasehold ? 195 : 0,
-    mortgageFee: hasMortgage ? 95 : 0,
-    newBuildFee: isNewBuild ? 195 : 0,
-    companyFee: isCompanyPurchase ? 295 : 0,
-    giftFundsFee: hasGiftFunds ? 50 : 0,
-    searchFees: 300,
-    landRegistryFee: propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100,
-    bankTransferFee: 35,
-  }
-  
-  const subtotal = fees.legalFee + fees.leaseholdSupplement + fees.mortgageFee + 
-    fees.newBuildFee + fees.companyFee + fees.giftFundsFee
+  const isFTB = data.firstTimeBuyer === "yes"
+  const isAdditional = data.propertyCount === "more-than-one"
+  const isPurchase = transactionType === "buying" || transactionType === "buying-selling"
+  const isSale = transactionType === "selling"
+
+  const legalFee = calcLegalFeeEmail(propertyValue, transactionType)
+  const leaseholdSupplement = isLeasehold ? 250 : 0
+  const newBuildFee = isNewBuild ? 300 : 0
+  const companyFee = isCompanyPurchase ? 295 : 0
+  const giftFundsFee = hasGiftFunds ? 50 : 0
+  const searchFees = isPurchase ? 350 : 0
+  const landRegistryFee = isSale ? 0 : calcLandRegEmail(propertyValue)
+  const bankTransferFee = 36
+  const sdlt = isPurchase ? calcSDLTEmail(propertyValue, isFTB, isAdditional) : 0
+
+  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee + giftFundsFee
   const vat = Math.round(subtotal * 0.2)
-  const disbursements = fees.searchFees + fees.landRegistryFee + fees.bankTransferFee
-  const total = subtotal + vat + disbursements
-  
+  const disbursements = searchFees + landRegistryFee + bankTransferFee
+  const totalExSDLT = subtotal + vat + disbursements
+  const total = totalExSDLT + sdlt
+
   return {
-    ...fees,
-    subtotal,
-    vat,
-    disbursements,
-    total,
+    legalFee, leaseholdSupplement, newBuildFee, companyFee, giftFundsFee,
+    searchFees, landRegistryFee, bankTransferFee, sdlt,
+    subtotal, vat, disbursements, totalExSDLT, total, isFTB, isAdditional,
+    mortgageFee: 0,
     transactionLabel: transactionTypeLabels[data.transactionType] || data.transactionType
   }
 }
@@ -68,12 +105,11 @@ const agents = [
 export function getCustomerConfirmationEmail(data: EnquiryFormData) {
   const fees = calculateFees(data)
   const fullName = `${data.firstName} ${data.lastName}`
+  const fmt = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-  // Build fee breakdown rows
   const feeRows = [
-    { label: "Legal fee", amount: fees.legalFee },
+    { label: "Legal fee (ex VAT)", amount: fees.legalFee },
     fees.leaseholdSupplement > 0 ? { label: "Leasehold supplement", amount: fees.leaseholdSupplement } : null,
-    fees.mortgageFee > 0 ? { label: "Mortgage work", amount: fees.mortgageFee } : null,
     fees.newBuildFee > 0 ? { label: "New build supplement", amount: fees.newBuildFee } : null,
     fees.companyFee > 0 ? { label: "Company purchase", amount: fees.companyFee } : null,
     fees.giftFundsFee > 0 ? { label: "Gift funds verification", amount: fees.giftFundsFee } : null,
@@ -81,15 +117,18 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
 
   const feeRowsHtml = feeRows.map(row => `
     <tr>
-      <td style="padding: 8px 0; color: #666;">${row.label}</td>
-      <td style="padding: 8px 0; text-align: right;">£${row.amount}</td>
-    </tr>
-  `).join("")
+      <td style="padding:8px 0;color:#555;font-size:14px;">${row.label}</td>
+      <td style="padding:8px 0;text-align:right;font-size:14px;">${fmt(row.amount)}</td>
+    </tr>`).join("")
 
-  const feeRowsText = feeRows.map(row => `${row.label}: £${row.amount}`).join("\n")
+  const sdltLabel = fees.isFTB
+    ? `SDLT <span style="color:#16a34a;font-size:12px;">(First Time Buyer relief applied)</span>`
+    : fees.isAdditional
+    ? "SDLT (+3% additional property surcharge)"
+    : "Stamp Duty Land Tax (SDLT)"
 
   return {
-    subject: `Your HomePanel Quote - £${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    subject: `Your HomePanel quote — ${fmt(fees.total)} for your ${fees.transactionLabel}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -97,139 +136,303 @@ export function getCustomerConfirmationEmail(data: EnquiryFormData) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #fafaf8;">
-  <div style="background-color: white; border-radius: 24px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-    
-    <!-- Logo -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="48" height="48" style="display: inline-block;" />
-    </div>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#1a1a1a;max-width:600px;margin:0 auto;padding:32px 16px;background-color:#f5f5f3;">
 
-    <!-- Heading -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <h1 style="font-size: 24px; font-weight: 600; margin: 0 0 8px;">If you let us handle this</h1>
-      <h1 style="font-size: 24px; font-weight: 600; margin: 0;">journey for you</h1>
-    </div>
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:24px;">
+    <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="40" height="40" style="display:inline-block;" />
+    <p style="margin:6px 0 0;font-size:13px;color:#999;letter-spacing:0.04em;text-transform:uppercase;">HomePanel</p>
+  </div>
 
-    <!-- Main fee -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <p style="color: #666; margin: 0 0 8px;">Our fee for your ${fees.transactionLabel} would be:</p>
-      <p style="font-size: 36px; font-weight: 700; margin: 0; color: #1a1a1a;">£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+  <!-- Card -->
+  <div style="background:#fff;border-radius:20px;padding:40px 36px;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
+
+    <!-- Greeting -->
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 6px;color:#1a1a1a;">Hi ${data.firstName},</h1>
+    <p style="margin:0 0 28px;color:#555;font-size:15px;line-height:1.7;">
+      Thank you for getting in touch. Here's your personalised conveyancing quote for your <strong>${fees.transactionLabel}</strong>. 
+      Someone from our team will be in touch shortly — in the meantime, everything you need is below.
+    </p>
+
+    <!-- Quote highlight -->
+    <div style="background:#f9f9f7;border:1px solid #e8e4de;border-radius:14px;padding:24px;margin-bottom:28px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Your estimated total</p>
+      <p style="margin:0;font-size:40px;font-weight:800;color:#1a1a1a;letter-spacing:-1px;">${fmt(fees.total)}</p>
+      ${fees.sdlt > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#888;">Excl. SDLT: ${fmt(fees.totalExSDLT)} &nbsp;·&nbsp; SDLT: ${fmt(fees.sdlt)}</p>` : ""}
+      ${fees.sdlt === 0 && fees.isFTB ? `<p style="margin:8px 0 0;font-size:13px;color:#16a34a;font-weight:500;">✓ First Time Buyer SDLT relief applied — £0 stamp duty</p>` : ""}
     </div>
 
     <!-- Fee breakdown -->
-    <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px; margin-bottom: 32px;">
-      <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px; color: #1a1a1a;">Fee breakdown</h3>
-      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-        ${feeRowsHtml}
+    <h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin:0 0 12px;">Fee breakdown</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      ${feeRowsHtml}
+      <tr>
+        <td style="padding:10px 0 8px;color:#555;font-size:14px;border-top:1px solid #eee;">Subtotal (ex VAT)</td>
+        <td style="padding:10px 0 8px;text-align:right;font-size:14px;border-top:1px solid #eee;">${fmt(fees.subtotal)}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;font-size:14px;">VAT (20%)</td>
+        <td style="padding:6px 0;text-align:right;font-size:14px;">${fmt(fees.vat)}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0 6px;color:#555;font-size:14px;border-top:1px solid #eee;">Disbursements</td>
+        <td style="padding:10px 0 6px;text-align:right;font-size:14px;border-top:1px solid #eee;">${fmt(fees.disbursements)}</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding:0 0 8px;color:#aaa;font-size:12px;">
+          ${fees.searchFees > 0 ? `Searches (${fmt(fees.searchFees)}) &nbsp;` : ""}Land Registry ${fees.landRegistryFee > 0 ? `(${fmt(fees.landRegistryFee)})` : "(n/a — sale)"} &nbsp;Bank transfer (${fmt(fees.bankTransferFee)})
+        </td>
+      </tr>
+      ${fees.sdlt >= 0 ? `
+      <tr>
+        <td style="padding:10px 0 6px;color:#555;font-size:14px;border-top:1px solid #eee;">${sdltLabel}</td>
+        <td style="padding:10px 0 6px;text-align:right;font-size:14px;border-top:1px solid #eee;${fees.sdlt === 0 ? "color:#16a34a;font-weight:600;" : ""}">${fees.sdlt === 0 ? "£0" : fmt(fees.sdlt)}</td>
+      </tr>` : ""}
+      <tr>
+        <td style="padding:14px 0 0;font-size:16px;font-weight:700;border-top:2px solid #1a1a1a;">Total estimate</td>
+        <td style="padding:14px 0 0;text-align:right;font-size:16px;font-weight:700;border-top:2px solid #1a1a1a;">${fmt(fees.total)}</td>
+      </tr>
+    </table>
+
+    <p style="font-size:12px;color:#aaa;margin:0 0 28px;line-height:1.6;">
+      All fees are estimates. Final figures confirmed on instruction. SDLT rates correct as at April 2025. 
+      Disbursements are passed through at cost with no markup.
+    </p>
+
+    <!-- What happens next -->
+    <div style="background:#f2faf6;border-left:4px solid #2d7a4f;border-radius:0 12px 12px 0;padding:18px 20px;margin-bottom:28px;">
+      <h3 style="font-size:14px;font-weight:700;color:#2d7a4f;margin:0 0 12px;">What happens next</h3>
+      <table style="width:100%;border-collapse:collapse;">
         <tr>
-          <td style="padding: 12px 0 8px; color: #666; border-top: 1px solid #e5e5e5;">Subtotal</td>
-          <td style="padding: 12px 0 8px; text-align: right; border-top: 1px solid #e5e5e5;">£${fees.subtotal}</td>
+          <td style="width:28px;vertical-align:top;padding-bottom:10px;"><span style="background:#2d7a4f;color:white;border-radius:50%;width:20px;height:20px;display:inline-block;text-align:center;font-size:11px;line-height:20px;font-weight:700;">1</span></td>
+          <td style="padding-bottom:10px;font-size:14px;color:#1a1a1a;">A member of our team will review your enquiry and be in touch within <strong>1 business day</strong></td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; color: #666;">VAT (20%)</td>
-          <td style="padding: 8px 0; text-align: right;">£${fees.vat}</td>
+          <td style="width:28px;vertical-align:top;padding-bottom:10px;"><span style="background:#2d7a4f;color:white;border-radius:50%;width:20px;height:20px;display:inline-block;text-align:center;font-size:11px;line-height:20px;font-weight:700;">2</span></td>
+          <td style="padding-bottom:10px;font-size:14px;color:#1a1a1a;">We'll send you a secure onboarding link to collect your ID, source of funds, and key documents</td>
         </tr>
         <tr>
-          <td style="padding: 12px 0 8px; color: #666; border-top: 1px solid #e5e5e5;">Disbursements</td>
-          <td style="padding: 12px 0 8px; text-align: right; border-top: 1px solid #e5e5e5;">£${fees.disbursements}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #999; font-size: 12px;" colspan="2">
-            Searches (£${fees.searchFees}), Land Registry (£${fees.landRegistryFee}), Bank Transfer (£${fees.bankTransferFee})
-          </td>
-        </tr>
-        <tr>
-          <td style="padding: 16px 0 0; font-weight: 600; border-top: 1px solid #e5e5e5;">Total</td>
-          <td style="padding: 16px 0 0; text-align: right; font-weight: 600; border-top: 1px solid #e5e5e5;">£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="width:28px;vertical-align:top;padding-bottom:10px;"><span style="background:#2d7a4f;color:white;border-radius:50%;width:20px;height:20px;display:inline-block;text-align:center;font-size:11px;line-height:20px;font-weight:700;">3</span></td>
+          <td style="padding-bottom:10px;font-size:14px;color:#1a1a1a;">Once your file is ready, your dedicated solicitor will be assigned and your case begins</td>
         </tr>
       </table>
     </div>
 
     <!-- Agents -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <p style="color: #666; margin: 0 0 16px;">Your case would directly be handled by</p>
-      <table style="margin: 0 auto;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <p style="color:#555;font-size:14px;margin:0 0 14px;">Your case will be handled directly by</p>
+      <table style="margin:0 auto;border-collapse:collapse;">
         <tr>
           ${agents.map((agent, i) => `
-            ${i > 0 ? '<td style="padding: 0 16px; color: #999; font-size: 14px;">or</td>' : ''}
-            <td style="text-align: center; padding: 0 8px;">
-              <img src="${agent.photo}" alt="${agent.name}" width="64" height="64" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 0 auto 8px; display: block;" />
-              <p style="margin: 0; font-weight: 500; font-size: 14px;">${agent.name}</p>
-              <p style="margin: 4px 0 0; color: #666; font-size: 12px;">${agent.role}</p>
+            ${i > 0 ? '<td style="padding:0 12px;color:#ccc;font-size:14px;">or</td>' : ''}
+            <td style="text-align:center;padding:0 8px;">
+              <img src="${agent.photo}" alt="${agent.name}" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;border:2px solid #eee;" />
+              <p style="margin:0;font-weight:600;font-size:13px;color:#1a1a1a;">${agent.name}</p>
+              <p style="margin:3px 0 0;color:#888;font-size:12px;">${agent.role}</p>
             </td>
           `).join("")}
         </tr>
       </table>
-      <p style="color: #666; font-size: 14px; margin: 16px 0 0;">Experts in their field.</p>
+      <p style="color:#aaa;font-size:12px;margin:12px 0 0;">Authorised and regulated by the Solicitors Regulation Authority</p>
     </div>
 
     <!-- CTA -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <a href="https://homepanel.co.uk/contact" style="display: inline-block; background-color: #059669; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 500;">Get started with HomePanel</a>
+    <div style="text-align:center;margin-bottom:20px;">
+      <a href="https://homepanel.co.uk/start" style="display:inline-block;background:#1a1a1a;color:white;padding:14px 36px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;letter-spacing:-0.2px;">Proceed with your move →</a>
     </div>
 
-    <!-- What happens next -->
-    <div style="background-color: #f8f8f6; border-radius: 16px; padding: 24px;">
-      <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 16px;">What happens next?</h3>
-      <ol style="color: #666; margin: 0; padding-left: 20px; font-size: 14px;">
-        <li style="margin-bottom: 8px;">Our team will review your details</li>
-        <li style="margin-bottom: 8px;">We'll contact you to discuss your move</li>
-        <li style="margin-bottom: 8px;">We'll guide you through our onboarding process</li>
-        <li>Once ready, we'll connect you with your dedicated conveyancer</li>
-      </ol>
-    </div>
-
-    <p style="color: #666; margin: 24px 0 8px; font-size: 14px;">
-      Questions? Simply reply to this email.
-    </p>
-    <p style="color: #1a1a1a; font-weight: 500; margin: 0; font-size: 14px;">
-      The HomePanel Team
+    <p style="color:#aaa;font-size:13px;text-align:center;margin:0;">
+      Questions? Simply reply to this email — we're here to help.
     </p>
   </div>
 
-  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 24px;">
-    HomePanel | Simplifying your home move<br>
-    <a href="https://homepanel.co.uk" style="color: #999;">homepanel.co.uk</a>
+  <!-- Footer -->
+  <p style="color:#bbb;font-size:12px;text-align:center;margin-top:24px;line-height:1.8;">
+    HomePanel · <a href="https://homepanel.co.uk" style="color:#bbb;text-decoration:none;">homepanel.co.uk</a><br>
+    Simplifying your home move
   </p>
+
 </body>
-</html>
-    `,
+</html>`,
     text: `
-Your HomePanel Quote
+Hi ${data.firstName},
 
-If you let us handle this journey for you
+Thank you for getting a quote with HomePanel. Here's your personalised estimate for your ${fees.transactionLabel}.
 
-Our fee for your ${fees.transactionLabel} would be:
-£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+YOUR QUOTE: ${fmt(fees.total)}
 
 Fee breakdown:
-${feeRowsText}
-Subtotal: £${fees.subtotal}
-VAT (20%): £${fees.vat}
-Disbursements: £${fees.disbursements}
-  - Searches: £${fees.searchFees}
-  - Land Registry: £${fees.landRegistryFee}
-  - Bank Transfer: £${fees.bankTransferFee}
-Total: £${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+${feeRows.map(r => `  ${r.label}: ${fmt(r.amount)}`).join("\n")}
+  Subtotal (ex VAT): ${fmt(fees.subtotal)}
+  VAT (20%): ${fmt(fees.vat)}
+  Disbursements: ${fmt(fees.disbursements)}
+    Searches: ${fees.searchFees > 0 ? fmt(fees.searchFees) : "n/a"}
+    Land Registry: ${fees.landRegistryFee > 0 ? fmt(fees.landRegistryFee) : "n/a"}
+    Bank transfer: ${fmt(fees.bankTransferFee)}
+  SDLT: ${fees.sdlt === 0 && fees.isFTB ? "£0 (First Time Buyer relief)" : fmt(fees.sdlt)}
 
-Your case would directly be handled by:
-${agents.map(a => `- ${a.name}, ${a.role}`).join("\n")}
-Experts in their field.
+Total: ${fmt(fees.total)}
 
-What happens next?
-1. Our team will review your details
-2. We'll contact you to discuss your move
-3. We'll guide you through our onboarding process
-4. Once ready, we'll connect you with your dedicated conveyancer
+WHAT HAPPENS NEXT:
+1. A member of our team will review your enquiry and be in touch within 1 business day
+2. We'll send you a secure onboarding link to collect your ID, source of funds, and key documents
+3. Once your file is ready, your dedicated solicitor will be assigned and your case begins
+
+Your case will be handled by: ${agents.map(a => a.name).join(" or ")}
 
 Questions? Simply reply to this email.
 
-Best regards,
 The HomePanel Team
+homepanel.co.uk
+    `,
+  }
+}
 
----
-HomePanel | Simplifying your home move
+// Email sent when user declines to proceed with quote
+export function getDeclineEmail(data: {
+  firstName: string
+  lastName: string
+  email?: string
+  quoteAmount?: number
+}) {
+  const fmt = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  return {
+    subject: `We're sorry to see you go, ${data.firstName} — a quick note from HomePanel`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#1a1a1a;max-width:600px;margin:0 auto;padding:32px 16px;background-color:#f5f5f3;">
+
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:24px;">
+    <img src="https://v0-home-panel-v2.vercel.app/logo.svg" alt="HomePanel" width="40" height="40" style="display:inline-block;" />
+    <p style="margin:6px 0 0;font-size:13px;color:#999;letter-spacing:0.04em;text-transform:uppercase;">HomePanel</p>
+  </div>
+
+  <!-- Card -->
+  <div style="background:#fff;border-radius:20px;padding:40px 36px;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
+
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 6px;color:#1a1a1a;">Hi ${data.firstName},</h1>
+    <p style="margin:0 0 24px;color:#555;font-size:15px;line-height:1.7;">
+      Thank you for taking the time to get a quote with us. We completely understand that choosing the right conveyancer is a big decision — and it's not always straightforward.
+    </p>
+
+    ${data.quoteAmount ? `
+    <div style="background:#f9f9f7;border:1px solid #e8e4de;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 4px;font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;">Your quote remains valid for 30 days</p>
+      <p style="margin:0;font-size:22px;font-weight:700;color:#1a1a1a;">${fmt(data.quoteAmount)}</p>
+      <p style="margin:6px 0 0;font-size:13px;color:#888;">Simply reply to this email and we'll pick up right where you left off.</p>
+    </div>` : ""}
+
+    <!-- Feedback section -->
+    <div style="background:#f9f9f7;border-radius:14px;padding:24px;margin-bottom:28px;">
+      <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:#1a1a1a;">Could you tell us why?</h3>
+      <p style="font-size:14px;color:#666;margin:0 0 16px;">Your feedback genuinely shapes how we improve. It takes 30 seconds.</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:7px 0;border-bottom:1px solid #eee;">
+            <a href="https://homepanel.co.uk/feedback?reason=price" style="text-decoration:none;color:#1a1a1a;font-size:14px;">💰 &nbsp;The price was too high</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:7px 0;border-bottom:1px solid #eee;">
+            <a href="https://homepanel.co.uk/feedback?reason=timing" style="text-decoration:none;color:#1a1a1a;font-size:14px;">⏳ &nbsp;I'm not ready to proceed yet</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:7px 0;border-bottom:1px solid #eee;">
+            <a href="https://homepanel.co.uk/feedback?reason=comparison" style="text-decoration:none;color:#1a1a1a;font-size:14px;">🔍 &nbsp;I'm comparing other firms</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:7px 0;border-bottom:1px solid #eee;">
+            <a href="https://homepanel.co.uk/feedback?reason=local" style="text-decoration:none;color:#1a1a1a;font-size:14px;">📍 &nbsp;I'd prefer a local solicitor</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:7px 0;border-bottom:1px solid #eee;">
+            <a href="https://homepanel.co.uk/feedback?reason=recommendation" style="text-decoration:none;color:#1a1a1a;font-size:14px;">👥 &nbsp;I'm going with a personal recommendation</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:7px 0;">
+            <a href="https://homepanel.co.uk/feedback?reason=other" style="text-decoration:none;color:#1a1a1a;font-size:14px;">✏️ &nbsp;Something else</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Why HomePanel -->
+    <div style="margin-bottom:28px;">
+      <h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin:0 0 14px;">Before you go — why clients choose us</h3>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:8px 0;font-size:14px;color:#555;border-bottom:1px solid #f0f0f0;">✓ &nbsp;Transparent, fixed fees — no hidden costs</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:14px;color:#555;border-bottom:1px solid #f0f0f0;">✓ &nbsp;Named solicitor handling your case from day one</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:14px;color:#555;border-bottom:1px solid #f0f0f0;">✓ &nbsp;SRA authorised and regulated firm</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:14px;color:#555;border-bottom:1px solid #f0f0f0;">✓ &nbsp;Streamlined onboarding — less paperwork, faster start</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:14px;color:#555;">✓ &nbsp;Based in Canary Wharf, London — accessible by appointment</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center;margin-bottom:24px;">
+      <a href="https://homepanel.co.uk/start" style="display:inline-block;background:#1a1a1a;color:white;padding:13px 32px;border-radius:999px;text-decoration:none;font-weight:600;font-size:14px;">Reconsider and get started →</a>
+    </div>
+
+    <p style="color:#aaa;font-size:13px;text-align:center;margin:0;">
+      Changed your mind? Just reply to this email — no forms needed.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <p style="color:#bbb;font-size:12px;text-align:center;margin-top:24px;line-height:1.8;">
+    HomePanel · <a href="https://homepanel.co.uk" style="color:#bbb;text-decoration:none;">homepanel.co.uk</a><br>
+    Simplifying your home move
+  </p>
+
+</body>
+</html>`,
+    text: `
+Hi ${data.firstName},
+
+Thank you for taking the time to get a quote with HomePanel. We completely understand that choosing the right conveyancer takes thought.
+
+${data.quoteAmount ? `Your quote of ${fmt(data.quoteAmount)} remains valid for 30 days. Simply reply to this email and we'll pick up where you left off.` : ""}
+
+Could you tell us why you didn't proceed? Your feedback helps us improve:
+
+→ The price was too high: https://homepanel.co.uk/feedback?reason=price
+→ I'm not ready yet: https://homepanel.co.uk/feedback?reason=timing
+→ Comparing other firms: https://homepanel.co.uk/feedback?reason=comparison
+→ Want a local solicitor: https://homepanel.co.uk/feedback?reason=local
+→ Going with a recommendation: https://homepanel.co.uk/feedback?reason=recommendation
+→ Something else: https://homepanel.co.uk/feedback?reason=other
+
+Why clients choose HomePanel:
+✓ Transparent, fixed fees — no hidden costs
+✓ Named solicitor handling your case from day one
+✓ SRA authorised and regulated
+✓ Streamlined onboarding — less paperwork, faster start
+✓ Based in Canary Wharf, London
+
+Changed your mind? Just reply to this email — no forms needed.
+
+The HomePanel Team
 homepanel.co.uk
     `,
   }
