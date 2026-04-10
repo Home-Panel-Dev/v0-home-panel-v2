@@ -722,18 +722,6 @@ function TermsConditionsStep({
   )
 }
 
-          onCheckedChange={onBoilerChange}
-          variant="card"
-        />
-      </div>
-
-      <InfoBox>
-        These selections are optional and will not affect your conveyancing quote. We may contact you with relevant offers based on your interests.
-      </InfoBox>
-    </div>
-  )
-}
-
 function TransactionTypeStep({
   value,
   onChange,
@@ -1006,15 +994,6 @@ function CompanyPurchaseStep({
   )
 }
 
-
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="vertical"
-      />
-    </div>
-  )
-}
 
 function PersonalDetailsStep({
   values,
