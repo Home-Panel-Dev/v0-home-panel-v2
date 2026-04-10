@@ -11,7 +11,6 @@ import {
   enquiryFormSchema,
   transactionTypes,
   tenureTypes,
-  ownerCountOptions,
   propertyCountOptions,
   type EnquiryFormData,
 } from "@/lib/form-schema"
@@ -34,19 +33,15 @@ import {
 
 type StepType = 
   | "terms-conditions"
-  | "product-interests"
   | "transaction-type"
   | "property-address"
-  | "tenure"
   | "property-value"
-  | "owner-count"
+  | "tenure"
   | "first-time-buyer"
   | "property-count"
   | "new-build"
   | "mortgage"
   | "company-purchase"
-  | "gift-funds"
-  | "bank-funds-only"
   | "personal-details"
   | "quote"
 
@@ -178,22 +173,16 @@ function calculateFees(data: Partial<EnquiryFormData>) {
 // ============================================================================
 
 function getStepsForTransaction(transactionType: string): StepType[] {
-  const preSteps: StepType[] = ["terms-conditions", "product-interests", "transaction-type"]
+  const preSteps: StepType[] = ["terms-conditions", "transaction-type", "property-address", "property-value", "tenure"]
   
   if (transactionType === "buying" || transactionType === "buying-selling") {
     return [
       ...preSteps,
-      "property-address",
-      "tenure",
-      "property-value",
-      "owner-count",
       "first-time-buyer",
       "property-count",
       "new-build",
       "mortgage",
       "company-purchase",
-      "gift-funds",
-      "bank-funds-only",
       "personal-details",
       "quote",
     ]
@@ -202,10 +191,6 @@ function getStepsForTransaction(transactionType: string): StepType[] {
   if (transactionType === "selling") {
     return [
       ...preSteps,
-      "property-address",
-      "tenure",
-      "property-value",
-      "owner-count",
       "mortgage",
       "personal-details",
       "quote",
@@ -215,10 +200,6 @@ function getStepsForTransaction(transactionType: string): StepType[] {
   if (transactionType === "remortgage") {
     return [
       ...preSteps,
-      "property-address",
-      "tenure",
-      "property-value",
-      "owner-count",
       "personal-details",
       "quote",
     ]
@@ -227,10 +208,6 @@ function getStepsForTransaction(transactionType: string): StepType[] {
   if (transactionType === "transfer-equity") {
     return [
       ...preSteps,
-      "property-address",
-      "tenure",
-      "property-value",
-      "owner-count",
       "mortgage",
       "personal-details",
       "quote",
@@ -257,9 +234,6 @@ export function MultiStepForm() {
     resolver: zodResolver(enquiryFormSchema),
     defaultValues: {
       termsAccepted: false,
-      marketingConsent: false,
-      interestSolar: false,
-      interestBoiler: false,
       transactionType: "",
       propertyAddressLine1: "",
       propertyAddressLine2: "",
@@ -303,8 +277,6 @@ export function MultiStepForm() {
     switch (currentStep) {
       case "terms-conditions":
         return watchedValues.termsAccepted === true
-      case "product-interests":
-        return true
       case "transaction-type":
         return !!watchedValues.transactionType
       case "property-address":
@@ -313,8 +285,6 @@ export function MultiStepForm() {
         return !!watchedValues.tenure
       case "property-value":
         return !!watchedValues.propertyValue
-      case "owner-count":
-        return !!watchedValues.ownerCount
       case "first-time-buyer":
         return !!watchedValues.firstTimeBuyer
       case "property-count":
@@ -325,10 +295,6 @@ export function MultiStepForm() {
         return !!watchedValues.hasMortgage
       case "company-purchase":
         return !!watchedValues.isCompanyPurchase
-      case "gift-funds":
-        return !!watchedValues.hasGiftFunds
-      case "bank-funds-only":
-        return !!watchedValues.bankFundsOnly
       case "personal-details":
         return await trigger(["firstName", "lastName", "email", "phone"])
       case "quote":
@@ -528,19 +494,7 @@ export function MultiStepForm() {
               {currentStep === "terms-conditions" && (
                 <TermsConditionsStep
                   termsAccepted={watchedValues.termsAccepted || false}
-                  marketingConsent={watchedValues.marketingConsent || false}
                   onTermsChange={(checked) => setValue("termsAccepted", checked)}
-                  onMarketingChange={(checked) => setValue("marketingConsent", checked)}
-                />
-              )}
-
-              {/* STEP: Product Interests */}
-              {currentStep === "product-interests" && (
-                <ProductInterestsStep
-                  interestSolar={watchedValues.interestSolar || false}
-                  interestBoiler={watchedValues.interestBoiler || false}
-                  onSolarChange={(checked) => setValue("interestSolar", checked)}
-                  onBoilerChange={(checked) => setValue("interestBoiler", checked)}
                 />
               )}
 
@@ -581,14 +535,6 @@ export function MultiStepForm() {
                 />
               )}
 
-              {/* STEP: Owner Count */}
-              {currentStep === "owner-count" && (
-                <OwnerCountStep
-                  value={watchedValues.ownerCount || ""}
-                  onChange={(value) => setValue("ownerCount", value)}
-                />
-              )}
-
               {/* STEP: First Time Buyer */}
               {currentStep === "first-time-buyer" && (
                 <FirstTimeBuyerStep
@@ -626,22 +572,6 @@ export function MultiStepForm() {
                 <CompanyPurchaseStep
                   value={watchedValues.isCompanyPurchase || ""}
                   onChange={(value) => setValue("isCompanyPurchase", value)}
-                />
-              )}
-
-              {/* STEP: Gift Funds */}
-              {currentStep === "gift-funds" && (
-                <GiftFundsStep
-                  value={watchedValues.hasGiftFunds || ""}
-                  onChange={(value) => setValue("hasGiftFunds", value)}
-                />
-              )}
-
-              {/* STEP: Bank Funds Only */}
-              {currentStep === "bank-funds-only" && (
-                <BankFundsOnlyStep
-                  value={watchedValues.bankFundsOnly || ""}
-                  onChange={(value) => setValue("bankFundsOnly", value)}
                 />
               )}
 
@@ -730,106 +660,68 @@ export function MultiStepForm() {
 
 function TermsConditionsStep({
   termsAccepted,
-  marketingConsent,
   onTermsChange,
-  onMarketingChange,
 }: {
   termsAccepted: boolean
-  marketingConsent: boolean
   onTermsChange: (checked: boolean) => void
-  onMarketingChange: (checked: boolean) => void
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <StepHeader
         title="Before we begin"
-        description="Please review and accept our terms to continue with your enquiry."
+        description="Please agree to our terms to get your instant quote."
         align="center"
       />
 
-      <div className="space-y-4">
-        <div className="p-4 rounded-xl border border-border bg-muted/30">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="termsAccepted"
-              checked={termsAccepted}
-              onCheckedChange={(checked) => onTermsChange(checked as boolean)}
-              className="mt-0.5"
-            />
-            <div className="flex-1">
-              <label htmlFor="termsAccepted" className="text-sm font-medium cursor-pointer block">
-                I agree to Emerald Green Energy&apos;s Terms and Conditions <span className="text-destructive">*</span>
-              </label>
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                By checking this box, I acknowledge and consent to Emerald Green Energy Limited collecting, processing, and sharing my personal information with authorised third-party partners for the purpose of providing quotations, services, and related communications regarding home energy products and conveyancing services. I understand that my data will be handled in accordance with applicable data protection laws, including the UK GDPR, and that I may withdraw my consent at any time by contacting Emerald Green Energy Limited directly.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl border border-border">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="marketingConsent"
-              checked={marketingConsent}
-              onCheckedChange={(checked) => onMarketingChange(checked as boolean)}
-              className="mt-0.5"
-            />
-            <div className="flex-1">
-              <label htmlFor="marketingConsent" className="text-sm font-medium cursor-pointer block">
-                I would like to receive marketing communications (optional)
-              </label>
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                Tick this box if you would like to receive promotional offers, product updates, and marketing materials from Emerald Green Energy and our trusted partners via email, phone, or SMS. You can unsubscribe at any time.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div
+        className={cn(
+          "flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-150",
+          termsAccepted
+            ? "border-foreground bg-muted/40"
+            : "border-border bg-background hover:border-foreground/40"
+        )}
+        onClick={() => onTermsChange(!termsAccepted)}
+      >
+        <Checkbox
+          id="termsAccepted"
+          checked={termsAccepted}
+          onCheckedChange={(checked) => onTermsChange(checked as boolean)}
+          className="h-5 w-5 flex-shrink-0"
+        />
+        <label htmlFor="termsAccepted" className="text-sm leading-snug cursor-pointer select-none">
+          I agree to HomePanel&apos;s{" "}
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            Terms & Conditions
+          </a>{" "}
+          and{" "}
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            Privacy Policy
+          </a>{" "}
+          <span className="text-destructive">*</span>
+        </label>
       </div>
 
       {!termsAccepted && (
-        <p className="text-sm text-muted-foreground text-center">
-          You must accept the terms and conditions to continue.
+        <p className="text-xs text-muted-foreground text-center">
+          You must agree to continue.
         </p>
       )}
     </div>
   )
 }
 
-function ProductInterestsStep({
-  interestSolar,
-  interestBoiler,
-  onSolarChange,
-  onBoilerChange,
-}: {
-  interestSolar: boolean
-  interestBoiler: boolean
-  onSolarChange: (checked: boolean) => void
-  onBoilerChange: (checked: boolean) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader
-        title="Are you interested in any of these services?"
-        description="Select any that apply. This helps us provide relevant information about additional services that may benefit your home."
-        align="center"
-      />
-
-      <div className="space-y-3">
-        <CheckboxField
-          id="interestSolar"
-          label="Solar Products for the Home"
-          description="Solar panels, battery storage systems, and renewable energy solutions to reduce your energy bills and carbon footprint."
-          checked={interestSolar}
-          onCheckedChange={onSolarChange}
-          variant="card"
-        />
-
-        <CheckboxField
-          id="interestBoiler"
-          label="Boiler Products and Services"
-          description="New boiler installations, heating system upgrades, and maintenance services for improved home comfort and efficiency."
-          checked={interestBoiler}
           onCheckedChange={onBoilerChange}
           variant="card"
         />
@@ -983,27 +875,6 @@ function PropertyValueStep({
   )
 }
 
-function OwnerCountStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Including you, how many people will own this property?" />
-      
-      <RadioCardGroup
-        options={ownerCountOptions.map(o => ({ value: o.value, label: o.label }))}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="horizontal"
-      />
-    </div>
-  )
-}
 
 function FirstTimeBuyerStep({
   value,
@@ -1135,61 +1006,7 @@ function CompanyPurchaseStep({
   )
 }
 
-function GiftFundsStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Will someone be giving you money to help with the purchase?" />
-      
-      <InfoBox>
-        This could be a friend or relative who is helping with the deposit or the price of the property. But this does not include anyone who will also be an owner of the property.
-      </InfoBox>
-      
-      <RadioCardGroup
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No / I'm not sure" },
-        ]}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="vertical"
-      />
-    </div>
-  )
-}
 
-function BankFundsOnlyStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Will you be paying for the property using only funds in your bank account?" />
-      
-      <InfoBox>
-        You only need to answer &quot;Yes&quot; if 100% of the funds for this property are coming from cash that someone already has.
-        <br /><br />
-        <strong className="text-foreground">Answer &quot;No&quot; if:</strong>
-        <ul className="list-disc list-inside mt-2">
-          <li>You are getting a mortgage.</li>
-          <li>You are selling another property that will pay for this one.</li>
-        </ul>
-      </InfoBox>
-      
-      <RadioCardGroup
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No / I'm not sure" },
-        ]}
         value={value}
         onChange={onChange}
         variant="pill"
