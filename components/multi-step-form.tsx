@@ -59,55 +59,26 @@ const agents = [
 ]
 
 // ============================================================================
-// FEE CALCULATION — HomePanel Pricing (effective April 2025)
+// FEE CALCULATION — HomePanel Headline Fees
 // ============================================================================
 
 function calcLegalFee(propertyValue: number, transactionType: string): number {
-  if (transactionType === "remortgage") {
-    // Remortgage fee bands
-    if (propertyValue <= 250000) return 499
-    if (propertyValue <= 500000) return 599
-    if (propertyValue <= 750000) return 699
-    if (propertyValue <= 1000000) return 799
-    return 999
-  }
-  // Sale & Purchase (freehold base) fee bands
-  if (propertyValue <= 150000) return 695
-  if (propertyValue <= 250000) return 795
-  if (propertyValue <= 350000) return 895
-  if (propertyValue <= 500000) return 995
-  if (propertyValue <= 650000) return 1095
-  if (propertyValue <= 800000) return 1195
-  if (propertyValue <= 1000000) return 1395
-  return 1595
-}
+  const isSale = transactionType === "selling"
 
-function calcSDLT(price: number, isFTB: boolean, isAdditional: boolean): number {
-  if (price <= 0) return 0
-  if (isFTB && !isAdditional) {
-    if (price <= 425000) return 0
-    if (price <= 625000) return Math.round((price - 425000) * 0.05)
-    // No FTB relief above £625k — standard rates apply
+  if (isSale) {
+    if (propertyValue <= 250000) return 900
+    if (propertyValue <= 500000) return 950
+    if (propertyValue <= 750000) return 1200
+    if (propertyValue <= 1000000) return 1900
+    return 0 // TBC above £1m
   }
-  const additional = isAdditional ? 0.03 : 0
-  const bands: [number, number][] = [[250000, 0], [925000, 0.05], [1500000, 0.10], [Infinity, 0.12]]
-  let sdlt = 0
-  let prev = 0
-  for (const [limit, rate] of bands) {
-    if (price <= limit) { sdlt += (price - prev) * (rate + additional); break }
-    sdlt += (limit - prev) * (rate + additional)
-    prev = limit
-  }
-  return Math.round(sdlt)
-}
 
-function calcLandRegistryFee(propertyValue: number): number {
-  if (propertyValue <= 80000) return 20
-  if (propertyValue <= 100000) return 40
-  if (propertyValue <= 200000) return 100
-  if (propertyValue <= 500000) return 270
-  if (propertyValue <= 1000000) return 540
-  return 1105
+  // Purchase, buying-selling, remortgage, transfer-equity
+  if (propertyValue <= 250000) return 995
+  if (propertyValue <= 500000) return 1200
+  if (propertyValue <= 750000) return 1400
+  if (propertyValue <= 1000000) return 1700
+  return 0 // TBC above £1m
 }
 
 function calculateFees(data: Partial<EnquiryFormData>) {
@@ -117,49 +88,36 @@ function calculateFees(data: Partial<EnquiryFormData>) {
   const isLeasehold = data.tenure === "leasehold"
   const isNewBuild = data.isNewBuild === "yes"
   const isCompanyPurchase = data.isCompanyPurchase === "yes"
-  const hasGiftFunds = data.hasGiftFunds === "yes"
-  const isFTB = data.firstTimeBuyer === "yes"
-  const isAdditional = data.propertyCount === "more-than-one"
-
-  const legalFee = calcLegalFee(propertyValue, transactionType)
-  const leaseholdSupplement = isLeasehold ? 250 : 0
-  const newBuildFee = isNewBuild ? 300 : 0
-  const companyFee = isCompanyPurchase ? 295 : 0
-  const giftFundsFee = hasGiftFunds ? 50 : 0
-
-  // Disbursements
   const isPurchase = transactionType === "buying" || transactionType === "buying-selling"
   const isSale = transactionType === "selling"
+  const isTBC = propertyValue > 1000000
+
+  const legalFee = calcLegalFee(propertyValue, transactionType)
+
+  // Supplements (purchase)
+  const leaseholdSupplement = isLeasehold && isPurchase ? 450 : isLeasehold && isSale ? 250 : 0
+  const newBuildFee = isNewBuild ? 350 : 0
+  const companyFee = isCompanyPurchase ? 150 : 0
+  const chapsFee = 45
   const searchFees = isPurchase ? 350 : 0
-  const landRegistryFee = isSale ? 0 : calcLandRegistryFee(propertyValue)
-  const bankTransferFee = 36 // inc VAT per transfer
 
-  // SDLT (purchase only)
-  const sdlt = isPurchase ? calcSDLT(propertyValue, isFTB, isAdditional) : 0
-
-  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee + giftFundsFee
+  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee
   const vat = Math.round(subtotal * 0.2)
-  const disbursements = searchFees + landRegistryFee + bankTransferFee
-  const totalExSDLT = subtotal + vat + disbursements
-  const total = totalExSDLT + sdlt
+  const disbursements = searchFees + chapsFee
+  const total = subtotal + vat + disbursements
 
   return {
     legalFee,
     leaseholdSupplement,
     newBuildFee,
     companyFee,
-    giftFundsFee,
+    chapsFee,
     searchFees,
-    landRegistryFee,
-    bankTransferFee,
-    sdlt,
     subtotal,
     vat,
     disbursements,
-    totalExSDLT,
     total,
-    isFTB,
-    isAdditional,
+    isTBC,
     transactionLabel:
       transactionType === "buying" ? "purchase" :
       transactionType === "selling" ? "sale" :
@@ -1079,82 +1037,66 @@ function QuoteStep({
         Our fee for your {fees.transactionLabel} would be:
       </p>
       <p className="text-4xl font-bold mb-8">
-        £{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {fees.isTBC ? "TBC" : `£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
       </p>
       
       {/* Fee breakdown */}
-      <div className="text-left bg-muted/50 rounded-xl p-5 mb-8">
-        <h3 className="font-medium mb-4 text-sm">Fee breakdown</h3>
-        <div className="space-y-2.5 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Legal fee</span>
-            <span className="font-medium">£{fees.legalFee}</span>
-          </div>
-          {fees.leaseholdSupplement > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Leasehold supplement</span>
-              <span className="font-medium">£{fees.leaseholdSupplement}</span>
-            </div>
-          )}
-          {fees.newBuildFee > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">New build supplement</span>
-              <span className="font-medium">£{fees.newBuildFee}</span>
-            </div>
-          )}
-          {fees.companyFee > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Company purchase</span>
-              <span className="font-medium">£{fees.companyFee}</span>
-            </div>
-          )}
-          {fees.giftFundsFee > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Gift funds verification</span>
-              <span className="font-medium">£{fees.giftFundsFee}</span>
-            </div>
-          )}
-          <div className="flex justify-between pt-2.5 border-t border-border">
-            <span className="text-muted-foreground">Subtotal (ex VAT)</span>
-            <span className="font-medium">£{fees.subtotal}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">VAT (20%)</span>
-            <span className="font-medium">£{fees.vat}</span>
-          </div>
-          <div className="flex justify-between pt-2.5 border-t border-border">
-            <span className="text-muted-foreground">Disbursements</span>
-            <span className="font-medium">£{fees.disbursements}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground text-xs">Searches {fees.searchFees > 0 ? `(£${fees.searchFees})` : "(n/a)"}, Land Registry {fees.landRegistryFee > 0 ? `(£${fees.landRegistryFee})` : "(n/a)"}, Bank transfer (£{fees.bankTransferFee})</span>
-          </div>
-          {fees.sdlt > 0 && (
-            <div className="flex justify-between pt-2.5 border-t border-border">
-              <span className="text-muted-foreground">
-                SDLT{fees.isFTB ? " (First Time Buyer)" : fees.isAdditional ? " (+3% Additional)" : ""}
-              </span>
-              <span className="font-medium">£{fees.sdlt.toLocaleString("en-GB")}</span>
-            </div>
-          )}
-          {fees.sdlt === 0 && fees.isFTB && (
-            <div className="flex justify-between pt-2.5 border-t border-border">
-              <span className="text-muted-foreground">SDLT (First Time Buyer relief)</span>
-              <span className="font-medium text-green-600">£0</span>
-            </div>
-          )}
-          <div className="flex justify-between pt-2.5 border-t border-border text-foreground">
-            <span className="font-semibold">Total estimate</span>
-            <span className="font-semibold">£{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          {fees.sdlt > 0 && (
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Excl. SDLT</span>
-              <span>£{fees.totalExSDLT.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
+      {fees.isTBC ? (
+        <div className="text-left bg-muted/50 rounded-xl p-5 mb-8">
+          <p className="text-sm text-muted-foreground text-center">
+            For properties over £1,000,000 our fees are quoted on application. A member of our team will be in touch with a personalised quote.
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="text-left bg-muted/50 rounded-xl p-5 mb-8">
+          <h3 className="font-medium mb-4 text-sm">Fee breakdown</h3>
+          <div className="space-y-2.5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Legal fee (ex VAT)</span>
+              <span className="font-medium">£{fees.legalFee.toLocaleString("en-GB")}</span>
+            </div>
+            {fees.leaseholdSupplement > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Leasehold supplement</span>
+                <span className="font-medium">£{fees.leaseholdSupplement.toLocaleString("en-GB")}</span>
+              </div>
+            )}
+            {fees.newBuildFee > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">New build supplement</span>
+                <span className="font-medium">£{fees.newBuildFee.toLocaleString("en-GB")}</span>
+              </div>
+            )}
+            {fees.companyFee > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Company purchase</span>
+                <span className="font-medium">£{fees.companyFee.toLocaleString("en-GB")}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-2.5 border-t border-border">
+              <span className="text-muted-foreground">VAT (20%)</span>
+              <span className="font-medium">£{fees.vat.toLocaleString("en-GB")}</span>
+            </div>
+            {fees.searchFees > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Searches</span>
+                <span className="font-medium">£{fees.searchFees.toLocaleString("en-GB")}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">CHAPS fee (inc VAT)</span>
+              <span className="font-medium">£{fees.chapsFee.toLocaleString("en-GB")}</span>
+            </div>
+            <div className="flex justify-between pt-2.5 border-t border-border text-foreground">
+              <span className="font-semibold">Total estimate</span>
+              <span className="font-semibold">£{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
+            All fees are estimates and exclude Stamp Duty Land Tax (SDLT), which is a government tax paid directly to HMRC. Your solicitor will advise on the exact SDLT amount at instruction.
+          </p>
+        </div>
+      )}
       
       {/* Agents */}
       <p className="text-muted-foreground mb-4">
