@@ -357,46 +357,77 @@ export default async function EnquiryDetailPage({ params }: EnquiryDetailPagePro
               <div className="divide-y divide-border">
                 {(() => {
                   const propertyValue = Number(enquiry.property_value) || 0
-                  let legalFee = 595
-                  if (propertyValue > 250000) legalFee = 695
-                  if (propertyValue > 500000) legalFee = 895
-                  if (propertyValue > 1000000) legalFee = 1295
-                  
-                  const subtotal = legalFee
+                  const transactionType = enquiry.transaction_type || "buying"
+                  const isSale = transactionType === "selling"
+                  const isPurchase = transactionType === "buying" || transactionType === "buying-selling"
+                  const isLeasehold = enquiry.tenure === "leasehold"
+                  const isNewBuild = enquiry.form_data?.isNewBuild === "yes"
+                  const isCompany = enquiry.form_data?.isCompanyPurchase === "yes"
+
+                  // Headline legal fee
+                  let legalFee = 0
+                  if (isSale) {
+                    if (propertyValue <= 250000) legalFee = 900
+                    else if (propertyValue <= 500000) legalFee = 950
+                    else if (propertyValue <= 750000) legalFee = 1200
+                    else if (propertyValue <= 1000000) legalFee = 1900
+                  } else {
+                    if (propertyValue <= 250000) legalFee = 995
+                    else if (propertyValue <= 500000) legalFee = 1200
+                    else if (propertyValue <= 750000) legalFee = 1400
+                    else if (propertyValue <= 1000000) legalFee = 1700
+                  }
+
+                  const leaseholdSupplement = isLeasehold && isPurchase ? 450 : isLeasehold && isSale ? 250 : 0
+                  const newBuildFee = isNewBuild ? 350 : 0
+                  const companyFee = isCompany ? 150 : 0
+                  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee
                   const vat = Math.round(subtotal * 0.2)
-                  const landRegistryFee = propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100
-                  const searchFees = 300
-                  const bankTransferFee = 35
-                  
+                  const searchFees = isPurchase ? 350 : 0
+                  const chapsFee = 45
+                  const total = subtotal + vat + searchFees + chapsFee
+
                   return (
                     <>
                       <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Legal Fee</span>
+                        <span className="text-sm text-muted-foreground">Legal Fee (ex VAT)</span>
                         <span className="text-sm font-medium">{formatCurrency(legalFee)}</span>
                       </div>
+                      {leaseholdSupplement > 0 && (
+                        <div className="px-6 py-3 flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Leasehold Supplement</span>
+                          <span className="text-sm font-medium">{formatCurrency(leaseholdSupplement)}</span>
+                        </div>
+                      )}
+                      {newBuildFee > 0 && (
+                        <div className="px-6 py-3 flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">New Build Supplement</span>
+                          <span className="text-sm font-medium">{formatCurrency(newBuildFee)}</span>
+                        </div>
+                      )}
+                      {companyFee > 0 && (
+                        <div className="px-6 py-3 flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Company Purchase</span>
+                          <span className="text-sm font-medium">{formatCurrency(companyFee)}</span>
+                        </div>
+                      )}
                       <div className="px-6 py-3 flex justify-between items-center bg-muted/50">
-                        <span className="text-sm text-muted-foreground">Subtotal</span>
-                        <span className="text-sm font-medium">{formatCurrency(subtotal)}</span>
-                      </div>
-                      <div className="px-6 py-3 flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">VAT (20%)</span>
                         <span className="text-sm font-medium">{formatCurrency(vat)}</span>
                       </div>
+                      {searchFees > 0 && (
+                        <div className="px-6 py-3 flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Searches</span>
+                          <span className="text-sm font-medium">{formatCurrency(searchFees)}</span>
+                        </div>
+                      )}
                       <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Search Fees</span>
-                        <span className="text-sm font-medium">{formatCurrency(searchFees)}</span>
-                      </div>
-                      <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Land Registry</span>
-                        <span className="text-sm font-medium">{formatCurrency(landRegistryFee)}</span>
-                      </div>
-                      <div className="px-6 py-3 flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Bank Transfer</span>
-                        <span className="text-sm font-medium">{formatCurrency(bankTransferFee)}</span>
+                        <span className="text-sm text-muted-foreground">CHAPS Fee</span>
+                        <span className="text-sm font-medium">{formatCurrency(chapsFee)}</span>
                       </div>
                       <div className="px-6 py-4 flex justify-between items-center bg-foreground text-background">
                         <span className="text-sm font-semibold">Total</span>
-                        <span className="font-semibold">{formatCurrency(enquiry.quote_amount)}</span>
+                        <span className="font-semibold">{formatCurrency(enquiry.quote_amount || total)}</span>
                       </div>
                     </>
                   )
