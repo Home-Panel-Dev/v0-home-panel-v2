@@ -14,49 +14,21 @@ const tenureLabels: Record<string, string> = {
   unsure: "Unsure",
 }
 
-// Fee calculation — NPS pricing structure (effective April 2025)
+// Fee calculation — HomePanel Headline Fees
 function calcLegalFeeEmail(propertyValue: number, transactionType: string): number {
-  if (transactionType === "remortgage") {
-    if (propertyValue <= 250000) return 499
-    if (propertyValue <= 500000) return 599
-    if (propertyValue <= 750000) return 699
-    if (propertyValue <= 1000000) return 799
-    return 999
+  const isSale = transactionType === "selling"
+  if (isSale) {
+    if (propertyValue <= 250000) return 900
+    if (propertyValue <= 500000) return 950
+    if (propertyValue <= 750000) return 1200
+    if (propertyValue <= 1000000) return 1900
+    return 0 // TBC
   }
-  if (propertyValue <= 150000) return 695
-  if (propertyValue <= 250000) return 795
-  if (propertyValue <= 350000) return 895
-  if (propertyValue <= 500000) return 995
-  if (propertyValue <= 650000) return 1095
-  if (propertyValue <= 800000) return 1195
-  if (propertyValue <= 1000000) return 1395
-  return 1595
-}
-
-function calcSDLTEmail(price: number, isFTB: boolean, isAdditional: boolean): number {
-  if (price <= 0) return 0
-  if (isFTB && !isAdditional) {
-    if (price <= 425000) return 0
-    if (price <= 625000) return Math.round((price - 425000) * 0.05)
-  }
-  const additional = isAdditional ? 0.03 : 0
-  const bands: [number, number][] = [[250000, 0], [925000, 0.05], [1500000, 0.10], [Infinity, 0.12]]
-  let sdlt = 0, prev = 0
-  for (const [limit, rate] of bands) {
-    if (price <= limit) { sdlt += (price - prev) * (rate + additional); break }
-    sdlt += (limit - prev) * (rate + additional)
-    prev = limit
-  }
-  return Math.round(sdlt)
-}
-
-function calcLandRegEmail(propertyValue: number): number {
-  if (propertyValue <= 80000) return 20
-  if (propertyValue <= 100000) return 40
-  if (propertyValue <= 200000) return 100
-  if (propertyValue <= 500000) return 270
-  if (propertyValue <= 1000000) return 540
-  return 1105
+  if (propertyValue <= 250000) return 995
+  if (propertyValue <= 500000) return 1200
+  if (propertyValue <= 750000) return 1400
+  if (propertyValue <= 1000000) return 1700
+  return 0 // TBC
 }
 
 function calculateFees(data: EnquiryFormData) {
@@ -65,33 +37,27 @@ function calculateFees(data: EnquiryFormData) {
   const isLeasehold = data.tenure === "leasehold"
   const isNewBuild = data.isNewBuild === "yes"
   const isCompanyPurchase = data.isCompanyPurchase === "yes"
-  const hasGiftFunds = data.hasGiftFunds === "yes"
-  const isFTB = data.firstTimeBuyer === "yes"
-  const isAdditional = data.propertyCount === "more-than-one"
   const isPurchase = transactionType === "buying" || transactionType === "buying-selling"
   const isSale = transactionType === "selling"
+  const isTBC = propertyValue > 1000000
 
   const legalFee = calcLegalFeeEmail(propertyValue, transactionType)
-  const leaseholdSupplement = isLeasehold ? 250 : 0
-  const newBuildFee = isNewBuild ? 300 : 0
-  const companyFee = isCompanyPurchase ? 295 : 0
-  const giftFundsFee = hasGiftFunds ? 50 : 0
+  const leaseholdSupplement = isLeasehold && isPurchase ? 450 : isLeasehold && isSale ? 250 : 0
+  const newBuildFee = isNewBuild ? 350 : 0
+  const companyFee = isCompanyPurchase ? 150 : 0
+  const chapsFee = 45
   const searchFees = isPurchase ? 350 : 0
-  const landRegistryFee = isSale ? 0 : calcLandRegEmail(propertyValue)
-  const bankTransferFee = 36
-  const sdlt = isPurchase ? calcSDLTEmail(propertyValue, isFTB, isAdditional) : 0
 
-  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee + giftFundsFee
+  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee
   const vat = Math.round(subtotal * 0.2)
-  const disbursements = searchFees + landRegistryFee + bankTransferFee
-  const totalExSDLT = subtotal + vat + disbursements
-  const total = totalExSDLT + sdlt
+  const disbursements = searchFees + chapsFee
+  const total = subtotal + vat + disbursements
 
   return {
-    legalFee, leaseholdSupplement, newBuildFee, companyFee, giftFundsFee,
-    searchFees, landRegistryFee, bankTransferFee, sdlt,
-    subtotal, vat, disbursements, totalExSDLT, total, isFTB, isAdditional,
-    mortgageFee: 0,
+    legalFee, leaseholdSupplement, newBuildFee, companyFee, chapsFee,
+    searchFees, subtotal, vat, disbursements, total, isTBC,
+    mortgageFee: 0, giftFundsFee: 0, bankTransferFee: 0,
+    sdlt: 0, totalExSDLT: total, isFTB: false, isAdditional: false,
     transactionLabel: transactionTypeLabels[data.transactionType] || data.transactionType
   }
 }
