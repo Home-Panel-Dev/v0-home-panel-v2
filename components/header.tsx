@@ -24,7 +24,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <img src="/logo.svg" alt="HomePanel" className="w-8 h-8" />
-            <span className="font-semibold text-base tracking-tight">HomePanel</span>
+            <span className="font-semibold text-base tracking-tight">The Home Panel</span>
           </Link>
 
           {/* Desktop nav */}
