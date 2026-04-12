@@ -1,57 +1,64 @@
 import { Metadata } from "next"
 import { MultiStepForm } from "@/components/multi-step-form"
-import { Shield, Clock, Award } from "lucide-react"
+import { Shield, Clock, Award, Lock } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Get a Quote | HomePanel",
   description: "Begin your home moving journey with HomePanel. Submit your enquiry in just a few minutes.",
 }
 
-const trustIndicators = [
-  {
-    icon: Clock,
-    label: "2-3 minute quote",
-  },
-  {
-    icon: Shield,
-    label: "No obligation",
-  },
-  {
-    icon: Award,
-    label: "CQS accredited",
-  },
-]
-
 export default function StartPage() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-background to-muted/30">
-      <div className="mx-auto max-w-5xl px-6 lg:px-8 py-12 lg:py-16">
-        {/* Header */}
-        <div className="max-w-xl mx-auto text-center mb-8">
-          <h1 className="text-2xl lg:text-3xl font-semibold tracking-tight mb-3 text-balance">
-            Get your conveyancing quote
-          </h1>
-          <p className="text-muted-foreground leading-relaxed">
-            Answer a few questions about your move. It only takes a few minutes.
-          </p>
-        </div>
+    <div className="relative min-h-screen">
 
-        {/* Trust indicators */}
-        <div className="flex flex-wrap items-center justify-center gap-6 mb-10">
-          {trustIndicators.map((item) => (
-            <div key={item.label} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <item.icon className="w-4 h-4" />
-              <span>{item.label}</span>
-            </div>
-          ))}
+      {/* Background image with overlay */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600&q=80&fit=crop"
+          alt=""
+          className="w-full h-full object-cover"
+          style={{ filter: "grayscale(50%) brightness(0.25)" }}
+        />
+        <div className="absolute inset-0 bg-black/40" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 mx-auto max-w-2xl px-6 lg:px-8 py-16 lg:py-24">
+
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3 text-white">
+            Get your instant quote
+          </h1>
+          <p className="text-white/60 leading-relaxed">
+            A few questions about your move. Takes under 3 minutes.
+          </p>
+
+          {/* Trust badges */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
+            {[
+              { icon: Clock, label: "Under 3 minutes" },
+              { icon: Shield, label: "No obligation" },
+              { icon: Award, label: "SRA regulated" },
+              { icon: Lock, label: "GDPR protected" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center gap-1.5 text-xs text-white/50 bg-white/10 border border-white/10 rounded-full px-3 py-1.5"
+              >
+                <item.icon className="w-3 h-3" />
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Form */}
         <MultiStepForm />
 
-        {/* Footer note */}
-        <p className="text-center text-xs text-muted-foreground mt-8 max-w-md mx-auto">
-          Your information is protected under GDPR and will only be used to provide your quote and related services.
+        {/* Footer */}
+        <p className="text-center text-xs text-white/30 mt-8 max-w-md mx-auto">
+          Your information is protected under GDPR and will only be used to provide your quote and related conveyancing services.
         </p>
       </div>
     </div>
