@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import Link from "next/link"
 import { MultiStepForm } from "@/components/multi-step-form"
 import { Shield, Clock, Award, Lock } from "lucide-react"
 
@@ -60,13 +61,13 @@ export default function StartPage() {
         <p className="text-center text-xs text-white/30 mt-8 max-w-md mx-auto">
           Your information is protected under GDPR and will only be used to provide your quote and related conveyancing services.
           By proceeding you agree to our{" "}
-          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-white/50 underline underline-offset-2 hover:text-white/70">
+          <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-white/50 underline underline-offset-2 hover:text-white/70">
             Terms & Conditions
-          </a>
+          </Link>
           {" "}and{" "}
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-white/50 underline underline-offset-2 hover:text-white/70">
+          <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-white/50 underline underline-offset-2 hover:text-white/70">
             Privacy Policy
-          </a>.
+          </Link>.
         </p>
       </div>
     </div>
