@@ -19,16 +19,16 @@ export function StepHeader({
   return (
     <div
       className={cn(
-        "mb-6",
+        "mb-8",
         align === "center" && "text-center",
         className
       )}
     >
-      <h2 className="text-lg font-semibold text-foreground tracking-tight">
+      <h2 className="text-2xl font-semibold text-foreground tracking-tight leading-tight">
         {title}
       </h2>
       {description && (
-        <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-lg mx-auto">
+        <p className="text-sm text-muted-foreground mt-2.5 leading-relaxed max-w-lg mx-auto">
           {description}
         </p>
       )}
