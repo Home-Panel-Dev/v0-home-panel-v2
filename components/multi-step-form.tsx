@@ -647,29 +647,20 @@ function TermsConditionsStep({
           className="h-5 w-5 flex-shrink-0"
         />
         <label htmlFor="termsAccepted" className="text-sm leading-snug cursor-pointer select-none">
-          I agree to HomePanel&apos;s{" "}
-          <a
-            href="/terms"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="underline underline-offset-2 hover:text-foreground transition-colors"
-          >
-            Terms & Conditions
-          </a>{" "}
-          and{" "}
-          <a
-            href="/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="underline underline-offset-2 hover:text-foreground transition-colors"
-          >
-            Privacy Policy
-          </a>{" "}
-          <span className="text-destructive">*</span>
+          I agree to HomePanel&apos;s Terms & Conditions and Privacy Policy <span className="text-destructive">*</span>
         </label>
       </div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        Read our{" "}
+        <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          Terms & Conditions
+        </a>
+        {" "}and{" "}
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          Privacy Policy
+        </a>
+      </p>
 
       {!termsAccepted && (
         <p className="text-xs text-muted-foreground text-center">
