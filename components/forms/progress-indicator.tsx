@@ -19,17 +19,21 @@ export function ProgressIndicator({
   const safeProgress = Number.isNaN(progress) ? 0 : Math.min(Math.max(progress, 0), 100)
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="flex justify-between items-center text-xs text-muted-foreground">
-        <span>Step {currentStep + 1} of {totalSteps}</span>
-        <span>{Math.round(safeProgress)}%</span>
+    <div className={cn("space-y-3", className)}>
+      <div className="flex justify-between items-center">
+        <span className="text-xs font-medium text-muted-foreground">
+          Step {currentStep + 1} of {totalSteps}
+        </span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {Math.round(safeProgress)}% complete
+        </span>
       </div>
-      <div className="h-1 bg-border rounded-full overflow-hidden">
+      <div className="h-0.5 bg-border rounded-full overflow-hidden">
         <motion.div
           className="h-full bg-foreground rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${safeProgress}%` }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
         />
       </div>
     </div>
