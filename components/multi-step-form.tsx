@@ -413,24 +413,25 @@ export function MultiStepForm() {
 
   return (
     <div className="w-full max-w-xl mx-auto">
-      <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-        {/* Back button */}
-        <div className="p-4 pb-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={prevStep}
-            disabled={currentStepIndex === 0}
-            className="rounded-lg text-muted-foreground hover:text-foreground -ml-2"
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-        </div>
-        
-        {/* Progress */}
-        <div className="px-6 pt-4">
+      <div className="bg-background rounded-3xl border border-border overflow-hidden shadow-xl shadow-black/5">
+        {/* Top bar — back + progress */}
+        <div className="px-8 pt-6 pb-0">
+          <div className="flex items-center justify-between mb-5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={prevStep}
+              disabled={currentStepIndex === 0}
+              className="rounded-lg text-muted-foreground hover:text-foreground -ml-2 h-8 px-2 gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="text-xs">Back</span>
+            </Button>
+            <span className="text-xs text-muted-foreground font-medium">
+              The Home Panel
+            </span>
+          </div>
           <ProgressIndicator
             currentStep={currentStepIndex}
             totalSteps={totalSteps}
@@ -438,7 +439,7 @@ export function MultiStepForm() {
         </div>
 
         {/* Form content */}
-        <div className="p-6 pt-8">
+        <div className="px-8 pt-8 pb-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -558,7 +559,7 @@ export function MultiStepForm() {
           )}
 
           {/* Navigation buttons */}
-          <div className="flex justify-end mt-8">
+          <div className="flex justify-end mt-10">
             {currentStep === "quote" ? (
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <Button
