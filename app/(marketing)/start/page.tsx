@@ -59,6 +59,14 @@ export default function StartPage() {
         {/* Footer */}
         <p className="text-center text-xs text-white/30 mt-8 max-w-md mx-auto">
           Your information is protected under GDPR and will only be used to provide your quote and related conveyancing services.
+          By proceeding you agree to our{" "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-white/50 underline underline-offset-2 hover:text-white/70">
+            Terms & Conditions
+          </a>
+          {" "}and{" "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-white/50 underline underline-offset-2 hover:text-white/70">
+            Privacy Policy
+          </a>.
         </p>
       </div>
     </div>
