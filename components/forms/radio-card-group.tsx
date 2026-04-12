@@ -32,7 +32,7 @@ export function RadioCardGroup({
     return (
       <div
         className={cn(
-          "flex flex-wrap gap-2",
+          "flex flex-wrap gap-3",
           layout === "vertical" && "flex-col",
           layout === "horizontal" && "flex-row",
           className
@@ -86,19 +86,19 @@ function PillOption({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center px-5 py-2.5 rounded-full border text-sm font-medium transition-all duration-200",
+        "inline-flex items-center gap-3 px-5 py-3.5 rounded-xl border text-sm font-medium transition-all duration-200 text-left",
         selected
-          ? "border-foreground bg-foreground text-background"
-          : "border-border bg-background text-foreground hover:border-foreground/40"
+          ? "border-foreground bg-foreground text-background shadow-sm"
+          : "border-border bg-background text-foreground hover:border-foreground/50 hover:bg-muted/30"
       )}
     >
       <span
         className={cn(
-          "w-4 h-4 rounded-full border-2 mr-2.5 flex items-center justify-center flex-shrink-0",
-          selected ? "border-background" : "border-muted-foreground/50"
+          "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+          selected ? "border-background bg-transparent" : "border-muted-foreground/40"
         )}
       >
-        {selected && <span className="w-2 h-2 rounded-full bg-background" />}
+        {selected && <span className="w-1.5 h-1.5 rounded-full bg-background" />}
       </span>
       {option.label}
     </button>
@@ -121,15 +121,15 @@ function CardOption({
       className={cn(
         "relative flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200",
         selected
-          ? "border-foreground bg-foreground/5 ring-1 ring-foreground"
-          : "border-border hover:border-foreground/40"
+          ? "border-foreground bg-foreground/5 shadow-sm"
+          : "border-border hover:border-foreground/40 hover:bg-muted/20"
       )}
     >
       <div className="flex items-start gap-3 w-full">
         <div
           className={cn(
-            "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors",
-            selected ? "border-foreground bg-foreground" : "border-muted-foreground/50"
+            "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all",
+            selected ? "border-foreground bg-foreground" : "border-muted-foreground/40"
           )}
         >
           {selected && <Check className="w-3 h-3 text-background" />}
@@ -139,7 +139,7 @@ function CardOption({
             {option.label}
           </span>
           {option.description && (
-            <span className="text-sm text-muted-foreground mt-1 block">
+            <span className="text-sm text-muted-foreground mt-1 block leading-relaxed">
               {option.description}
             </span>
           )}
