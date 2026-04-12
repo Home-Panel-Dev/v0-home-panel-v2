@@ -653,13 +653,14 @@ function TermsConditionsStep({
 
       <p className="text-xs text-muted-foreground text-center">
         Read our{" "}
-        <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">
+        <span className="underline underline-offset-2 cursor-pointer hover:text-foreground transition-colors">
           Terms & Conditions
-        </a>
+        </span>
         {" "}and{" "}
-        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">
+        <span className="underline underline-offset-2 cursor-pointer hover:text-foreground transition-colors">
           Privacy Policy
-        </a>
+        </span>
+        {" "}below.
       </p>
 
       {!termsAccepted && (
