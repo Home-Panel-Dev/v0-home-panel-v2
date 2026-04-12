@@ -22,45 +22,41 @@ const submitSchema = z.object({
 
 function calculateFees(data: EnquiryFormData) {
   const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
-  
-  let legalFee = 595
-  if (propertyValue > 250000) legalFee = 695
-  if (propertyValue > 500000) legalFee = 895
-  if (propertyValue > 1000000) legalFee = 1295
-  
+  const transactionType = data.transactionType || "buying"
+  const isSale = transactionType === "selling"
+  const isPurchase = transactionType === "buying" || transactionType === "buying-selling"
   const isLeasehold = data.tenure === "leasehold"
-  const hasMortgage = data.hasMortgage === "yes"
   const isNewBuild = data.isNewBuild === "yes"
   const isCompanyPurchase = data.isCompanyPurchase === "yes"
-  const hasGiftFunds = data.hasGiftFunds === "yes"
-  
-  const leaseholdSupplement = isLeasehold ? 195 : 0
-  const mortgageFee = hasMortgage ? 95 : 0
-  const newBuildFee = isNewBuild ? 195 : 0
-  const companyFee = isCompanyPurchase ? 295 : 0
-  const giftFundsFee = hasGiftFunds ? 50 : 0
-  
-  const subtotal = legalFee + leaseholdSupplement + mortgageFee + newBuildFee + companyFee + giftFundsFee
+
+  // Headline legal fees
+  let legalFee = 0
+  if (isSale) {
+    if (propertyValue <= 250000) legalFee = 900
+    else if (propertyValue <= 500000) legalFee = 950
+    else if (propertyValue <= 750000) legalFee = 1200
+    else if (propertyValue <= 1000000) legalFee = 1900
+  } else {
+    if (propertyValue <= 250000) legalFee = 995
+    else if (propertyValue <= 500000) legalFee = 1200
+    else if (propertyValue <= 750000) legalFee = 1400
+    else if (propertyValue <= 1000000) legalFee = 1700
+  }
+
+  const leaseholdSupplement = isLeasehold && isPurchase ? 450 : isLeasehold && isSale ? 250 : 0
+  const newBuildFee = isNewBuild ? 350 : 0
+  const companyFee = isCompanyPurchase ? 150 : 0
+  const chapsFee = 45
+  const searchFees = isPurchase ? 350 : 0
+
+  const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee
   const vat = Math.round(subtotal * 0.2)
-  
-  const searchFees = 300
-  const landRegistryFee = propertyValue > 500000 ? 295 : propertyValue > 250000 ? 150 : 100
-  const bankTransferFee = 35
-  const disbursements = searchFees + landRegistryFee + bankTransferFee
-  
+  const disbursements = searchFees + chapsFee
   const total = subtotal + vat + disbursements
-  
+
   return { 
-    legalFee, 
-    leaseholdSupplement, 
-    mortgageFee, 
-    newBuildFee, 
-    companyFee, 
-    giftFundsFee, 
-    subtotal, 
-    vat, 
-    disbursements, 
-    total 
+    legalFee, leaseholdSupplement, newBuildFee, companyFee,
+    chapsFee, searchFees, subtotal, vat, disbursements, total 
   }
 }
 
