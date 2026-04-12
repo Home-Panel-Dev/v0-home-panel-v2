@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  try {
-    const response = await fetch("https://portal.credasdemo.com/api/v2/ci/journeys", {
-      headers: {
-        "Authorization": `Bearer ${process.env.CREDAS_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    })
+  const apiKey = process.env.CREDAS_API_KEY
+  const baseUrl = process.env.CREDAS_BASE_URL || "https://portal.credasdemo.com/api"
 
-    const data = await response.json()
-    return NextResponse.json(data)
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 })
-  }
+  // Try with raw key (no Bearer)
+  const response = await fetch(`${baseUrl}/v2/ci/journeys`, {
+    headers: {
+      "Authorization": apiKey || "",
+      "Content-Type": "application/json",
+    },
+  })
+
+  const data = await response.json()
+  return NextResponse.json({ status: response.status, data })
 }
