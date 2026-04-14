@@ -16,13 +16,13 @@ export function Hero() {
         loop
         playsInline
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ filter: "grayscale(40%) brightness(0.5)" }}
+        style={{ filter: "grayscale(20%) brightness(0.75)" }}
       >
         <source src="/hero.mp4" type="video/mp4" />
       </video>
 
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/30" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col flex-1 mx-auto max-w-7xl px-6 lg:px-8 w-full">
