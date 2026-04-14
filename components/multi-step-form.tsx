@@ -1,123 +1,61 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronLeft, ArrowRight, Check, Loader2, Home, Building2, RefreshCw, ArrowLeftRight } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   enquiryFormSchema,
-  transactionTypes,
-  tenureTypes,
-  propertyCountOptions,
   type EnquiryFormData,
 } from "@/lib/form-schema"
 import { cn } from "@/lib/utils"
-import {
-  FormField,
-  TextInput,
-  RadioCardGroup,
-  CheckboxField,
-  StepHeader,
-  InfoBox,
-  ProgressIndicator,
-  AddressAutocomplete,
-  type AddressData,
-} from "@/components/forms"
+import { AddressAutocomplete, type AddressData } from "@/components/forms"
+import Link from "next/link"
 
 // ============================================================================
-// TYPES & CONSTANTS
-// ============================================================================
-
-type StepType = 
-  | "terms-conditions"
-  | "transaction-type"
-  | "property-address"
-  | "property-value"
-  | "tenure"
-  | "first-time-buyer"
-  | "property-count"
-  | "new-build"
-  | "mortgage"
-  | "company-purchase"
-  | "personal-details"
-  | "quote"
-
-const agents = [
-  {
-    name: "Sarah Mitchell",
-    role: "Senior Conveyancer",
-    image: "/agents/sarah-mitchell.jpg",
-  },
-  {
-    name: "James Thompson",
-    role: "Property Solicitor",
-    image: "/agents/james-thompson.jpg",
-  },
-]
-
-// ============================================================================
-// FEE CALCULATION — HomePanel Headline Fees
+// FEE CALCULATION
 // ============================================================================
 
 function calcLegalFee(propertyValue: number, transactionType: string): number {
   const isSale = transactionType === "selling"
-
   if (isSale) {
     if (propertyValue <= 250000) return 900
     if (propertyValue <= 500000) return 950
     if (propertyValue <= 750000) return 1200
     if (propertyValue <= 1000000) return 1900
-    return 0 // TBC above £1m
+    return 0
   }
-
-  // Purchase, buying-selling, remortgage, transfer-equity
   if (propertyValue <= 250000) return 995
   if (propertyValue <= 500000) return 1200
   if (propertyValue <= 750000) return 1400
   if (propertyValue <= 1000000) return 1700
-  return 0 // TBC above £1m
+  return 0
 }
 
 function calculateFees(data: Partial<EnquiryFormData>) {
   const propertyValue = parseFloat(data.propertyValue?.replace(/,/g, "") || "0")
   const transactionType = data.transactionType || "buying"
-
   const isLeasehold = data.tenure === "leasehold"
   const isNewBuild = data.isNewBuild === "yes"
   const isCompanyPurchase = data.isCompanyPurchase === "yes"
   const isPurchase = transactionType === "buying" || transactionType === "buying-selling"
   const isSale = transactionType === "selling"
   const isTBC = propertyValue > 1000000
-
   const legalFee = calcLegalFee(propertyValue, transactionType)
-
-  // Supplements (purchase)
   const leaseholdSupplement = isLeasehold && isPurchase ? 450 : isLeasehold && isSale ? 250 : 0
   const newBuildFee = isNewBuild ? 350 : 0
   const companyFee = isCompanyPurchase ? 150 : 0
   const chapsFee = 45
   const searchFees = isPurchase ? 350 : 0
-
   const subtotal = legalFee + leaseholdSupplement + newBuildFee + companyFee
   const vat = Math.round(subtotal * 0.2)
   const disbursements = searchFees + chapsFee
   const total = subtotal + vat + disbursements
-
   return {
-    legalFee,
-    leaseholdSupplement,
-    newBuildFee,
-    companyFee,
-    chapsFee,
-    searchFees,
-    subtotal,
-    vat,
-    disbursements,
-    total,
-    isTBC,
+    legalFee, leaseholdSupplement, newBuildFee, companyFee,
+    chapsFee, searchFees, subtotal, vat, disbursements, total, isTBC,
     transactionLabel:
       transactionType === "buying" ? "purchase" :
       transactionType === "selling" ? "sale" :
@@ -127,56 +65,72 @@ function calculateFees(data: Partial<EnquiryFormData>) {
 }
 
 // ============================================================================
-// STEP FLOW LOGIC
+// STEP FLOW
 // ============================================================================
 
+type StepType =
+  | "terms-conditions" | "transaction-type" | "property-address"
+  | "property-value" | "tenure" | "first-time-buyer" | "property-count"
+  | "new-build" | "mortgage" | "company-purchase" | "personal-details" | "quote"
+
 function getStepsForTransaction(transactionType: string): StepType[] {
-  const preSteps: StepType[] = ["terms-conditions", "transaction-type", "property-address", "property-value", "tenure"]
-  
-  if (transactionType === "buying" || transactionType === "buying-selling") {
-    return [
-      ...preSteps,
-      "first-time-buyer",
-      "property-count",
-      "new-build",
-      "mortgage",
-      "company-purchase",
-      "personal-details",
-      "quote",
-    ]
-  }
-  
-  if (transactionType === "selling") {
-    return [
-      ...preSteps,
-      "mortgage",
-      "personal-details",
-      "quote",
-    ]
-  }
-  
-  if (transactionType === "remortgage") {
-    return [
-      ...preSteps,
-      "personal-details",
-      "quote",
-    ]
-  }
-  
-  if (transactionType === "transfer-equity") {
-    return [
-      ...preSteps,
-      "mortgage",
-      "personal-details",
-      "quote",
-    ]
-  }
-  
-  return preSteps
+  const pre: StepType[] = ["terms-conditions", "transaction-type", "property-address", "property-value", "tenure"]
+  if (transactionType === "buying" || transactionType === "buying-selling")
+    return [...pre, "first-time-buyer", "property-count", "new-build", "mortgage", "company-purchase", "personal-details", "quote"]
+  if (transactionType === "selling")
+    return [...pre, "mortgage", "personal-details", "quote"]
+  if (transactionType === "remortgage")
+    return [...pre, "personal-details", "quote"]
+  if (transactionType === "transfer-equity")
+    return [...pre, "mortgage", "personal-details", "quote"]
+  return pre
 }
 
 // ============================================================================
-// MAIN FORM COMPONENT
+// OPTION BUTTON
+// ============================================================================
+
+function Option({ label, sublabel, selected, onClick, icon }: {
+  label: string
+  sublabel?: string
+  selected: boolean
+  onClick: () => void
+  icon?: React.ReactNode
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={cn(
+        "group relative w-full text-left px-6 py-5 rounded-2xl border-2 transition-all duration-200 flex items-center gap-4",
+        selected
+          ? "border-white bg-white/10 text-white"
+          : "border-white/20 bg-white/5 text-white/70 hover:border-white/40 hover:bg-white/8 hover:text-white"
+      )}
+    >
+      {icon && (
+        <div className={cn("flex-shrink-0 transition-colors", selected ? "text-white" : "text-white/40 group-hover:text-white/60")}>
+          {icon}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-base">{label}</div>
+        {sublabel && <div className="text-sm mt-0.5 opacity-60">{sublabel}</div>}
+      </div>
+      <div className={cn(
+        "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+        selected ? "border-white bg-white" : "border-white/30"
+      )}>
+        {selected && <div className="w-2 h-2 rounded-full bg-black" />}
+      </div>
+    </motion.button>
+  )
+}
+
+// ============================================================================
+// MAIN COMPONENT
 // ============================================================================
 
 export function MultiStepForm() {
@@ -187,118 +141,86 @@ export function MultiStepForm() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addressData, setAddressData] = useState<AddressData | null>(null)
+  const [direction, setDirection] = useState(1)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<EnquiryFormData>({
     resolver: zodResolver(enquiryFormSchema),
     defaultValues: {
-      termsAccepted: false,
-      transactionType: "",
-      propertyAddressLine1: "",
-      propertyAddressLine2: "",
-      propertyCity: "",
-      propertyPostcode: "",
-      propertyAddressUnknown: false,
-      tenure: "",
-      propertyValue: "",
-      ownerCount: "",
-      firstTimeBuyer: "",
-      propertyCount: "",
-      isNewBuild: "",
-      hasMortgage: "",
-      isCompanyPurchase: "",
-      hasGiftFunds: "",
-      bankFundsOnly: "",
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
+      termsAccepted: false, transactionType: "",
+      propertyAddressLine1: "", propertyAddressLine2: "",
+      propertyCity: "", propertyPostcode: "",
+      propertyAddressUnknown: false, tenure: "", propertyValue: "",
+      ownerCount: "", firstTimeBuyer: "", propertyCount: "",
+      isNewBuild: "", hasMortgage: "", isCompanyPurchase: "",
+      hasGiftFunds: "", bankFundsOnly: "",
+      firstName: "", lastName: "", email: "", phone: "",
     },
     mode: "onChange",
   })
 
   const { handleSubmit, watch, setValue, formState: { errors }, trigger } = form
   const watchedValues = watch()
-  
-  const steps = useMemo(() => 
-    getStepsForTransaction(watchedValues.transactionType),
-    [watchedValues.transactionType]
-  )
-  
+  const steps = useMemo(() => getStepsForTransaction(watchedValues.transactionType), [watchedValues.transactionType])
   const currentStep = steps[currentStepIndex] || "terms-conditions"
   const totalSteps = steps.length || 1
+  const progress = totalSteps > 1 ? (currentStepIndex / (totalSteps - 1)) * 100 : 0
 
-  // ============================================================================
-  // VALIDATION
-  // ============================================================================
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 400)
+  }, [currentStep])
 
   const validateCurrentStep = useCallback(async (): Promise<boolean> => {
     switch (currentStep) {
-      case "terms-conditions":
-        return watchedValues.termsAccepted === true
-      case "transaction-type":
-        return !!watchedValues.transactionType
-      case "property-address":
-        return watchedValues.propertyAddressUnknown || (!!watchedValues.propertyPostcode && watchedValues.propertyPostcode.length >= 5)
-      case "tenure":
-        return !!watchedValues.tenure
-      case "property-value":
-        return !!watchedValues.propertyValue
-      case "first-time-buyer":
-        return !!watchedValues.firstTimeBuyer
-      case "property-count":
-        return !!watchedValues.propertyCount
-      case "new-build":
-        return !!watchedValues.isNewBuild
-      case "mortgage":
-        return !!watchedValues.hasMortgage
-      case "company-purchase":
-        return !!watchedValues.isCompanyPurchase
-      case "personal-details":
-        return await trigger(["firstName", "lastName", "email", "phone"])
-      case "quote":
-        return true
-      default:
-        return true
+      case "terms-conditions": return watchedValues.termsAccepted === true
+      case "transaction-type": return !!watchedValues.transactionType
+      case "property-address": return watchedValues.propertyAddressUnknown || (!!watchedValues.propertyPostcode && watchedValues.propertyPostcode.length >= 5)
+      case "tenure": return !!watchedValues.tenure
+      case "property-value": return !!watchedValues.propertyValue
+      case "first-time-buyer": return !!watchedValues.firstTimeBuyer
+      case "property-count": return !!watchedValues.propertyCount
+      case "new-build": return !!watchedValues.isNewBuild
+      case "mortgage": return !!watchedValues.hasMortgage
+      case "company-purchase": return !!watchedValues.isCompanyPurchase
+      case "personal-details": return await trigger(["firstName", "lastName", "email", "phone"])
+      default: return true
     }
   }, [currentStep, watchedValues, trigger])
-
-  // ============================================================================
-  // NAVIGATION
-  // ============================================================================
 
   const nextStep = useCallback(async () => {
     const isValid = await validateCurrentStep()
     if (isValid && currentStepIndex < steps.length - 1) {
-      setCurrentStepIndex((prev) => prev + 1)
+      setDirection(1)
+      setCurrentStepIndex(prev => prev + 1)
     }
   }, [validateCurrentStep, currentStepIndex, steps.length])
 
   const prevStep = useCallback(() => {
     if (currentStepIndex > 0) {
-      setCurrentStepIndex((prev) => prev - 1)
+      setDirection(-1)
+      setCurrentStepIndex(prev => prev - 1)
     }
   }, [currentStepIndex])
 
-  // ============================================================================
-  // SUBMISSION
-  // ============================================================================
+  const handleKeyDown = useCallback(async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && currentStep !== "personal-details" && currentStep !== "property-address" && currentStep !== "property-value") {
+      await nextStep()
+    }
+  }, [nextStep, currentStep])
 
   const onSubmit = async (data: EnquiryFormData) => {
     setIsSubmitting(true)
     setError(null)
-    
     try {
       const response = await fetch("/api/enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || "Something went wrong. Please try again.")
       }
-
       setIsSuccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
@@ -307,26 +229,15 @@ export function MultiStepForm() {
     }
   }
 
-  // ============================================================================
-  // DECLINE & FEEDBACK
-  // ============================================================================
-
   const handleDecline = async () => {
     setShowFeedbackForm(true)
-    
     try {
       await fetch("/api/enquiry/decline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: watchedValues.firstName,
-          lastName: watchedValues.lastName,
-          email: watchedValues.email,
-        }),
+        body: JSON.stringify({ firstName: watchedValues.firstName, lastName: watchedValues.lastName, email: watchedValues.email }),
       })
-    } catch {
-      // Silent fail - still show feedback form
-    }
+    } catch {}
   }
 
   const handleFeedbackSubmit = async (reasons: string[], otherReason?: string) => {
@@ -335,924 +246,458 @@ export function MultiStepForm() {
       await fetch("/api/enquiry/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: watchedValues.firstName,
-          lastName: watchedValues.lastName,
-          email: watchedValues.email,
-          reasons,
-          otherReason,
-          quoteAmount: calculateFees(watchedValues).total,
-        }),
+        body: JSON.stringify({ firstName: watchedValues.firstName, lastName: watchedValues.lastName, email: watchedValues.email, reasons, otherReason, quoteAmount: calculateFees(watchedValues).total }),
       })
       setFeedbackSubmitted(true)
-    } catch {
-      setFeedbackSubmitted(true)
-    } finally {
-      setIsSubmitting(false)
-    }
+    } catch { setFeedbackSubmitted(true) }
+    finally { setIsSubmitting(false) }
   }
 
-  // ============================================================================
-  // ADDRESS HANDLING
-  // ============================================================================
-
-  const handleAddressChange = (address: AddressData | null) => {
-    setAddressData(address)
-    if (address) {
-      setValue("propertyAddressLine1", address.addressLine1)
-      setValue("propertyAddressLine2", address.addressLine2)
-      setValue("propertyCity", address.city)
-      setValue("propertyPostcode", address.postcode)
-    }
+  const variants = {
+    enter: (d: number) => ({ opacity: 0, y: d > 0 ? 40 : -40 }),
+    center: { opacity: 1, y: 0 },
+    exit: (d: number) => ({ opacity: 0, y: d > 0 ? -40 : 40 }),
   }
 
-  const handlePostcodeChange = (postcode: string) => {
-    setValue("propertyPostcode", postcode)
-  }
-
-  // ============================================================================
-  // RENDER: SUCCESS STATE
-  // ============================================================================
-
+  // SUCCESS
   if (isSuccess) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-16"
-      >
-        <div className="h-16 w-16 rounded-full bg-foreground text-background flex items-center justify-center mx-auto mb-6">
-          <Check className="h-8 w-8" />
-        </div>
-        <h2 className="text-2xl font-semibold mb-3">Enquiry submitted</h2>
-        <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-          Thank you for your enquiry. A member of the HomePanel team will be in touch shortly to guide you through the next steps.
-        </p>
-      </motion.div>
+      <div className="min-h-screen bg-black flex items-center justify-center px-6">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-md">
+          <div className="w-20 h-20 rounded-full border-2 border-white/20 flex items-center justify-center mx-auto mb-8">
+            <Check className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-semibold text-white mb-4 tracking-tight">Enquiry submitted</h2>
+          <p className="text-white/50 leading-relaxed text-lg">A member of The Home Panel team will be in touch within one business day.</p>
+          <Link href="/" className="inline-flex items-center gap-2 mt-10 text-white/40 hover:text-white/70 transition-colors text-sm">
+            <ChevronLeft className="w-4 h-4" /> Back to homepage
+          </Link>
+        </motion.div>
+      </div>
     )
   }
 
-  // ============================================================================
-  // RENDER: FEEDBACK FORM
-  // ============================================================================
-
+  // FEEDBACK
   if (showFeedbackForm) {
+    if (feedbackSubmitted) {
+      return (
+        <div className="min-h-screen bg-black flex items-center justify-center px-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center max-w-md">
+            <div className="w-16 h-16 rounded-full border border-white/20 flex items-center justify-center mx-auto mb-6">
+              <Check className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-2xl font-semibold text-white mb-3">Thank you</h2>
+            <p className="text-white/40">Your feedback helps us improve.</p>
+          </motion.div>
+        </div>
+      )
+    }
+    const feedbackReasons = [
+      { id: "price", label: "Price too high" },
+      { id: "timing", label: "Not ready yet" },
+      { id: "comparison", label: "Comparing other firms" },
+      { id: "location", label: "Want a local solicitor" },
+      { id: "recommendation", label: "Going with a recommendation" },
+      { id: "other", label: "Other reason" },
+    ]
+    const [selectedReasons, setSelectedReasons] = useState<string[]>([])
     return (
-      <FeedbackForm
-        firstName={watchedValues.firstName}
-        isSubmitting={isSubmitting}
-        feedbackSubmitted={feedbackSubmitted}
-        onSubmit={handleFeedbackSubmit}
-      />
+      <div className="min-h-screen bg-black flex items-center justify-center px-6">
+        <div className="w-full max-w-lg">
+          <h2 className="text-2xl font-semibold text-white mb-2">We're sorry to see you go</h2>
+          <p className="text-white/40 mb-8">Could you tell us why you decided not to proceed?</p>
+          <div className="space-y-3 mb-8">
+            {feedbackReasons.map(r => (
+              <Option key={r.id} label={r.label} selected={selectedReasons.includes(r.id)}
+                onClick={() => setSelectedReasons(prev => prev.includes(r.id) ? prev.filter(x => x !== r.id) : [...prev, r.id])} />
+            ))}
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => handleFeedbackSubmit([])} className="flex-1 py-4 rounded-2xl border border-white/20 text-white/50 hover:text-white hover:border-white/40 transition-all text-sm">Skip</button>
+            <button type="button" onClick={() => handleFeedbackSubmit(selectedReasons)} disabled={selectedReasons.length === 0 || isSubmitting}
+              className="flex-1 py-4 rounded-2xl bg-white text-black font-medium hover:bg-white/90 transition-all text-sm disabled:opacity-40">
+              {isSubmitting ? "Submitting..." : "Submit feedback"}
+            </button>
+          </div>
+        </div>
+      </div>
     )
   }
 
-  // ============================================================================
-  // RENDER: MAIN FORM
-  // ============================================================================
+  const fees = calculateFees(watchedValues)
 
   return (
-    <div className="w-full max-w-xl mx-auto">
-      <div className="bg-background rounded-3xl border border-border overflow-hidden shadow-xl shadow-black/5">
-        {/* Top bar — back + progress */}
-        <div className="px-8 pt-6 pb-0">
-          <div className="flex items-center justify-between mb-5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={prevStep}
-              disabled={currentStepIndex === 0}
-              className="rounded-lg text-muted-foreground hover:text-foreground -ml-2 h-8 px-2 gap-1"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="text-xs">Back</span>
-            </Button>
-            <span className="text-xs text-muted-foreground font-medium">
-              The Home Panel
-            </span>
-          </div>
-          <ProgressIndicator
-            currentStep={currentStepIndex}
-            totalSteps={totalSteps}
-          />
+    <div className="min-h-screen bg-black relative overflow-hidden" onKeyDown={handleKeyDown}>
+      {/* Background image — subtle */}
+      <div className="absolute inset-0">
+        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600&q=80&fit=crop"
+          className="w-full h-full object-cover opacity-10" style={{ filter: "grayscale(100%)" }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
+      </div>
+
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between px-8 py-6">
+        <Link href="/" className="flex items-center gap-2.5">
+          <img src="/logo.svg" alt="The Home Panel" className="w-7 h-7" />
+          <span className="text-white/70 text-sm font-medium">The Home Panel</span>
+        </Link>
+
+        {/* Progress dots */}
+        <div className="flex items-center gap-1.5">
+          {steps.map((_, i) => (
+            <div key={i} className={cn(
+              "rounded-full transition-all duration-300",
+              i === currentStepIndex ? "w-6 h-1.5 bg-white" :
+              i < currentStepIndex ? "w-1.5 h-1.5 bg-white/50" :
+              "w-1.5 h-1.5 bg-white/20"
+            )} />
+          ))}
         </div>
 
-        {/* Form content */}
-        <div className="px-8 pt-8 pb-8">
-          <AnimatePresence mode="wait">
+        {/* Back button */}
+        <button type="button" onClick={prevStep} disabled={currentStepIndex === 0}
+          className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors text-sm disabled:opacity-0">
+          <ChevronLeft className="w-4 h-4" /> Back
+        </button>
+      </div>
+
+      {/* Step content */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-6 pb-24">
+        <div className="w-full max-w-lg">
+          <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="min-h-[320px]"
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
-              {/* STEP: Terms & Conditions */}
+
+              {/* TERMS */}
               {currentStep === "terms-conditions" && (
-                <TermsConditionsStep
-                  termsAccepted={watchedValues.termsAccepted || false}
-                  onTermsChange={(checked) => setValue("termsAccepted", checked)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Before we begin</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Your privacy matters</h1>
+                  <p className="text-white/50 text-lg mb-10 leading-relaxed">We'll only use your information to prepare your conveyancing quote and manage your case.</p>
+                  <div onClick={() => setValue("termsAccepted", !watchedValues.termsAccepted)}
+                    className={cn("flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all mb-6",
+                      watchedValues.termsAccepted ? "border-white bg-white/10" : "border-white/20 bg-white/5 hover:border-white/40")}>
+                    <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+                      watchedValues.termsAccepted ? "border-white bg-white" : "border-white/30")}>
+                      {watchedValues.termsAccepted && <Check className="w-3.5 h-3.5 text-black" />}
+                    </div>
+                    <span className="text-white text-sm leading-relaxed">
+                      I agree to The Home Panel's Terms & Conditions and Privacy Policy
+                    </span>
+                  </div>
+                  <p className="text-white/30 text-xs text-center">
+                    <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-white/50 transition-colors">Terms & Conditions</Link>
+                    {" · "}
+                    <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-white/50 transition-colors">Privacy Policy</Link>
+                  </p>
+                </div>
               )}
 
-              {/* STEP: Transaction Type */}
+              {/* TRANSACTION TYPE */}
               {currentStep === "transaction-type" && (
-                <TransactionTypeStep
-                  value={watchedValues.transactionType}
-                  onChange={(value) => setValue("transactionType", value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Step 1</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">What are you looking to do?</h1>
+                  <p className="text-white/50 text-lg mb-10">Select the type of transaction you need help with.</p>
+                  <div className="space-y-3">
+                    <Option label="Buying a property" sublabel="Residential purchase" selected={watchedValues.transactionType === "buying"} onClick={() => { setValue("transactionType", "buying"); setTimeout(nextStep, 300) }} icon={<Home className="w-5 h-5" />} />
+                    <Option label="Selling a property" sublabel="Residential sale" selected={watchedValues.transactionType === "selling"} onClick={() => { setValue("transactionType", "selling"); setTimeout(nextStep, 300) }} icon={<Building2 className="w-5 h-5" />} />
+                    <Option label="Buying & selling" sublabel="Both at the same time" selected={watchedValues.transactionType === "buying-selling"} onClick={() => { setValue("transactionType", "buying-selling"); setTimeout(nextStep, 300) }} icon={<ArrowLeftRight className="w-5 h-5" />} />
+                    <Option label="Remortgage" sublabel="Switch or renew your mortgage" selected={watchedValues.transactionType === "remortgage"} onClick={() => { setValue("transactionType", "remortgage"); setTimeout(nextStep, 300) }} icon={<RefreshCw className="w-5 h-5" />} />
+                    <Option label="Transfer of equity" sublabel="Change ownership of a property" selected={watchedValues.transactionType === "transfer-equity"} onClick={() => { setValue("transactionType", "transfer-equity"); setTimeout(nextStep, 300) }} icon={<ArrowLeftRight className="w-5 h-5" />} />
+                  </div>
+                </div>
               )}
 
-              {/* STEP: Property Address */}
+              {/* PROPERTY ADDRESS */}
               {currentStep === "property-address" && (
-                <PropertyAddressStep
-                  transactionType={watchedValues.transactionType}
-                  postcode={watchedValues.propertyPostcode || ""}
-                  addressUnknown={watchedValues.propertyAddressUnknown || false}
-                  addressData={addressData}
-                  onAddressChange={handleAddressChange}
-                  onPostcodeChange={handlePostcodeChange}
-                  onAddressUnknownChange={(checked) => setValue("propertyAddressUnknown", checked)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Step 2</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">
+                    {watchedValues.transactionType === "selling" ? "What's the address of the property you're selling?" : "What's the property address?"}
+                  </h1>
+                  <p className="text-white/50 text-lg mb-10">Start typing the postcode to search.</p>
+                  <div className="space-y-4">
+                    <div className="[&_input]:bg-white/10 [&_input]:border-white/20 [&_input]:text-white [&_input]:placeholder-white/30 [&_input:focus]:border-white/60 [&_input]:rounded-2xl [&_input]:py-4 [&_input]:px-5 [&_input]:text-base">
+                      <AddressAutocomplete
+                        value={addressData}
+                        onChange={(address) => {
+                          setAddressData(address)
+                          if (address) {
+                            setValue("propertyAddressLine1", address.addressLine1)
+                            setValue("propertyAddressLine2", address.addressLine2)
+                            setValue("propertyCity", address.city)
+                            setValue("propertyPostcode", address.postcode)
+                          }
+                        }}
+                        onPostcodeChange={(postcode) => setValue("propertyPostcode", postcode)}
+                        placeholder="Start typing postcode..."
+                        disabled={watchedValues.propertyAddressUnknown}
+                      />
+                    </div>
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => setValue("propertyAddressUnknown", !watchedValues.propertyAddressUnknown)}>
+                      <div className={cn("w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
+                        watchedValues.propertyAddressUnknown ? "border-white bg-white" : "border-white/30")}>
+                        {watchedValues.propertyAddressUnknown && <Check className="w-3 h-3 text-black" />}
+                      </div>
+                      <span className="text-white/50 text-sm">I don't know the address yet</span>
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* STEP: Tenure */}
-              {currentStep === "tenure" && (
-                <TenureStep
-                  value={watchedValues.tenure || ""}
-                  onChange={(value) => setValue("tenure", value)}
-                />
-              )}
-
-              {/* STEP: Property Value */}
+              {/* PROPERTY VALUE */}
               {currentStep === "property-value" && (
-                <PropertyValueStep
-                  value={watchedValues.propertyValue || ""}
-                  onChange={(value) => setValue("propertyValue", value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Step 3</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">What's the property value?</h1>
+                  <p className="text-white/50 text-lg mb-10">An estimate is fine at this stage.</p>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 text-xl font-medium">£</span>
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      inputMode="numeric"
+                      value={watchedValues.propertyValue}
+                      onChange={(e) => setValue("propertyValue", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && nextStep()}
+                      placeholder="350,000"
+                      className="w-full bg-white/10 border-2 border-white/20 text-white placeholder-white/20 rounded-2xl py-5 pl-10 pr-5 text-2xl font-medium focus:outline-none focus:border-white/60 transition-colors"
+                    />
+                  </div>
+                </div>
               )}
 
-              {/* STEP: First Time Buyer */}
+              {/* TENURE */}
+              {currentStep === "tenure" && (
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Step 4</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Is it freehold or leasehold?</h1>
+                  <p className="text-white/50 text-lg mb-10">Most houses are freehold. Most flats are leasehold. Your estate agent can confirm.</p>
+                  <div className="space-y-3">
+                    <Option label="Freehold" sublabel="You own the building and land" selected={watchedValues.tenure === "freehold"} onClick={() => { setValue("tenure", "freehold"); setTimeout(nextStep, 300) }} />
+                    <Option label="Leasehold" sublabel="You own the property for a set period" selected={watchedValues.tenure === "leasehold"} onClick={() => { setValue("tenure", "leasehold"); setTimeout(nextStep, 300) }} />
+                    <Option label="Not sure" sublabel="We'll confirm during onboarding" selected={watchedValues.tenure === "unsure"} onClick={() => { setValue("tenure", "unsure"); setTimeout(nextStep, 300) }} />
+                  </div>
+                </div>
+              )}
+
+              {/* FIRST TIME BUYER */}
               {currentStep === "first-time-buyer" && (
-                <FirstTimeBuyerStep
-                  value={watchedValues.firstTimeBuyer || ""}
-                  onChange={(value) => setValue("firstTimeBuyer", value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Almost there</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Is this your first property?</h1>
+                  <p className="text-white/50 text-lg mb-10">You're a first time buyer if none of the new owners have ever owned property anywhere in the world.</p>
+                  <div className="space-y-3">
+                    <Option label="Yes, first time buyer" sublabel="None of us have owned property before" selected={watchedValues.firstTimeBuyer === "yes"} onClick={() => { setValue("firstTimeBuyer", "yes"); setTimeout(nextStep, 300) }} />
+                    <Option label="No" sublabel="One or more of us have owned property before" selected={watchedValues.firstTimeBuyer === "no"} onClick={() => { setValue("firstTimeBuyer", "no"); setTimeout(nextStep, 300) }} />
+                  </div>
+                </div>
               )}
 
-              {/* STEP: Property Count */}
+              {/* PROPERTY COUNT */}
               {currentStep === "property-count" && (
-                <PropertyCountStep
-                  value={watchedValues.propertyCount || ""}
-                  onChange={(value) => setValue("propertyCount", value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Almost there</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">How many properties will you own after this purchase?</h1>
+                  <p className="text-white/50 text-lg mb-10">Including this one, across all owners.</p>
+                  <div className="space-y-3">
+                    <Option label="Just this one" sublabel="This will be our only property" selected={watchedValues.propertyCount === "one"} onClick={() => { setValue("propertyCount", "one"); setTimeout(nextStep, 300) }} />
+                    <Option label="More than one" sublabel="We'll own additional properties" selected={watchedValues.propertyCount === "more-than-one"} onClick={() => { setValue("propertyCount", "more-than-one"); setTimeout(nextStep, 300) }} />
+                  </div>
+                </div>
               )}
 
-              {/* STEP: New Build */}
+              {/* NEW BUILD */}
               {currentStep === "new-build" && (
-                <NewBuildStep
-                  value={watchedValues.isNewBuild || ""}
-                  onChange={(value) => setValue("isNewBuild", value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Almost there</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Is this a new build?</h1>
+                  <p className="text-white/50 text-lg mb-10">A property being built or recently completed by a developer.</p>
+                  <div className="space-y-3">
+                    <Option label="Yes, new build" selected={watchedValues.isNewBuild === "yes"} onClick={() => { setValue("isNewBuild", "yes"); setTimeout(nextStep, 300) }} />
+                    <Option label="No" selected={watchedValues.isNewBuild === "no"} onClick={() => { setValue("isNewBuild", "no"); setTimeout(nextStep, 300) }} />
+                  </div>
+                </div>
               )}
 
-              {/* STEP: Mortgage */}
+              {/* MORTGAGE */}
               {currentStep === "mortgage" && (
-                <MortgageStep
-                  value={watchedValues.hasMortgage || ""}
-                  onChange={(value) => setValue("hasMortgage", value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Almost there</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Will you be using a mortgage?</h1>
+                  <p className="text-white/50 text-lg mb-10">This helps us understand the complexity of your transaction.</p>
+                  <div className="space-y-3">
+                    <Option label="Yes, with a mortgage" selected={watchedValues.hasMortgage === "yes"} onClick={() => { setValue("hasMortgage", "yes"); setTimeout(nextStep, 300) }} />
+                    <Option label="No, cash purchase" selected={watchedValues.hasMortgage === "no"} onClick={() => { setValue("hasMortgage", "no"); setTimeout(nextStep, 300) }} />
+                  </div>
+                </div>
               )}
 
-              {/* STEP: Company Purchase */}
+              {/* COMPANY PURCHASE */}
               {currentStep === "company-purchase" && (
-                <CompanyPurchaseStep
-                  value={watchedValues.isCompanyPurchase || ""}
-                  onChange={(value) => setValue("isCompanyPurchase", value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">One more</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Are you buying under a company name?</h1>
+                  <p className="text-white/50 text-lg mb-10">This includes limited companies, partnerships, or any other business entity.</p>
+                  <div className="space-y-3">
+                    <Option label="Yes, company purchase" selected={watchedValues.isCompanyPurchase === "yes"} onClick={() => { setValue("isCompanyPurchase", "yes"); setTimeout(nextStep, 300) }} />
+                    <Option label="No, personal purchase" selected={watchedValues.isCompanyPurchase === "no"} onClick={() => { setValue("isCompanyPurchase", "no"); setTimeout(nextStep, 300) }} />
+                  </div>
+                </div>
               )}
 
-              {/* STEP: Personal Details */}
+              {/* PERSONAL DETAILS */}
               {currentStep === "personal-details" && (
-                <PersonalDetailsStep
-                  values={watchedValues}
-                  errors={errors}
-                  isSubmitting={isSubmitting}
-                  onFieldChange={(field, value) => setValue(field, value)}
-                />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Final step</p>
+                  <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Tell us about yourself</h1>
+                  <p className="text-white/50 text-lg mb-10">We'll use these details to send your quote and get in touch.</p>
+                  <div className="space-y-4">
+                    {[
+                      { field: "firstName" as const, label: "First name", type: "text", placeholder: "Habib" },
+                      { field: "lastName" as const, label: "Last name", type: "text", placeholder: "Fazel" },
+                      { field: "email" as const, label: "Email address", type: "email", placeholder: "habib@example.com" },
+                      { field: "phone" as const, label: "Phone number", type: "tel", placeholder: "07700 000000" },
+                    ].map(({ field, label, type, placeholder }) => (
+                      <div key={field}>
+                        <label className="block text-white/40 text-xs uppercase tracking-widest mb-2">{label}</label>
+                        <input
+                          type={type}
+                          value={watchedValues[field] as string}
+                          onChange={(e) => setValue(field, e.target.value)}
+                          placeholder={placeholder}
+                          className={cn(
+                            "w-full bg-white/10 border-2 text-white placeholder-white/20 rounded-2xl py-4 px-5 text-base focus:outline-none transition-colors",
+                            errors[field] ? "border-red-500/60" : "border-white/20 focus:border-white/60"
+                          )}
+                        />
+                        {errors[field] && <p className="text-red-400 text-xs mt-1.5">{errors[field]?.message}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
-              {/* STEP: Quote */}
+              {/* QUOTE */}
               {currentStep === "quote" && (
-                <QuoteStep values={watchedValues} />
+                <div>
+                  <p className="text-white/40 text-sm uppercase tracking-widest mb-4">Your quote</p>
+                  <h1 className="text-4xl font-semibold text-white mb-2 tracking-tight">
+                    {fees.isTBC ? "We'll be in touch" : `£${fees.total.toLocaleString("en-GB")}`}
+                  </h1>
+                  <p className="text-white/50 text-lg mb-8">
+                    {fees.isTBC ? "Properties over £1m are quoted on application." : `Fixed fee for your ${fees.transactionLabel}`}
+                  </p>
+
+                  {!fees.isTBC && (
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/50">Legal fee (ex VAT)</span>
+                        <span className="text-white">£{fees.legalFee.toLocaleString("en-GB")}</span>
+                      </div>
+                      {fees.leaseholdSupplement > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/50">Leasehold supplement</span>
+                          <span className="text-white">£{fees.leaseholdSupplement.toLocaleString("en-GB")}</span>
+                        </div>
+                      )}
+                      {fees.newBuildFee > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/50">New build supplement</span>
+                          <span className="text-white">£{fees.newBuildFee.toLocaleString("en-GB")}</span>
+                        </div>
+                      )}
+                      {fees.companyFee > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/50">Company purchase</span>
+                          <span className="text-white">£{fees.companyFee.toLocaleString("en-GB")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm pt-3 border-t border-white/10">
+                        <span className="text-white/50">VAT (20%)</span>
+                        <span className="text-white">£{fees.vat.toLocaleString("en-GB")}</span>
+                      </div>
+                      {fees.searchFees > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/50">Searches</span>
+                          <span className="text-white">£{fees.searchFees.toLocaleString("en-GB")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/50">CHAPS fee</span>
+                        <span className="text-white">£{fees.chapsFee.toLocaleString("en-GB")}</span>
+                      </div>
+                      <div className="flex justify-between text-base pt-3 border-t border-white/20 font-semibold">
+                        <span className="text-white">Total estimate</span>
+                        <span className="text-white">£{fees.total.toLocaleString("en-GB")}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-white/30 text-xs mb-8">Stamp Duty Land Tax (SDLT) is not included — it's a government tax paid directly to HMRC. Your solicitor will advise on the exact amount.</p>
+
+                  <div className="space-y-3">
+                    <motion.button
+                      type="button"
+                      onClick={handleSubmit(onSubmit)}
+                      disabled={isSubmitting}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      className="w-full bg-white text-black font-semibold py-5 rounded-2xl text-base hover:bg-white/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : <>Proceed with The Home Panel <ArrowRight className="w-4 h-4" /></>}
+                    </motion.button>
+                    <button type="button" onClick={handleDecline} className="w-full py-4 text-white/30 hover:text-white/60 transition-colors text-sm">
+                      No thanks
+                    </button>
+                  </div>
+                </div>
               )}
+
             </motion.div>
           </AnimatePresence>
 
-          {/* Error message */}
-          {error && (
-            <div className="mt-4 p-4 rounded-xl bg-destructive/10 text-destructive text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Navigation buttons */}
-          <div className="flex justify-end mt-10">
-            {currentStep === "quote" ? (
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isSubmitting}
-                  onClick={handleDecline}
-                  className="rounded-xl border-border h-12 order-2 sm:order-1"
-                >
-                  No thanks
-                </Button>
-                <Button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={handleSubmit(onSubmit)}
-                  className="rounded-xl bg-foreground hover:bg-foreground/90 text-background px-8 h-12 order-1 sm:order-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Proceed with HomePanel"
-                  )}
-                </Button>
-              </div>
-            ) : currentStep === "personal-details" ? (
-              <Button
+          {/* Continue button — for steps that don't auto-advance */}
+          {currentStep !== "quote" && currentStep !== "transaction-type" && currentStep !== "tenure" && currentStep !== "first-time-buyer" && currentStep !== "property-count" && currentStep !== "new-build" && currentStep !== "mortgage" && currentStep !== "company-purchase" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mt-10"
+            >
+              {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
+              <motion.button
                 type="button"
                 onClick={nextStep}
-                className="rounded-xl bg-foreground hover:bg-foreground/90 text-background h-12 px-6"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="w-full bg-white text-black font-semibold py-5 rounded-2xl text-base hover:bg-white/90 transition-all flex items-center justify-center gap-2"
               >
-                Get My Quote
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={nextStep}
-                className="rounded-xl bg-foreground hover:bg-foreground/90 text-background h-12 px-6"
-              >
-                Continue
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ============================================================================
-// STEP COMPONENTS
-// ============================================================================
-
-function TermsConditionsStep({
-  termsAccepted,
-  onTermsChange,
-}: {
-  termsAccepted: boolean
-  onTermsChange: (checked: boolean) => void
-}) {
-  return (
-    <div className="space-y-8">
-      <StepHeader
-        title="Before we begin"
-        description="Please agree to our terms to get your instant quote."
-        align="center"
-      />
-
-      <div
-        className={cn(
-          "flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-150",
-          termsAccepted
-            ? "border-foreground bg-muted/40"
-            : "border-border bg-background hover:border-foreground/40"
-        )}
-        onClick={() => onTermsChange(!termsAccepted)}
-      >
-        <Checkbox
-          id="termsAccepted"
-          checked={termsAccepted}
-          onCheckedChange={(checked) => onTermsChange(checked as boolean)}
-          className="h-5 w-5 flex-shrink-0"
-        />
-        <label htmlFor="termsAccepted" className="text-sm leading-snug cursor-pointer select-none">
-          I agree to HomePanel&apos;s Terms & Conditions and Privacy Policy <span className="text-destructive">*</span>
-        </label>
-      </div>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Read our{" "}
-        <span className="underline underline-offset-2 cursor-pointer hover:text-foreground transition-colors">
-          Terms & Conditions
-        </span>
-        {" "}and{" "}
-        <span className="underline underline-offset-2 cursor-pointer hover:text-foreground transition-colors">
-          Privacy Policy
-        </span>
-        {" "}below.
-      </p>
-
-      {!termsAccepted && (
-        <p className="text-xs text-muted-foreground text-center">
-          You must agree to continue.
-        </p>
-      )}
-    </div>
-  )
-}
-
-function TransactionTypeStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="text-center">
-      <div className="mb-8">
-        <p className="text-muted-foreground mb-2">
-          Buying or selling a home can be both a <strong className="text-foreground">stressful</strong> and <strong className="text-foreground">exciting</strong> experience.
-        </p>
-        <p className="text-muted-foreground mb-2">
-          Let us handle this <strong className="text-foreground">important moment</strong> for you.
-        </p>
-        <p className="text-muted-foreground mb-6">
-          We are <strong className="text-foreground">HomePanel</strong>, a team which:
-        </p>
-        <ul className="text-sm text-muted-foreground space-y-1">
-          <li className="underline decoration-dotted underline-offset-4">is 2x faster than the national average,</li>
-          <li className="underline decoration-dotted underline-offset-4">has learnt from 30,000+ transactions,</li>
-          <li className="underline decoration-dotted underline-offset-4">offers the easiest client experience</li>
-          <li className="underline decoration-dotted underline-offset-4">in the industry.</li>
-        </ul>
-      </div>
-      
-      <FormField label="What would you like a quote for?" className="text-center">
-        <RadioCardGroup
-          options={transactionTypes.map(t => ({ value: t.value, label: t.label }))}
-          value={value}
-          onChange={onChange}
-          variant="pill"
-          layout="horizontal"
-          className="justify-center"
-        />
-      </FormField>
-    </div>
-  )
-}
-
-function PropertyAddressStep({
-  transactionType,
-  postcode,
-  addressUnknown,
-  addressData,
-  onAddressChange,
-  onPostcodeChange,
-  onAddressUnknownChange,
-}: {
-  transactionType: string
-  postcode: string
-  addressUnknown: boolean
-  addressData: AddressData | null
-  onAddressChange: (address: AddressData | null) => void
-  onPostcodeChange: (postcode: string) => void
-  onAddressUnknownChange: (checked: boolean) => void
-}) {
-  const action = transactionType === "selling" ? "selling" : "buying"
-  
-  return (
-    <div className="space-y-6">
-      <StepHeader
-        title={`What is the address of the property you are ${action}?`}
-      />
-      
-      <FormField>
-        <AddressAutocomplete
-          value={addressData}
-          onChange={onAddressChange}
-          onPostcodeChange={onPostcodeChange}
-          placeholder="Start typing postcode..."
-          disabled={addressUnknown}
-        />
-      </FormField>
-      
-      <div className="flex items-center gap-3">
-        <Checkbox
-          id="addressUnknown"
-          checked={addressUnknown}
-          onCheckedChange={(checked) => onAddressUnknownChange(checked as boolean)}
-        />
-        <label htmlFor="addressUnknown" className="text-sm text-muted-foreground cursor-pointer">
-          I don&apos;t know it yet
-        </label>
-      </div>
-    </div>
-  )
-}
-
-function TenureStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Is it a Freehold or Leasehold property?" />
-      
-      <InfoBox>
-        Most houses are <strong className="text-foreground">Freehold</strong> and most flats are <strong className="text-foreground">Leasehold</strong>. If you are buying through an Estate Agent they should be able to make you aware.
-      </InfoBox>
-      
-      <RadioCardGroup
-        options={tenureTypes.map(t => ({ value: t.value, label: t.label }))}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="horizontal"
-      />
-    </div>
-  )
-}
-
-function PropertyValueStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="How much will you be paying (approximately)?" />
-      
-      <FormField>
-        <TextInput
-          prefix="£"
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Enter amount"
-        />
-      </FormField>
-    </div>
-  )
-}
-
-
-function FirstTimeBuyerStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Will this be the first property you have all ever owned?" />
-      
-      <InfoBox>
-        You could be considered a first time buyer if you have never owned or part owned a property anywhere in the world. <strong className="text-foreground">If any of the new owners have then you should answer &quot;No&quot;.</strong>
-      </InfoBox>
-      
-      <RadioCardGroup
-        options={[
-          { value: "yes", label: "Yes, we are all first time buyers" },
-          { value: "no", label: "No" },
-        ]}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="vertical"
-      />
-    </div>
-  )
-}
-
-function PropertyCountStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="When your purchase completes how many properties will you all own?" />
-      
-      <RadioCardGroup
-        options={propertyCountOptions.map(o => ({ value: o.value, label: o.label }))}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="vertical"
-      />
-    </div>
-  )
-}
-
-function NewBuildStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Is this a new build property?" />
-      
-      <RadioCardGroup
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-        ]}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="horizontal"
-      />
-    </div>
-  )
-}
-
-function MortgageStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Will you be getting a mortgage?" />
-      
-      <RadioCardGroup
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-        ]}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="horizontal"
-      />
-    </div>
-  )
-}
-
-function CompanyPurchaseStep({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Are you buying under a company name?" />
-      
-      <InfoBox>
-        This could be a limited company (LTD), partnership or any other company.
-      </InfoBox>
-      
-      <RadioCardGroup
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No / I don't know" },
-        ]}
-        value={value}
-        onChange={onChange}
-        variant="pill"
-        layout="vertical"
-      />
-    </div>
-  )
-}
-
-
-function PersonalDetailsStep({
-  values,
-  errors,
-  isSubmitting,
-  onFieldChange,
-}: {
-  values: EnquiryFormData
-  errors: Record<string, { message?: string }>
-  isSubmitting: boolean
-  onFieldChange: (field: keyof EnquiryFormData, value: string) => void
-}) {
-  return (
-    <div className="space-y-6">
-      <StepHeader title="Tell us about yourself" />
-      
-      <div className="space-y-4">
-        <FormField label="First name" required error={errors.firstName?.message}>
-          <TextInput
-            value={values.firstName}
-            onChange={(e) => onFieldChange("firstName", e.target.value)}
-            placeholder="Enter your first name"
-            disabled={isSubmitting}
-            error={!!errors.firstName}
-          />
-        </FormField>
-        
-        <FormField label="Last name" required error={errors.lastName?.message}>
-          <TextInput
-            value={values.lastName}
-            onChange={(e) => onFieldChange("lastName", e.target.value)}
-            placeholder="Enter your last name"
-            disabled={isSubmitting}
-            error={!!errors.lastName}
-          />
-        </FormField>
-        
-        <FormField label="Email address" required error={errors.email?.message}>
-          <TextInput
-            type="email"
-            value={values.email}
-            onChange={(e) => onFieldChange("email", e.target.value)}
-            placeholder="Enter your email"
-            disabled={isSubmitting}
-            error={!!errors.email}
-          />
-        </FormField>
-        
-        <FormField label="Phone number" required error={errors.phone?.message}>
-          <TextInput
-            type="tel"
-            value={values.phone}
-            onChange={(e) => onFieldChange("phone", e.target.value)}
-            placeholder="Enter your phone number"
-            disabled={isSubmitting}
-            error={!!errors.phone}
-          />
-        </FormField>
-      </div>
-    </div>
-  )
-}
-
-function QuoteStep({
-  values,
-}: {
-  values: EnquiryFormData
-}) {
-  const fees = calculateFees(values)
-  
-  return (
-    <div className="text-center">
-      <img src="/logo.svg" alt="HomePanel" className="w-12 h-12 mx-auto mb-4" />
-      
-      <h2 className="text-xl font-semibold mb-1">
-        If you let us handle this
-      </h2>
-      <p className="text-xl font-semibold mb-6">
-        journey for you
-      </p>
-      
-      <p className="text-muted-foreground mb-2">
-        Our fee for your {fees.transactionLabel} would be:
-      </p>
-      <p className="text-4xl font-bold mb-8">
-        {fees.isTBC ? "TBC" : `£${fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-      </p>
-      
-      {/* Fee breakdown */}
-      {fees.isTBC ? (
-        <div className="text-left bg-muted/50 rounded-xl p-5 mb-8">
-          <p className="text-sm text-muted-foreground text-center">
-            For properties over £1,000,000 our fees are quoted on application. A member of our team will be in touch with a personalised quote.
-          </p>
-        </div>
-      ) : (
-        <div className="text-left bg-muted/50 rounded-xl p-5 mb-8">
-          <h3 className="font-medium mb-4 text-sm">Fee breakdown</h3>
-          <div className="space-y-2.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Legal fee (ex VAT)</span>
-              <span className="font-medium">£{fees.legalFee.toLocaleString("en-GB")}</span>
-            </div>
-            {fees.leaseholdSupplement > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Leasehold supplement</span>
-                <span className="font-medium">£{fees.leaseholdSupplement.toLocaleString("en-GB")}</span>
-              </div>
-            )}
-            {fees.newBuildFee > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">New build supplement</span>
-                <span className="font-medium">£{fees.newBuildFee.toLocaleString("en-GB")}</span>
-              </div>
-            )}
-            {fees.companyFee > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Company purchase</span>
-                <span className="font-medium">£{fees.companyFee.toLocaleString("en-GB")}</span>
-              </div>
-            )}
-            <div className="flex justify-between pt-2.5 border-t border-border">
-              <span className="text-muted-foreground">VAT (20%)</span>
-              <span className="font-medium">£{fees.vat.toLocaleString("en-GB")}</span>
-            </div>
-            {fees.searchFees > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Searches</span>
-                <span className="font-medium">£{fees.searchFees.toLocaleString("en-GB")}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">CHAPS fee (inc VAT)</span>
-              <span className="font-medium">£{fees.chapsFee.toLocaleString("en-GB")}</span>
-            </div>
-            <div className="flex justify-between pt-2.5 border-t border-border text-foreground">
-              <span className="font-semibold">Total estimate</span>
-              <span className="font-semibold">£{fees.total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-            All fees are estimates and exclude Stamp Duty Land Tax (SDLT), which is a government tax paid directly to HMRC. Your solicitor will advise on the exact SDLT amount at instruction.
-          </p>
-        </div>
-      )}
-      
-      {/* Agents */}
-      <p className="text-muted-foreground mb-4">
-        Your case would directly be handled by
-      </p>
-      
-      <div className="flex items-center justify-center gap-6 mb-4">
-        {agents.map((agent, index) => (
-          <div key={agent.name} className="flex items-center gap-4">
-            {index > 0 && (
-              <span className="text-sm text-muted-foreground">or</span>
-            )}
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-2 overflow-hidden">
-                <img 
-                  src={agent.image} 
-                  alt={agent.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <p className="font-medium text-sm">{agent.name}</p>
-              <p className="text-xs text-muted-foreground">{agent.role}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <p className="text-sm text-muted-foreground">
-        Experts in their field.
-      </p>
-    </div>
-  )
-}
-
-// ============================================================================
-// FEEDBACK FORM
-// ============================================================================
-
-const feedbackReasons = [
-  { id: "price", label: "Price too high" },
-  { id: "timing", label: "Not ready to proceed yet" },
-  { id: "comparison", label: "Comparing other law firms" },
-  { id: "service", label: "Prefer a different service" },
-  { id: "location", label: "Want a local solicitor" },
-  { id: "recommendation", label: "Going with a recommendation" },
-  { id: "other", label: "Other reason" },
-]
-
-function FeedbackForm({
-  firstName,
-  isSubmitting,
-  feedbackSubmitted,
-  onSubmit,
-}: {
-  firstName: string
-  isSubmitting: boolean
-  feedbackSubmitted: boolean
-  onSubmit: (reasons: string[], otherReason?: string) => void
-}) {
-  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
-  const [otherReason, setOtherReason] = useState("")
-
-  const toggleReason = (reasonId: string) => {
-    setSelectedReasons(prev => 
-      prev.includes(reasonId) 
-        ? prev.filter(r => r !== reasonId)
-        : [...prev, reasonId]
-    )
-  }
-
-  const handleSubmit = () => {
-    onSubmit(selectedReasons, selectedReasons.includes("other") ? otherReason : undefined)
-  }
-
-  if (feedbackSubmitted) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-xl mx-auto"
-      >
-        <div className="bg-card rounded-2xl border border-border p-8 text-center">
-          <div className="h-16 w-16 rounded-full bg-foreground text-background flex items-center justify-center mx-auto mb-6">
-            <Check className="h-8 w-8" />
-          </div>
-          <h2 className="text-2xl font-semibold mb-3">Thank you for your feedback</h2>
-          <p className="text-muted-foreground max-w-md mx-auto leading-relaxed mb-6">
-            We appreciate you taking the time to share your thoughts. Your feedback helps us improve our services.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            If you change your mind, feel free to come back anytime. We&apos;d be happy to help with your conveyancing needs.
-          </p>
-        </div>
-      </motion.div>
-    )
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="w-full max-w-xl mx-auto"
-    >
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <div className="p-6">
-          <StepHeader
-            title={`We're sorry to see you go, ${firstName}`}
-            description="Thank you for considering HomePanel. To help us improve, could you share why you decided not to proceed?"
-            align="center"
-          />
-
-          <div className="space-y-3 mb-6">
-            {feedbackReasons.map((reason) => (
-              <CheckboxField
-                key={reason.id}
-                id={reason.id}
-                label={reason.label}
-                checked={selectedReasons.includes(reason.id)}
-                onCheckedChange={() => toggleReason(reason.id)}
-                variant="card"
-              />
-            ))}
-          </div>
-
-          {selectedReasons.includes("other") && (
-            <FormField label="Please tell us more" className="mb-6">
-              <textarea
-                value={otherReason}
-                onChange={(e) => setOtherReason(e.target.value)}
-                placeholder="Your feedback helps us improve..."
-                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground min-h-[100px] resize-none transition-all duration-200"
-              />
-            </FormField>
+                {currentStep === "personal-details" ? "Get my quote" : "Continue"}
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
+              <p className="text-center text-white/20 text-xs mt-4">Press Enter ↵ to continue</p>
+            </motion.div>
           )}
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl flex-1 h-12"
-              onClick={() => onSubmit([], undefined)}
-              disabled={isSubmitting}
-            >
-              Skip feedback
-            </Button>
-            <Button
-              type="button"
-              className="rounded-xl bg-foreground hover:bg-foreground/90 text-background flex-1 h-12"
-              onClick={handleSubmit}
-              disabled={isSubmitting || selectedReasons.length === 0}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit feedback"
-              )}
-            </Button>
-          </div>
         </div>
       </div>
-    </motion.div>
+
+      {/* Bottom progress bar */}
+      <div className="fixed bottom-0 left-0 right-0 h-0.5 bg-white/10 z-20">
+        <motion.div
+          className="h-full bg-white"
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        />
+      </div>
+    </div>
   )
 }
