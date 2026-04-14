@@ -267,7 +267,7 @@ export function MultiStepForm() {
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600&q=80&fit=crop"
             className="w-full h-full object-cover" style={{ filter: "grayscale(30%)" }} />
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-black/65" />
         </div>
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative z-10 text-center max-w-lg">
           <motion.div
@@ -279,29 +279,29 @@ export function MultiStepForm() {
             <Check className="w-9 h-9 text-black" />
           </motion.div>
           <h2 className="text-4xl font-semibold text-white mb-4 tracking-tight">You're all set</h2>
-          <p className="text-white/80 leading-relaxed text-lg mb-4">Your enquiry has been submitted successfully.</p>
-          <p className="text-white/60 leading-relaxed mb-10">A member of The Home Panel team will review your details and be in touch within one business day.</p>
-          <div className="bg-white/15 border border-white/30 rounded-2xl p-6 mb-10 text-left">
-            <div className="flex items-center gap-3 text-white/90 text-sm">
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                <Check className="w-4 h-4 text-white" />
+          <p className="text-white leading-relaxed text-lg mb-4">Your enquiry has been submitted successfully.</p>
+          <p className="text-white/80 leading-relaxed mb-10">A member of The Home Panel team will review your details and be in touch within one business day.</p>
+          <div className="bg-black/60 border border-white/20 rounded-2xl p-6 mb-10 text-left">
+            <div className="flex items-center gap-3 text-white text-sm">
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                <Check className="w-4 h-4 text-black" />
               </div>
               <span>Enquiry received and logged</span>
             </div>
-            <div className="flex items-center gap-3 text-white/70 text-sm mt-3">
-              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs text-white/70">2</span>
+            <div className="flex items-center gap-3 text-white/80 text-sm mt-4">
+              <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs text-white font-medium">2</span>
               </div>
               <span>Team review — within 1 business day</span>
             </div>
-            <div className="flex items-center gap-3 text-white/70 text-sm mt-3">
-              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs text-white/70">3</span>
+            <div className="flex items-center gap-3 text-white/80 text-sm mt-4">
+              <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs text-white font-medium">3</span>
               </div>
               <span>Onboarding link sent to your email</span>
             </div>
           </div>
-          <Link href="/" className="inline-flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm">
+          <Link href="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm">
             <ChevronLeft className="w-4 h-4" /> Back to homepage
           </Link>
         </motion.div>
@@ -456,7 +456,6 @@ export function MultiStepForm() {
                   </h1>
                   <p className="text-white/50 text-lg mb-10">Start typing the postcode to search.</p>
                   <div className="space-y-4">
-                    <div className="[&_input]:bg-white/10 [&_input]:border-white/20 [&_input]:text-white [&_input]:placeholder-white/30 [&_input:focus]:border-white/60 [&_input]:rounded-2xl [&_input]:py-4 [&_input]:px-5 [&_input]:text-base">
                       <AddressAutocomplete
                         value={addressData}
                         onChange={(address) => {
@@ -471,8 +470,8 @@ export function MultiStepForm() {
                         onPostcodeChange={(postcode) => setValue("propertyPostcode", postcode)}
                         placeholder="Start typing postcode..."
                         disabled={watchedValues.propertyAddressUnknown}
+                        dark={true}
                       />
-                    </div>
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => setValue("propertyAddressUnknown", !watchedValues.propertyAddressUnknown)}>
                       <div className={cn("w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
                         watchedValues.propertyAddressUnknown ? "border-white bg-white" : "border-white/30")}>
