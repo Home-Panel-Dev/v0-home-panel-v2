@@ -11,14 +11,14 @@ const contactInfo = [
   {
     icon: Mail,
     label: "Email",
-    value: "hello@homepanel.co.uk",
-    href: "mailto:hello@homepanel.co.uk",
+    value: "info@thehomepanel.co.uk",
+    href: "mailto:info@thehomepanel.co.uk",
   },
   {
     icon: Phone,
     label: "Phone",
-    value: "0800 123 4567",
-    href: "tel:08001234567",
+    value: "info@thehomepanel.co.uk",
+    href: "mailto:info@thehomepanel.co.uk",
   },
   {
     icon: MapPin,
@@ -82,7 +82,7 @@ export default function ContactPage() {
             <div className="mt-8 p-6 rounded-2xl bg-secondary border border-border">
               <h3 className="font-semibold mb-2">Partnership enquiries</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                If you're an estate agent, mortgage broker, or solicitor interested in partnering with HomePanel, please use the contact form and select "Partnership enquiry" as the subject.
+                If you're an estate agent, mortgage broker, or solicitor interested in partnering with The Home Panel, please use the contact form and select "Partnership enquiry" as the subject.
               </p>
             </div>
           </div>
