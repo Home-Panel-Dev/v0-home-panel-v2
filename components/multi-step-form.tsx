@@ -142,6 +142,7 @@ export function MultiStepForm() {
   const [error, setError] = useState<string | null>(null)
   const [addressData, setAddressData] = useState<AddressData | null>(null)
   const [direction, setDirection] = useState(1)
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<EnquiryFormData>({
@@ -300,7 +301,6 @@ export function MultiStepForm() {
       { id: "recommendation", label: "Going with a recommendation" },
       { id: "other", label: "Other reason" },
     ]
-    const [selectedReasons, setSelectedReasons] = useState<string[]>([])
     return (
       <div className="min-h-screen bg-black flex items-center justify-center px-6">
         <div className="w-full max-w-lg">
