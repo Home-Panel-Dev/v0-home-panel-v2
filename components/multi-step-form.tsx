@@ -263,14 +263,45 @@ export function MultiStepForm() {
   // SUCCESS
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center px-6">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-md">
-          <div className="w-20 h-20 rounded-full border-2 border-white/20 flex items-center justify-center mx-auto mb-8">
-            <Check className="w-8 h-8 text-white" />
+      <div className="min-h-screen relative flex items-center justify-center px-6">
+        <div className="absolute inset-0">
+          <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600&q=80&fit=crop"
+            className="w-full h-full object-cover" style={{ filter: "grayscale(30%)" }} />
+          <div className="absolute inset-0 bg-black/60" />
+        </div>
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative z-10 text-center max-w-lg">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="w-20 h-20 rounded-full bg-white flex items-center justify-center mx-auto mb-8"
+          >
+            <Check className="w-9 h-9 text-black" />
+          </motion.div>
+          <h2 className="text-4xl font-semibold text-white mb-4 tracking-tight">You're all set</h2>
+          <p className="text-white/60 leading-relaxed text-lg mb-4">Your enquiry has been submitted successfully.</p>
+          <p className="text-white/40 leading-relaxed mb-10">A member of The Home Panel team will review your details and be in touch within one business day.</p>
+          <div className="bg-white/10 border border-white/20 rounded-2xl p-6 mb-10 text-left">
+            <div className="flex items-center gap-3 text-white/60 text-sm">
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Check className="w-4 h-4 text-white" />
+              </div>
+              <span>Enquiry received and logged</span>
+            </div>
+            <div className="flex items-center gap-3 text-white/40 text-sm mt-3">
+              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs text-white/40">2</span>
+              </div>
+              <span>Team review — within 1 business day</span>
+            </div>
+            <div className="flex items-center gap-3 text-white/40 text-sm mt-3">
+              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs text-white/40">3</span>
+              </div>
+              <span>Onboarding link sent to your email</span>
+            </div>
           </div>
-          <h2 className="text-3xl font-semibold text-white mb-4 tracking-tight">Enquiry submitted</h2>
-          <p className="text-white/50 leading-relaxed text-lg">A member of The Home Panel team will be in touch within one business day.</p>
-          <Link href="/" className="inline-flex items-center gap-2 mt-10 text-white/40 hover:text-white/70 transition-colors text-sm">
+          <Link href="/" className="inline-flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm">
             <ChevronLeft className="w-4 h-4" /> Back to homepage
           </Link>
         </motion.div>
@@ -562,10 +593,10 @@ export function MultiStepForm() {
                   <p className="text-white/50 text-lg mb-10">We'll use these details to send your quote and get in touch.</p>
                   <div className="space-y-4">
                     {[
-                      { field: "firstName" as const, label: "First name", type: "text", placeholder: "Habib" },
-                      { field: "lastName" as const, label: "Last name", type: "text", placeholder: "Fazel" },
-                      { field: "email" as const, label: "Email address", type: "email", placeholder: "habib@example.com" },
-                      { field: "phone" as const, label: "Phone number", type: "tel", placeholder: "07700 000000" },
+                      { field: "firstName" as const, label: "First name", type: "text", placeholder: "Your first name" },
+                      { field: "lastName" as const, label: "Last name", type: "text", placeholder: "Your last name" },
+                      { field: "email" as const, label: "Email address", type: "email", placeholder: "Your email address" },
+                      { field: "phone" as const, label: "Phone number", type: "tel", placeholder: "Your phone number" },
                     ].map(({ field, label, type, placeholder }) => (
                       <div key={field}>
                         <label className="block text-white/40 text-xs uppercase tracking-widest mb-2">{label}</label>
