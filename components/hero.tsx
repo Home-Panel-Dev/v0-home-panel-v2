@@ -100,7 +100,7 @@ export function Hero() {
         >
           {[
             { value: "2×", label: "Faster than average" },
-            { value: "30,000+", label: "Transactions handled" },
+            { value: "5,000+", label: "Cases completed" },
             { value: "98%", label: "Client satisfaction" },
             { value: "Fixed", label: "Fee guarantee" },
           ].map((stat) => (
