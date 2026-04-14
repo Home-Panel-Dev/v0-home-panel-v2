@@ -407,11 +407,11 @@ export function MultiStepForm() {
                   <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">What are you looking to do?</h1>
                   <p className="text-white/50 text-lg mb-10">Select the type of transaction you need help with.</p>
                   <div className="space-y-3">
-                    <Option label="Buying a property" sublabel="Residential purchase" selected={watchedValues.transactionType === "buying"} onClick={() => { setValue("transactionType", "buying"); setTimeout(nextStep, 300) }} icon={<Home className="w-5 h-5" />} />
-                    <Option label="Selling a property" sublabel="Residential sale" selected={watchedValues.transactionType === "selling"} onClick={() => { setValue("transactionType", "selling"); setTimeout(nextStep, 300) }} icon={<Building2 className="w-5 h-5" />} />
-                    <Option label="Buying & selling" sublabel="Both at the same time" selected={watchedValues.transactionType === "buying-selling"} onClick={() => { setValue("transactionType", "buying-selling"); setTimeout(nextStep, 300) }} icon={<ArrowLeftRight className="w-5 h-5" />} />
-                    <Option label="Remortgage" sublabel="Switch or renew your mortgage" selected={watchedValues.transactionType === "remortgage"} onClick={() => { setValue("transactionType", "remortgage"); setTimeout(nextStep, 300) }} icon={<RefreshCw className="w-5 h-5" />} />
-                    <Option label="Transfer of equity" sublabel="Change ownership of a property" selected={watchedValues.transactionType === "transfer-equity"} onClick={() => { setValue("transactionType", "transfer-equity"); setTimeout(nextStep, 300) }} icon={<ArrowLeftRight className="w-5 h-5" />} />
+                    <Option label="Buying a property" sublabel="Residential purchase" selected={watchedValues.transactionType === "buying"} onClick={() => { setValue("transactionType", "buying"); setTimeout(nextStep, 150) }} icon={<Home className="w-5 h-5" />} />
+                    <Option label="Selling a property" sublabel="Residential sale" selected={watchedValues.transactionType === "selling"} onClick={() => { setValue("transactionType", "selling"); setTimeout(nextStep, 150) }} icon={<Building2 className="w-5 h-5" />} />
+                    <Option label="Buying & selling" sublabel="Both at the same time" selected={watchedValues.transactionType === "buying-selling"} onClick={() => { setValue("transactionType", "buying-selling"); setTimeout(nextStep, 150) }} icon={<ArrowLeftRight className="w-5 h-5" />} />
+                    <Option label="Remortgage" sublabel="Switch or renew your mortgage" selected={watchedValues.transactionType === "remortgage"} onClick={() => { setValue("transactionType", "remortgage"); setTimeout(nextStep, 150) }} icon={<RefreshCw className="w-5 h-5" />} />
+                    <Option label="Transfer of equity" sublabel="Change ownership of a property" selected={watchedValues.transactionType === "transfer-equity"} onClick={() => { setValue("transactionType", "transfer-equity"); setTimeout(nextStep, 150) }} icon={<ArrowLeftRight className="w-5 h-5" />} />
                   </div>
                 </div>
               )}
@@ -482,9 +482,9 @@ export function MultiStepForm() {
                   <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Is it freehold or leasehold?</h1>
                   <p className="text-white/50 text-lg mb-10">Most houses are freehold. Most flats are leasehold. Your estate agent can confirm.</p>
                   <div className="space-y-3">
-                    <Option label="Freehold" sublabel="You own the building and land" selected={watchedValues.tenure === "freehold"} onClick={() => { setValue("tenure", "freehold"); setTimeout(nextStep, 300) }} />
-                    <Option label="Leasehold" sublabel="You own the property for a set period" selected={watchedValues.tenure === "leasehold"} onClick={() => { setValue("tenure", "leasehold"); setTimeout(nextStep, 300) }} />
-                    <Option label="Not sure" sublabel="We'll confirm during onboarding" selected={watchedValues.tenure === "unsure"} onClick={() => { setValue("tenure", "unsure"); setTimeout(nextStep, 300) }} />
+                    <Option label="Freehold" sublabel="You own the building and land" selected={watchedValues.tenure === "freehold"} onClick={() => { setValue("tenure", "freehold"); setTimeout(nextStep, 150) }} />
+                    <Option label="Leasehold" sublabel="You own the property for a set period" selected={watchedValues.tenure === "leasehold"} onClick={() => { setValue("tenure", "leasehold"); setTimeout(nextStep, 150) }} />
+                    <Option label="Not sure" sublabel="We'll confirm during onboarding" selected={watchedValues.tenure === "unsure"} onClick={() => { setValue("tenure", "unsure"); setTimeout(nextStep, 150) }} />
                   </div>
                 </div>
               )}
@@ -496,8 +496,8 @@ export function MultiStepForm() {
                   <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Is this your first property?</h1>
                   <p className="text-white/50 text-lg mb-10">You're a first time buyer if none of the new owners have ever owned property anywhere in the world.</p>
                   <div className="space-y-3">
-                    <Option label="Yes, first time buyer" sublabel="None of us have owned property before" selected={watchedValues.firstTimeBuyer === "yes"} onClick={() => { setValue("firstTimeBuyer", "yes"); setTimeout(nextStep, 300) }} />
-                    <Option label="No" sublabel="One or more of us have owned property before" selected={watchedValues.firstTimeBuyer === "no"} onClick={() => { setValue("firstTimeBuyer", "no"); setTimeout(nextStep, 300) }} />
+                    <Option label="Yes, first time buyer" sublabel="None of us have owned property before" selected={watchedValues.firstTimeBuyer === "yes"} onClick={() => { setValue("firstTimeBuyer", "yes"); setTimeout(nextStep, 150) }} />
+                    <Option label="No" sublabel="One or more of us have owned property before" selected={watchedValues.firstTimeBuyer === "no"} onClick={() => { setValue("firstTimeBuyer", "no"); setTimeout(nextStep, 150) }} />
                   </div>
                 </div>
               )}
@@ -509,8 +509,8 @@ export function MultiStepForm() {
                   <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">How many properties will you own after this purchase?</h1>
                   <p className="text-white/50 text-lg mb-10">Including this one, across all owners.</p>
                   <div className="space-y-3">
-                    <Option label="Just this one" sublabel="This will be our only property" selected={watchedValues.propertyCount === "one"} onClick={() => { setValue("propertyCount", "one"); setTimeout(nextStep, 300) }} />
-                    <Option label="More than one" sublabel="We'll own additional properties" selected={watchedValues.propertyCount === "more-than-one"} onClick={() => { setValue("propertyCount", "more-than-one"); setTimeout(nextStep, 300) }} />
+                    <Option label="Just this one" sublabel="This will be our only property" selected={watchedValues.propertyCount === "one"} onClick={() => { setValue("propertyCount", "one"); setTimeout(nextStep, 150) }} />
+                    <Option label="More than one" sublabel="We'll own additional properties" selected={watchedValues.propertyCount === "more-than-one"} onClick={() => { setValue("propertyCount", "more-than-one"); setTimeout(nextStep, 150) }} />
                   </div>
                 </div>
               )}
@@ -522,8 +522,8 @@ export function MultiStepForm() {
                   <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Is this a new build?</h1>
                   <p className="text-white/50 text-lg mb-10">A property being built or recently completed by a developer.</p>
                   <div className="space-y-3">
-                    <Option label="Yes, new build" selected={watchedValues.isNewBuild === "yes"} onClick={() => { setValue("isNewBuild", "yes"); setTimeout(nextStep, 300) }} />
-                    <Option label="No" selected={watchedValues.isNewBuild === "no"} onClick={() => { setValue("isNewBuild", "no"); setTimeout(nextStep, 300) }} />
+                    <Option label="Yes, new build" selected={watchedValues.isNewBuild === "yes"} onClick={() => { setValue("isNewBuild", "yes"); setTimeout(nextStep, 150) }} />
+                    <Option label="No" selected={watchedValues.isNewBuild === "no"} onClick={() => { setValue("isNewBuild", "no"); setTimeout(nextStep, 150) }} />
                   </div>
                 </div>
               )}
@@ -535,8 +535,8 @@ export function MultiStepForm() {
                   <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Will you be using a mortgage?</h1>
                   <p className="text-white/50 text-lg mb-10">This helps us understand the complexity of your transaction.</p>
                   <div className="space-y-3">
-                    <Option label="Yes, with a mortgage" selected={watchedValues.hasMortgage === "yes"} onClick={() => { setValue("hasMortgage", "yes"); setTimeout(nextStep, 300) }} />
-                    <Option label="No, cash purchase" selected={watchedValues.hasMortgage === "no"} onClick={() => { setValue("hasMortgage", "no"); setTimeout(nextStep, 300) }} />
+                    <Option label="Yes, with a mortgage" selected={watchedValues.hasMortgage === "yes"} onClick={() => { setValue("hasMortgage", "yes"); setTimeout(nextStep, 150) }} />
+                    <Option label="No, cash purchase" selected={watchedValues.hasMortgage === "no"} onClick={() => { setValue("hasMortgage", "no"); setTimeout(nextStep, 150) }} />
                   </div>
                 </div>
               )}
@@ -548,8 +548,8 @@ export function MultiStepForm() {
                   <h1 className="text-4xl font-semibold text-white mb-3 tracking-tight">Are you buying under a company name?</h1>
                   <p className="text-white/50 text-lg mb-10">This includes limited companies, partnerships, or any other business entity.</p>
                   <div className="space-y-3">
-                    <Option label="Yes, company purchase" selected={watchedValues.isCompanyPurchase === "yes"} onClick={() => { setValue("isCompanyPurchase", "yes"); setTimeout(nextStep, 300) }} />
-                    <Option label="No, personal purchase" selected={watchedValues.isCompanyPurchase === "no"} onClick={() => { setValue("isCompanyPurchase", "no"); setTimeout(nextStep, 300) }} />
+                    <Option label="Yes, company purchase" selected={watchedValues.isCompanyPurchase === "yes"} onClick={() => { setValue("isCompanyPurchase", "yes"); setTimeout(nextStep, 150) }} />
+                    <Option label="No, personal purchase" selected={watchedValues.isCompanyPurchase === "no"} onClick={() => { setValue("isCompanyPurchase", "no"); setTimeout(nextStep, 150) }} />
                   </div>
                 </div>
               )}
