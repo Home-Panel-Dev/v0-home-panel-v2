@@ -48,6 +48,7 @@ interface AddressAutocompleteProps {
   error?: boolean
   disabled?: boolean
   className?: string
+  dark?: boolean
 }
 
 interface AddressSuggestion {
@@ -193,6 +194,7 @@ export function AddressAutocomplete({
   onChange,
   onPostcodeChange,
   placeholder = "Start typing postcode or address...",
+  dark = false,
   error,
   disabled,
   className,
@@ -319,7 +321,7 @@ export function AddressAutocomplete({
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        
         <input
           ref={inputRef}
           type="text"
@@ -334,12 +336,15 @@ export function AddressAutocomplete({
           aria-haspopup="listbox"
           aria-autocomplete="list"
           className={cn(
-            "w-full h-12 pl-11 pr-10 rounded-xl border bg-background text-foreground text-base",
-            "placeholder:text-muted-foreground transition-all duration-200",
-            "border-input",
-            "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
-            error && "border-destructive focus:ring-destructive/20 focus:border-destructive",
-            disabled && "opacity-50 cursor-not-allowed bg-muted"
+            dark
+              ? "w-full h-14 pl-5 pr-10 rounded-2xl border-2 bg-white/10 border-white/20 text-white text-base focus:outline-none focus:border-white/60 transition-all placeholder:text-white/30"
+              : cn(
+                  "w-full h-12 pl-4 pr-10 rounded-xl border bg-background text-foreground text-base",
+                  "placeholder:text-muted-foreground transition-all duration-200",
+                  "border-input focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+                  error && "border-destructive focus:ring-destructive/20 focus:border-destructive",
+                  disabled && "opacity-50 cursor-not-allowed bg-muted"
+                )
           )}
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
