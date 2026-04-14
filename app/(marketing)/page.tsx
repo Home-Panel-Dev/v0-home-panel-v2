@@ -116,15 +116,19 @@ export default function HomePage() {
                 <p className="text-4xl font-semibold">98%</p>
                 <p className="text-sm text-background/70 mt-1">Client satisfaction</p>
               </div>
+              <div className="absolute -top-6 -left-6 bg-background border border-border rounded-2xl p-6 shadow-sm">
+                <p className="text-4xl font-semibold">5,000+</p>
+                <p className="text-sm text-muted-foreground mt-1">Cases completed</p>
+              </div>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">Why HomePanel</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">Why The Home Panel</p>
               <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-6">
                 A better way to start your move
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-10">
-                We believe moving home should feel effortless. HomePanel removes the friction from conveyancing so you can focus on what matters.
+                We believe moving home should feel effortless. The Home Panel removes the friction from conveyancing so you can focus on what matters.
               </p>
 
               <div className="grid grid-cols-2 gap-6">
@@ -199,7 +203,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
           <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-8">What clients say</p>
           <blockquote className="text-2xl sm:text-3xl font-medium leading-relaxed tracking-tight mb-8">
-            "HomePanel made the whole process so much less stressful. I knew exactly what was happening at every stage and the fees were exactly what they quoted."
+            "The Home Panel made the whole process so much less stressful. I knew exactly what was happening at every stage and the fees were exactly what they quoted."
           </blockquote>
           <div className="flex items-center justify-center gap-3">
             <div className="w-10 h-10 rounded-full bg-muted overflow-hidden">
