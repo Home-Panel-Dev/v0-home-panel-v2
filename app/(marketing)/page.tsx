@@ -3,56 +3,63 @@ import Link from "next/link"
 import { Hero } from "@/components/hero"
 import { CTASection } from "@/components/cta-section"
 import { AuthRedirectHandler } from "@/components/auth-redirect-handler"
-import { ArrowRight, Shield, Zap, Clock, HeartHandshake } from "lucide-react"
+import { ArrowRight, Shield, Zap, Clock, HeartHandshake, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const steps = [
   {
     number: "01",
     title: "Get an instant quote",
-    description: "Answer a few simple questions about your move and get a fixed-fee quote in under 3 minutes.",
+    description: "Tell us about your move and get a fixed-fee quote in under 3 minutes. No obligation, no hidden costs.",
     image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80&fit=crop",
   },
   {
     number: "02",
-    title: "Complete onboarding",
-    description: "Verify your identity and submit your documents securely online — no branch visits needed.",
+    title: "Complete secure onboarding",
+    description: "We guide you through a short, encrypted process — identity checks, funding details, and key documents — all online.",
     image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&q=80&fit=crop",
   },
   {
     number: "03",
-    title: "We handle the rest",
-    description: "Your dedicated solicitor takes over and keeps you updated every step of the way.",
+    title: "Your solicitor begins immediately",
+    description: "Your case arrives with your solicitor fully prepared. No chasing, no delays, no back and forth.",
     image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80&fit=crop",
   },
 ]
 
 const benefits = [
   { title: "Fixed fees", description: "Know exactly what you'll pay upfront. No surprises at completion.", icon: Shield },
-  { title: "Fast onboarding", description: "Complete everything online in one sitting. No paperwork, no delays.", icon: Zap },
-  { title: "Fewer delays", description: "Full documentation collected upfront means your case moves faster.", icon: Clock },
-  { title: "Personal service", description: "A named solicitor handles your case from instruction to completion.", icon: HeartHandshake },
+  { title: "Fast onboarding", description: "Complete everything online in one sitting. No paperwork, no branch visits.", icon: Zap },
+  { title: "Fewer delays", description: "Your case is fully prepared before your solicitor is instructed — so they can start immediately.", icon: Clock },
+  { title: "Personal service", description: "A named solicitor handles your case from instruction through to completion.", icon: HeartHandshake },
 ]
 
 const partners = [
   {
     title: "Estate Agents",
-    description: "Offer your clients seamless conveyancing that reflects your commitment to service.",
+    description: "Offer your clients seamless conveyancing that reflects your commitment to exceptional service.",
     href: "/estate-agents",
     image: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=600&q=80&fit=crop",
   },
   {
     title: "Mortgage Brokers",
-    description: "Enhance your client journey with integrated conveyancing alongside your mortgage service.",
+    description: "Integrate conveyancing into your client journey for a smoother, end-to-end home buying experience.",
     href: "/brokers",
     image: "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?w=600&q=80&fit=crop",
   },
   {
     title: "Solicitors",
-    description: "Receive pre-qualified, well-prepared clients ready to progress their transaction.",
+    description: "Receive pre-qualified, fully prepared clients ready to progress — with documentation already in order.",
     href: "/solicitors",
     image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&q=80&fit=crop",
   },
+]
+
+const trustPoints = [
+  "Identity checks completed before your solicitor is instructed",
+  "Source of funds verified securely through our platform",
+  "All documentation collected upfront — reducing delays",
+  "Encrypted onboarding process built for UK property transactions",
 ]
 
 export default function HomePage() {
@@ -70,10 +77,10 @@ export default function HomePage() {
           <div className="max-w-2xl mb-16">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">How it works</p>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
-              From quote to completion
+              From quote to instruction in three steps
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              Three simple steps. No jargon. No stress.
+              We prepare your case before it reaches a solicitor — so you can move forward without the usual delays.
             </p>
           </div>
 
@@ -125,10 +132,10 @@ export default function HomePage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">Why The Home Panel</p>
               <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-6">
-                A better way to start your move
+                We prepare your case before it reaches your solicitor
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-10">
-                We believe moving home should feel effortless. The Home Panel removes the friction from conveyancing so you can focus on what matters.
+                Traditional conveyancing starts with delays, repeated document requests, and weeks of waiting. The Home Panel changes that — by doing the preparation work upfront, your solicitor can begin immediately.
               </p>
 
               <div className="grid grid-cols-2 gap-6">
@@ -158,8 +165,40 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Partners */}
+      {/* Trust section */}
       <section className="py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">Security & compliance</p>
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-6">
+                Built for a smooth, secure experience
+              </h2>
+              <p className="text-muted-foreground text-lg leading-relaxed mb-10">
+                Your information is handled through a secure, guided process designed specifically for UK property transactions. Everything is collected once, upfront — so nothing gets missed later.
+              </p>
+              <div className="space-y-4">
+                {trustPoints.map((point) => (
+                  <div key={point} className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-foreground flex-shrink-0" />
+                    <span className="text-muted-foreground">{point}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-3xl overflow-hidden aspect-square">
+              <img
+                src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80&fit=crop"
+                alt="Secure conveyancing"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Partners */}
+      <section className="py-24 lg:py-32 bg-card border-y border-border">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">Partners</p>
@@ -167,7 +206,7 @@ export default function HomePage() {
               Built for property professionals
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              We work with estate agents, mortgage brokers, and solicitors to deliver a seamless client experience.
+              We work with estate agents, mortgage brokers, and solicitors to deliver a seamless experience for every client.
             </p>
           </div>
 
@@ -199,11 +238,11 @@ export default function HomePage() {
       </section>
 
       {/* Testimonial */}
-      <section className="py-24 lg:py-32 bg-card border-y border-border">
+      <section className="py-24 lg:py-32">
         <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
           <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-8">What clients say</p>
           <blockquote className="text-2xl sm:text-3xl font-medium leading-relaxed tracking-tight mb-8">
-            "The Home Panel made the whole process so much less stressful. I knew exactly what was happening at every stage and the fees were exactly what they quoted."
+            "The Home Panel made the whole process so much less stressful. I knew exactly what was happening at every stage and the fees were exactly as quoted."
           </blockquote>
           <div className="flex items-center justify-center gap-3">
             <div className="w-10 h-10 rounded-full bg-muted overflow-hidden">
@@ -222,9 +261,9 @@ export default function HomePage() {
       </section>
 
       <CTASection
-        title="Ready to simplify your move?"
-        subtitle="Get an instant fixed-fee quote in under 3 minutes. No obligation."
-        ctaText="Start your move"
+        title="Start your move today"
+        subtitle="Get your fixed-fee quote in under 3 minutes. No obligation, no hidden costs."
+        ctaText="Get your instant quote"
         ctaHref="/start"
       />
     </>
