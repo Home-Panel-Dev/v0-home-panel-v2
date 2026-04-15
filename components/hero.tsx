@@ -38,7 +38,7 @@ export function Hero() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm text-sm text-white/70 mb-8"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            SRA Regulated · Fixed Fees · No Hidden Costs
+            SRA Regulated · Fixed Fees · Secure Onboarding
           </motion.div>
 
           {/* Headline */}
@@ -50,7 +50,7 @@ export function Hero() {
           >
             Moving home,
             <br />
-            <span className="text-white/40">made simple.</span>
+            <span className="text-white/40">done properly.</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -60,7 +60,7 @@ export function Hero() {
             transition={{ duration: 0.7, delay: 0.6 }}
             className="text-lg lg:text-xl text-white/60 max-w-xl leading-relaxed mb-10"
           >
-            Fixed-fee conveyancing handled by experts. Get your instant quote in under 3 minutes.
+            From quote to instruction — we prepare your case upfront so your solicitor can begin immediately. Fixed fees, no hidden costs.
           </motion.p>
 
           {/* CTAs */}
