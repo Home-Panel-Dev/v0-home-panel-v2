@@ -77,7 +77,7 @@ export function Footer() {
             &copy; {new Date().getFullYear()} The Home Panel. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
-            Conveyancing services provided by NPS Solicitors, authorised and regulated by the Solicitors Regulation Authority.
+            Conveyancing services are provided by SRA-regulated solicitors.
           </p>
         </div>
       </div>
