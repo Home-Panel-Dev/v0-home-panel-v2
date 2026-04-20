@@ -84,7 +84,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-12">
             {steps.map((step) => (
               <div key={step.number} className="group">
                 <div className="rounded-2xl overflow-hidden mb-6 aspect-[4/3] bg-muted">
@@ -210,7 +210,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-8">
             {partners.map((partner) => (
               <Link
                 key={partner.title}
@@ -238,10 +238,10 @@ export default function HomePage() {
       </section>
 
       {/* Testimonial */}
-      <section className="py-24 lg:py-32">
+      <section className="py-24 lg:py-32" style={{ background: "linear-gradient(135deg, #0A0A0A 0%, #1a1a1a 50%, #2C2C2A 100%)" }}>
         <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-8">What clients say</p>
-          <blockquote className="text-2xl sm:text-3xl font-medium leading-relaxed tracking-tight mb-8">
+          <p className="text-sm font-medium text-white/40 uppercase tracking-widest mb-8">What clients say</p>
+          <blockquote className="text-2xl sm:text-3xl font-medium leading-relaxed tracking-tight mb-8 text-white">
             "The Home Panel made the whole process so much less stressful. I knew exactly what was happening at every stage and the fees were exactly as quoted."
           </blockquote>
           <div className="flex items-center justify-center gap-3">
@@ -253,8 +253,8 @@ export default function HomePage() {
               />
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium">Emma Richardson</p>
-              <p className="text-sm text-muted-foreground">First-time buyer, London</p>
+              <p className="text-sm font-medium text-white">Emma Richardson</p>
+              <p className="text-sm text-white/50">First-time buyer, London</p>
             </div>
           </div>
         </div>
